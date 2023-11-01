@@ -1,0 +1,20 @@
+{
+  "name": "kayle-bot",
+  "version": "1.0.0",
+  "description": "League of Legends Romania discord BOT",
+  "main": "kayle.js",
+  "scripts": {
+    "dev": "nodemon ./source/kayle.js"
+  },
+  "author": "rootblind",
+  "license": "ISC",
+  "dependencies": {
+    "@discordjs/rest": "^2.0.1",
+    "ascii-table": "^0.0.9",
+    "colors": "^1.4.0",
+    "discord.js": "^14.13.0",
+    "dotenv": "^16.3.1",
+    "fs": "^0.0.1-security",
+    "nodemon": "^3.0.1"
+  }
+}
