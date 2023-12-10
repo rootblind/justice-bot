@@ -6,6 +6,7 @@ config();
 
 //loads
 const {loadEvents} = require('../Handlers/eventHandler');
+const {loadCommands} = require('../Handlers/commandHandler');
 
 const client = new Client({ intents: [
     Object.keys(GatewayIntentBits),
@@ -34,6 +35,7 @@ async function main()
         });
         client.login(TOKEN).then(() => {
             loadEvents(client);
+            loadCommands(client);
         });
     }catch(err)
     {

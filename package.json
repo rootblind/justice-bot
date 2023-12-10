@@ -12,9 +12,11 @@
     "@discordjs/rest": "^2.0.1",
     "ascii-table": "^0.0.9",
     "colors": "^1.4.0",
+    "cpu-stat": "^2.0.1",
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
     "fs": "^0.0.1-security",
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "pg": "^8.11.3"
   }
 }
