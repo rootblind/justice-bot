@@ -5,6 +5,7 @@ const fs = require('fs');
 const {config} = require('dotenv');
 config();
 
+// Setting up the database
 
 // This command is to be run before using any of the bot commands that require a database connection.
 

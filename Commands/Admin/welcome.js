@@ -1,3 +1,8 @@
+/*
+        The welcome commands are used to set up the configuration for guildMemberAdd event.
+    Which means whenever someone joins the server, if this event is set up, the bot will send a welcome message.
+*/
+
 const { SlashCommandBuilder, Client, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
@@ -28,6 +33,8 @@ module.exports = {
                             option.setName('message-description')
                                 .setDescription('The body of the welcome message.')
                                 .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(255)
                         )
 
                         .addBooleanOption(option =>
@@ -37,14 +44,17 @@ module.exports = {
                         .addStringOption(option =>
                             option.setName('message-title')
                                 .setDescription('The title of the welcome message.')
+                                .setMaxLength(255)
                         )
                         .addNumberOption(option =>
                             option.setName('hexcolor')
                                 .setDescription('The hex color of the welcome message.')
+                                .setMinValue(0)
                         )
                         .addStringOption(option =>
                             option.setName('image-link')
                                 .setDescription('The image link of the embed message.')
+                                .setMaxLength(255)
                         )
 
                 )
@@ -83,6 +93,7 @@ module.exports = {
                 .addStringOption(option =>
                     option.setName('message-description')
                         .setDescription('Change the current welcome message.')
+                        .setMaxLength(255)
                 )
                 .addBooleanOption(option =>
                     option.setName('author')
@@ -91,14 +102,17 @@ module.exports = {
                 .addStringOption(option =>
                     option.setName('message-title')
                         .setDescription('Change the current title')
+                        .setMaxLength(255)
                 )
                 .addNumberOption(option =>
                     option.setName('hexcolor')
                         .setDescription('Change the current color.')
+                        .setMinValue(0)
                 )
                 .addStringOption(option =>
                     option.setName('image-link')
                         .setDescription('Change the image')
+                        .setMaxLength(255)
                 )
         )
     ,

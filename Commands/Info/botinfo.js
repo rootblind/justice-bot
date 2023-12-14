@@ -1,3 +1,7 @@
+/*
+    A few technical and client-related informations about the bot.
+*/
+
 const {SlashCommandBuilder, EmbedBuilder, CommandInteraction, PermissionFlagsBits} = require('discord.js');
 const cpuStats = require('cpu-stat');
 const { config } = require('dotenv');
@@ -38,7 +42,7 @@ module.exports = {
                 const embed = new EmbedBuilder()
                     .setTitle('Bot Info & Stats')
                     .setColor('Aqua')
-                    .setAuthor({ name: 'Check on github', iconURL: 'https://pngimg.com/uploads/github/github_PNG67.png', url: 'https://github.com/rootblind/kayle-bot'})
+                    .setAuthor({ name: 'Check on github', iconURL: 'https://pngimg.com/uploads/github/github_PNG67.png', url: 'https://github.com/rootblind/justice-bot'})
                     .addFields(
                         { name: "Dev", value: "rootblind", inline: true },
                         { name: "Username:", value: `${client.user.username}`, inline: true },

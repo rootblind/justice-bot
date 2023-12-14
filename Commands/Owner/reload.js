@@ -1,3 +1,7 @@
+/*
+    Reload modules live. Not sure what might happen with non-persistent variables after reloading.
+*/
+
 const {Client, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const {loadCommands} = require('../../Handlers/commandHandler');
 const {loadEvents} = require('../../Handlers/eventHandler');

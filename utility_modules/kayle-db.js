@@ -1,3 +1,6 @@
+// Here a pool connection is established between the bot and the database.
+// An object and a method are exported for convenience.
+
 const { Pool, Client } = require("pg");
 const { config } = require("dotenv");
 config();

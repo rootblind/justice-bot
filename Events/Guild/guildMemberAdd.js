@@ -1,3 +1,6 @@
+// The new member event being handled.
+// What the code below does is reading the welcomescheme table from database and making an embed to be sent.
+
 const {EmbedBuilder} = require("@discordjs/builders");
 const {GuildMember, Embed} = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');

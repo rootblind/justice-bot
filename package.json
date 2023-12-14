@@ -4,7 +4,7 @@
   "description": "League of Legends Romania discord BOT",
   "main": "kayle.js",
   "scripts": {
-    "dev": "nodemon ./source/kayle.js"
+    "dev": "nodemon ./source/justice.js"
   },
   "author": "rootblind",
   "license": "ISC",

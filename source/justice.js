@@ -9,15 +9,16 @@ const {loadEvents} = require('../Handlers/eventHandler');
 const {loadCommands} = require('../Handlers/commandHandler');
 
 const client = new Client({ intents: [
-    Object.keys(GatewayIntentBits),
-],
-partials:[
-    Object.keys(Partials)
-]
+        Object.keys(GatewayIntentBits),
+    ],
+    partials:[
+            Object.keys(Partials)
+        ]
 });
+client.cooldowns = new Collection(); // collection for commands cooldowns: used in interactionCreate
 //env variables
 const TOKEN = process.env.BOT_TOKEN;
-const CLIENT_ID=process.env.KAYLE_CLIENT_ID;
+const CLIENT_ID=process.env.CLIENT_ID;
 const GUILD_ID=process.env.HOME_SERVER_ID;
 
 const rest = new REST({ version: '10'}).setToken(TOKEN);
