@@ -5,9 +5,6 @@
 const {Client, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const {loadCommands} = require('../../Handlers/commandHandler');
 const {loadEvents} = require('../../Handlers/eventHandler');
-const botUtils = require('../../utility_modules/utility_methods.js');
-const {config} = require('dotenv');
-config();
 
 module.exports = {
     cooldown: 10,
@@ -27,24 +24,8 @@ module.exports = {
             subcommand.setName('all')
                 .setDescription('Reload all files')
         ),
-    
+    botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client){
-        if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0)
-            {
-                console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-            }
-            else if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == -1){
-                const embed = EmbedBuilder()
-                    .setTitle('An error occurred while running this command!')
-                    .setColor('Red');
-                return interaction.reply({embeds:[embed], ephemeral:true});
-                
-            }
-        if(interaction.user.id != process.env.OWNER)
-        {
-            return interaction.reply({content: `You are not my master!`, ephemeral: true});
-        }
-
         const subcommand = interaction.options.getSubcommand();
         const embed = new EmbedBuilder()
             .setTitle('💻 Master')

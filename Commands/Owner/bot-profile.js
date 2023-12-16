@@ -5,8 +5,6 @@
 const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder, ActivityType, DiscordAPIError} = require('discord.js');
 const botUtils = require('../../utility_modules/utility_methods.js'); 
 const fs = require('fs');
-const {config} = require('dotenv');
-config();
 
 module.exports = {
     cooldown: 5,
@@ -101,24 +99,8 @@ module.exports = {
                 )
         )
         ,
-    
+    botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client){
-        
-        if(interaction.user.id != process.env.OWNER)
-        {
-            return interaction.reply({content: `You are not my master!`, ephemeral: true});
-        }
-        if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0)
-            {
-                console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-            }
-            else if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == -1){
-                const embed = EmbedBuilder()
-                    .setTitle('An error occurred while running this command!')
-                    .setColor('Red');
-                return interaction.reply({embeds:[embed], ephemeral:true});
-                
-            }
         
         const subcommand = interaction.options.getSubcommand();
         const embed = new EmbedBuilder();

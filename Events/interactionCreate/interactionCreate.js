@@ -2,20 +2,14 @@ const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder} = requ
 const {config} = require('dotenv');
 config();
 const fs = require('fs');
-
+const {poolConnection} = require('../../utility_modules/kayle-db.js');
+const botUtils = require('../../utility_modules/utility_methods.js'); 
 
 module.exports = {
     name: 'interactionCreate',
 
     execute(interaction, client){
-        const readFile = async (filePath, encoding) => {
-            try {
-                const data = fs.readFileSync(filePath, encoding);
-                return JSON.parse(data);
-            } catch (error) {
-                console.error(error);
-            }
-        };
+        
 
         if(interaction.isChatInputCommand())
         {
@@ -64,6 +58,18 @@ module.exports = {
                 }
             }
 
+            const botAppData = fs.readFileSync('./objects/botapplication.json', 'utf-8');
+            const botApplicationConfig = JSON.parse(botAppData);
+
+            if(botApplicationConfig.applicationscope === 'test' && interaction.guild.id !== process.env.HOME_SERVER_ID) {
+                const rEmbed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('Error')
+                    .setDescription('Application scope is set to testing!\nMaintenance might be undergoing.')
+                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    return;
+            }
+            
             if(command.testOnly && interaction.guild.id !== process.env.HOME_SERVER_ID) {
                 const rEmbed = new EmbedBuilder()
                     .setColor('Red')

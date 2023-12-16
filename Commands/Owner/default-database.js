@@ -1,9 +1,6 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const botUtils = require('../../utility_modules/utility_methods.js');
 const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder} = require('discord.js');
 const fs = require('fs');
-const {config} = require('dotenv');
-config();
 
 // Setting up the database
 
@@ -16,23 +13,8 @@ module.exports = {
         .setName('default-database')
         .setDescription('Set the default tables in the database.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-        
+    botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client){
-        if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0)
-            {
-                console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-            }
-            else if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == -1){
-                const embed = EmbedBuilder()
-                    .setTitle('An error occurred while running this command!')
-                    .setColor('Red');
-                return interaction.reply({embeds:[embed], ephemeral:true});
-                
-            }
-        if(interaction.user.id != process.env.OWNER)
-        {
-            return interaction.reply({content: `You are not my master!`, ephemeral: true});
-        }
         const embed = new EmbedBuilder()
             .setTitle('Default database tables');
         
@@ -79,7 +61,7 @@ module.exports = {
         }
 
         // Taking care of awaiting the query to execute through a promise
-        dbSerialization = new Promise((resolve, reject) => {
+        const welcomescheme = new Promise((resolve, reject) => {
             poolConnection.query(`CREATE TABLE IF NOT EXISTS welcomescheme (
                 id bigint PRIMARY KEY,
                 guild VARCHAR(32),
@@ -104,9 +86,9 @@ module.exports = {
                 }
             });
         });
-        await dbSerialization;
+        await welcomescheme;
     
-
+    
         let index = 1;
         for (x of table_nameListed){
             embed.addFields({name: `[${index}] - ${x}`, value: 'exists'});

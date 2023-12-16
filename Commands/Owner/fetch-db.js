@@ -3,9 +3,6 @@
 */
 const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, Client} = require('discord.js')
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
-const botUtils = require('../../utility_modules/utility_methods.js');
-const { config} = require('dotenv');
-config();
 
 module.exports = {
     cooldown: 10,
@@ -25,14 +22,8 @@ module.exports = {
                 .setRequired(true)    
         )
     ,
+    botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client) {
-        if(interaction.user.id != process.env.OWNER)
-        {
-            return interaction.reply({content: `You are not my master!`, ephemeral: true});
-        }
-        if (botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0) {
-            return console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-        }
         let clientResponse;
         const queryItems = interaction.options.getString('items');
         const queryTable = interaction.options.getString('table-name');
