@@ -10,6 +10,8 @@ config();
 // This command is to be run before using any of the bot commands that require a database connection.
 
 module.exports = {
+    cooldown: 3,
+    ownerOnly: true,
     data: new SlashCommandBuilder()
         .setName('default-database')
         .setDescription('Set the default tables in the database.')
@@ -79,7 +81,8 @@ module.exports = {
         // Taking care of awaiting the query to execute through a promise
         dbSerialization = new Promise((resolve, reject) => {
             poolConnection.query(`CREATE TABLE IF NOT EXISTS welcomescheme (
-                id SERIAL PRIMARY KEY,
+                id bigint PRIMARY KEY,
+                guild VARCHAR(32),
                 active BOOLEAN DEFAULT false NOT NULL,
                 channel VARCHAR(30),
                 message VARCHAR(255),

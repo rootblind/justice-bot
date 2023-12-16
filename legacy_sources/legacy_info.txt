@@ -1,0 +1,5 @@
+The files within this directory are older versions of the ones that are used.
+
+I do this as a backup in case at some point something breaks and I need to troubleshoot.
+
+I will keep them as part of the repository, just in case anyone needs them.

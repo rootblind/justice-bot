@@ -1,20 +1,78 @@
-const {CommandInteraction, PermissionFlagsBits, Collection} = require('discord.js');
+const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder} = require('discord.js');
+const {config} = require('dotenv');
+config();
+const fs = require('fs');
+
 
 module.exports = {
     name: 'interactionCreate',
 
     execute(interaction, client){
-        
+        const readFile = async (filePath, encoding) => {
+            try {
+                const data = fs.readFileSync(filePath, encoding);
+                return JSON.parse(data);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+
         if(interaction.isChatInputCommand())
         {
+
+            const command = client.commands.get(interaction.commandName);
+            const me = interaction.guild.members.cache.get(process.env.KAYLE_CLIENT_ID);
             if(interaction.guild === null) {
                 return interaction.reply('Private commands are not available yet!');
                 
             }
 
-            const command = client.commands.get(interaction.commandName);
-            const me = interaction.guild.members.cache.get(process.env.KAYLE_CLIENT_ID);
-            
+            if(command.ownerOnly === true && interaction.user.id !== process.env.OWNER){
+                const rEmbed = new EmbedBuilder()
+                        .setColor('Red')
+                        .setTitle('Error')
+                        .setDescription('This command requires Master privileges.');
+                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    return;
+            }
+
+            if (command.userPermissions?.length) {
+                for (const permission of command.userPermissions) {
+                    if (interaction.member.permissions.has(permission)) {
+                        continue;
+                    }
+                    const rEmbed = new EmbedBuilder()
+                        .setColor(`Red`)
+                        .setTitle('Error')
+                        .setDescription(`You have insufficient permissions! ${PermissionFlagsBits[permission]}`);
+                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    return;
+                }
+            }
+
+            if (command.botPermissions?.length) {
+                for (const permission of command.botPermissions) {
+                    if (interaction.member.permissions.has(permission)) {
+                        continue;
+                    }
+                    const rEmbed = new EmbedBuilder()
+                        .setColor(`Red`)
+                        .setTitle('Error')
+                        .setDescription(`I lack the permission(s) to do that! ${PermissionFlagsBits[permission]}`);
+                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    return;
+                }
+            }
+
+            if(command.testOnly && interaction.guild.id !== process.env.HOME_SERVER_ID) {
+                const rEmbed = new EmbedBuilder()
+                    .setColor('Red')
+                    .setTitle('Error')
+                    .setDescription('This command cannot be ran outside the Test Server!')
+                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    return;
+            }
+
             // user based cooldown implementation https://discordjs.guide/additional-features/cooldowns
             const { cooldowns } = interaction.client; 
             // adding a cooldown collection for all the commands

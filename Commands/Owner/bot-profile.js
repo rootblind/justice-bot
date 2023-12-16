@@ -9,6 +9,8 @@ const {config} = require('dotenv');
 config();
 
 module.exports = {
+    cooldown: 5,
+    ownerOnly: true,
     data: new SlashCommandBuilder()
         .setName('bot-profile')
         .setDescription('Change a few aspects of my profile.')

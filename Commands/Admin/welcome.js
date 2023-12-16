@@ -8,6 +8,7 @@ const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
 module.exports = {
+    cooldown: 5,
     data: new SlashCommandBuilder()
         .setName('welcome')
         .setDescription('Configure the welcome messagess')
@@ -114,20 +115,10 @@ module.exports = {
                         .setDescription('Change the image')
                         .setMaxLength(255)
                 )
-        )
-    ,
+        ),
+    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels],
 
     async execute(interaction, client) {
-        if (botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0) {
-            console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-        }
-        else if (botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == -1) {
-            const embed = EmbedBuilder()
-                .setTitle('An error occurred while running this command!')
-                .setColor('Red');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-
-        }
 
 
         const embed = new EmbedBuilder();
@@ -139,9 +130,6 @@ module.exports = {
                 .setColor('Red');
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
-
-
-        const subcommandGroup = interaction.options.getSubcommandGroup();
         const subcommand = interaction.options.getSubcommand();
         const botMember = botUtils.getBotMember(client, interaction); // getting the bot member to check if the bot
         // has specific permissions
@@ -172,16 +160,19 @@ module.exports = {
                         ],
                         position: 0,
                     });
+                } else if (botUtils.botPermsCheckInChannel(client, welcomeChannel, [PermissionFlagsBits.SendMessages]) == 0) {
+                    return interaction.reply({content:`I am missing SendMessages permission in ${welcomeChannel} channel.`, ephemeral: true});
                 }
                 let welcomeMessage = `Welcome to ${interaction.guild.name}!`;
                 let hasAuthorEmbed = true;
-                let title = `A new summoner joined the server!`;
+                let title = `A new member joined the server!`;
                 let color = `0xc30000`;
-                let imageLink = `https://i.ibb.co/yR5wwN3/6563b0990b825.jpg`;
+                let imageLink = interaction.guild.bannerURL({size: 1024});
                 embed.setTitle(title)
                     .setDescription(welcomeMessage)
                     .setAuthor({ name: interaction.member.user.username, iconURL: interaction.member.displayAvatarURL({ format: 'jpg' }) })
                     .setImage(imageLink)
+                    .setThumbnail(interaction.guild.iconURL())
                     .setColor(Number(color))
                     .setTimestamp()
                     .setFooter({ text: `ID: ${interaction.member.id}` });
@@ -192,14 +183,14 @@ module.exports = {
                     // or Insert a new one if it doesn't
                     // the bot is built for a single server in mind, that's why there is no unique identifier since
                     // there is no reason for more than one welcome scheme to exist
-                    poolConnection.query('SELECT 1 FROM welcomescheme LIMIT 1', (err, result) => {
+                    poolConnection.query(`SELECT 1 FROM welcomescheme WHERE id=${interaction.guildId}  LIMIT 1`, (err, result) => {
                         if (err) {
                             console.error(err);
                             reject(err);
                         } else {
                             if (result.rows.length > 0) {
                                 poolConnection.query(
-                                    'UPDATE welcomescheme SET channel=$1, message=$2, author=$3, title=$4, colorcode=$5, imagelink=$6 WHERE id=1',
+                                    `UPDATE welcomescheme SET channel=$1, message=$2, author=$3, title=$4, colorcode=$5, imagelink=$6 WHERE id=${interaction.guildId}`,
                                     [welcomeChannel.id, welcomeMessage, hasAuthorEmbed, title, color, imageLink],
                                     (updateErr, updateResult) => {
                                         if (updateErr) {
@@ -212,8 +203,9 @@ module.exports = {
                                 );
                             } else {
                                 poolConnection.query(
-                                    'INSERT INTO welcomescheme(active, channel, message, author, title, colorcode, imagelink) VALUES($1, $2, $3, $4, $5, $6, $7)',
-                                    [true, welcomeChannel.id, welcomeMessage, hasAuthorEmbed, title, color, imageLink],
+                                    `INSERT INTO welcomescheme(id, guild, active, channel, message, author, title, colorcode, imagelink)
+                                     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                                    [interaction.guildId, interaction.guild.name, true, welcomeChannel.id, welcomeMessage, hasAuthorEmbed, title, color, imageLink],
                                     (insertErr, insertResult) => {
                                         if (insertErr) {
                                             console.error('Error inserting row', insertErr);
@@ -292,6 +284,7 @@ module.exports = {
                         return interaction.reply({ content: 'Invalid image link provided!', ephemeral: true });
                     }
                 embed.setTimestamp()
+                    .setThumbnail(interaction.guild.iconURL())
                     .setFooter({ text: `ID: ${interaction.member.id}` });
 
                 await welcomeChannelCustom.send({ content: `<@${interaction.member.id}> This is a demo:`, embeds: [embed] });
@@ -301,14 +294,14 @@ module.exports = {
                     // or Insert a new one if it doesn't
                     // the bot is built for a single server in mind, that's why there is no unique identifier since
                     // there is no reason for more than one welcome scheme to exist
-                    poolConnection.query('SELECT 1 FROM welcomescheme LIMIT 1', (err, result) => {
+                    poolConnection.query(`SELECT 1 FROM welcomescheme WHERE id=${interaction.guildId}  LIMIT 1`, (err, result) => {
                         if (err) {
                             console.error(err);
                             reject(err);
                         } else {
                             if (result.rows.length > 0) {
                                 poolConnection.query(
-                                    'UPDATE welcomescheme SET channel=$1, message=$2, author=$3, title=$4, colorcode=$5, imagelink=$6 WHERE id=1',
+                                    `UPDATE welcomescheme SET channel=$1, message=$2, author=$3, title=$4, colorcode=$5, imagelink=$6 WHERE id=${interaction.guildId}`,
                                     [welcomeChannelCustom.id, messageDescription, customAuthor, messageTitle, botUtils.hexToString(embedColor), imageLinkCustom],
                                     (updateErr, updateResult) => {
                                         if (updateErr) {
@@ -321,8 +314,10 @@ module.exports = {
                                 );
                             } else {
                                 poolConnection.query(
-                                    'INSERT INTO welcomescheme(active, channel, message, author, title, colorcode, imagelink) VALUES($1, $2, $3, $4, $5, $6, $7)',
-                                    [true, welcomeChannelCustom.id, messageDescription, customAuthor, messageTitle, botUtils.hexToString(embedColor), imageLinkCustom],
+                                    `INSERT INTO welcomescheme(id, guild, active, channel, message, author, title, colorcode, imagelink)
+                                     VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                                    [interaction.guildId, interaction.guild.name, true, welcomeChannelCustom.id, messageDescription, 
+                                        customAuthor, messageTitle, botUtils.hexToString(embedColor), imageLinkCustom],
                                     (insertErr, insertResult) => {
                                         if (insertErr) {
                                             console.error('Error inserting row', insertErr);
@@ -343,7 +338,7 @@ module.exports = {
                 const takeAction = interaction.options.getString('take');
                 let query;
                 const checkRowExists = new Promise((resolve, reject) => {
-                    poolConnection.query(`SELECT 1 FROM welcomescheme LIMIT 1`,
+                    poolConnection.query(`SELECT 1 FROM welcomescheme WHERE id=${interaction.guildId} LIMIT 1`,
                         (err, result) => {
                             if (err) {
                                 console.error(err);
@@ -357,34 +352,24 @@ module.exports = {
                                             // checking if there is a welcome message available
 
 
-                                            query = `UPDATE welcomescheme SET active=true WHERE id=1`;
+                                            query = `UPDATE welcomescheme SET active=true WHERE id=${interaction.guildId}`;
                                             embed.setTitle('The welcome event is now active')
                                                 .setDescription('You\'ve enabled the welcome event!')
                                                 .setColor('Green');
                                             break;
                                         case 'disable':
-                                            query = `UPDATE welcomescheme SET active=false WHERE id=1`
+                                            query = `UPDATE welcomescheme SET active=false WHERE id=${interaction.guildId}`
                                             embed.setTitle('The welcome event is now deactivated')
                                                 .setDescription('You\'ve disabled the welcome event!')
                                                 .setColor('Green');
                                             break;
                                         case 'remove':
-                                            query = `DELETE FROM welcomescheme WHERE id=1`
+                                            query = `DELETE FROM welcomescheme WHERE id=${interaction.guildId}`
                                             embed.setTitle('The welcome scheme was cleared!')
                                                 .setDescription('You\'ve removed the welcome event configuration.')
                                                 .setColor('Green');
                                             break;
                                     }
-                                    poolConnection.query(query, (err, result) => {
-                                        if (err) {
-                                            console.error(err);
-                                        }
-                                        else {
-                                            poolConnection.query(`SELECT setval('welcomescheme_id_seq', 1, false);`, (err, result) => {
-                                                if (err) console.error(err);
-                                            });
-                                        }
-                                    });
 
                                 }
                                 else {
@@ -398,6 +383,13 @@ module.exports = {
                 });
 
                 await checkRowExists;
+                const executeActionQuery = new Promise((resolve, reject) => {
+                    poolConnection.query(query, (err, result) => {
+                        if(err){ console.error(err); reject(err);}
+                        resolve(result);
+                    });
+                });
+                await executeActionQuery;
                 return interaction.reply({ embeds: [embed] });
                 break;
 
@@ -406,7 +398,7 @@ module.exports = {
 
                 const changeChannel = interaction.options.getChannel('welcome-channel') || null;
                 const changeDescription = interaction.options.getString('message-description') || null;
-                const changeAuthor = interaction.options.getBoolean('author') || false;
+                const changeAuthor = interaction.options.getBoolean('author') || null;
                 const changeTitle = interaction.options.getString('message-title') || null;
                 const changeColor = interaction.options.getNumber('hexcolor') || null;
                 const changeLink = interaction.options.getString('image-link') || null;
@@ -497,9 +489,9 @@ module.exports = {
 
 
                 changeQuery = changeQuery.slice(0, -1);
-                changeQuery = changeQuery + ` WHERE id=1`;
+                changeQuery = changeQuery + ` WHERE id=${interaction.guildId}`;
                 const _checkRowExists = new Promise((resolve, reject) => {
-                    poolConnection.query(`SELECT 1 FROM welcomescheme LIMIT 1`,
+                    poolConnection.query(`SELECT 1 FROM welcomescheme WHERE id=${interaction.guildId} LIMIT 1`,
                         (err, result) => {
                             if (err) {
                                 console.error(err);
@@ -511,7 +503,7 @@ module.exports = {
                                     poolConnection.query(changeQuery, queryValues, (err, result) => {
                                         if (err) console.error(err);
                                     });
-                                    poolConnection.query(`SELECT * FROM welcomescheme WHERE id=1`,
+                                    poolConnection.query(`SELECT * FROM welcomescheme WHERE id=${interaction.guildId}`,
                                         (err, result) => {
                                             if (err) console.error(err);
                                             else {
@@ -527,7 +519,8 @@ module.exports = {
                                                 if (result.rows[0].imagelink)
                                                     embed.setImage(result.rows[0].imagelink)
                                                 embed.setTimestamp()
-                                                    .setFooter({ text: `ID: ${interaction.member.id}` });
+                                                    .setFooter({ text: `ID: ${interaction.member.id}` })
+                                                    .setThumbnail(interaction.guild.iconURL());
                                                 demoChangeEmbedChannel.send({ content: `<@${interaction.member.id}> This is a demo:`, embeds: [embed] });
                                             }
                                         }
@@ -544,7 +537,7 @@ module.exports = {
                 });
                 await _checkRowExists;
                 
-                return interaction.reply({ embeds: [embed], ephemeral: true });
+                
                 break;
 
         }

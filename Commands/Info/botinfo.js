@@ -5,27 +5,17 @@
 const {SlashCommandBuilder, EmbedBuilder, CommandInteraction, PermissionFlagsBits} = require('discord.js');
 const cpuStats = require('cpu-stat');
 const { config } = require('dotenv');
-const botUtils = require('../../utility_modules/utility_methods.js');
 
 config();
 
 module.exports = {
+    cooldown: 3,
     data : new SlashCommandBuilder()
         .setName('botinfo')
         .setDescription('Check details about my system.'),
+    botPermissions: [PermissionFlagsBits.SendMessages],
 
-        execute(interaction, client){
-            if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == 0)
-            {
-                console.error(`I am missing SendMessages permission in ${interaction.channel} channel.`);
-            }
-            else if(botUtils.botPermsCheckInChannel(client, interaction.channel, [PermissionFlagsBits.SendMessages]) == -1){
-                const embed = EmbedBuilder()
-                    .setTitle('An error occurred while running this command!')
-                    .setColor('Red');
-                return interaction.reply({embeds:[embed], ephemeral:true});
-                
-            }
+    async execute(interaction, client){
             //getting time numbers for the following embedded messages
             const days = Math.floor(client.uptime / 86400000);
             const hours = Math.floor(client.uptime / 3600000) % 24;

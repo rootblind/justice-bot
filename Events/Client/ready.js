@@ -3,6 +3,12 @@
 
 const { Client, ActivityType } = require("discord.js");
 const fs = require("fs");
+const { config } = require('dotenv');
+config();
+const commandComparing = require('../../utility_modules/commandComparing');
+const getApplicationCommands = require('../../utility_modules/getApplicationCommands');
+const getLocalCommands = require('../../utility_modules/getLocalCommands');
+require('colors');
 
 function randNum(maxNumber) {
     // a basic random function depending on a max number
@@ -26,9 +32,10 @@ async function statusSetter (client, presence, actList) {
 }
 
 module.exports = {
-    name: "ready",
+    name: 'ready',
     once: true,
-    async execute(client) {
+    async execute(client){
+    
         // just a little greeting in our console
         let currentDate = new Date();
         console.log(
@@ -53,7 +60,8 @@ module.exports = {
         let autoUpdateInterval; // this variable will act as the interval ID of auto-update presence
         if(presenceConfig.status == "enable")
           if(presenceConfig.delay) {
-              autoUpdateInterval = setInterval(async () =>{
+            await statusSetter(client, presencePresetsObject, activityTypes);
+            autoUpdateInterval = setInterval(async () =>{
                 
                 const presenceConfig = await readFile("./objects/presence-config.json","utf-8"); // updating the object to stop the interval
                 // if a configuration change is done to the presence status
@@ -65,5 +73,5 @@ module.exports = {
           }
           else await statusSetter(client, presenceConfig, activityTypes);
 
-    },
+    }
 };

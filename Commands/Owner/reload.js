@@ -2,7 +2,7 @@
     Reload modules live. Not sure what might happen with non-persistent variables after reloading.
 */
 
-const {Client, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const {Client, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const {loadCommands} = require('../../Handlers/commandHandler');
 const {loadEvents} = require('../../Handlers/eventHandler');
 const botUtils = require('../../utility_modules/utility_methods.js');
@@ -10,6 +10,8 @@ const {config} = require('dotenv');
 config();
 
 module.exports = {
+    cooldown: 10,
+    ownerOnly: true,
     data: new SlashCommandBuilder()
         .setName('reload')
         .setDescription('Reload the commands or events files')
