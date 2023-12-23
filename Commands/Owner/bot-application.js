@@ -2,7 +2,7 @@ const {SlashCommandBuilder, EmbedBuilder, Client, PermissionFlagsBits} = require
 const fs = require('fs');
 module.exports = {
     ownerOnly: true,
-    testOnly: true,
+    testOnly: false,
     cooldown: 10,
     data: new SlashCommandBuilder()
         .setName('bot-application')

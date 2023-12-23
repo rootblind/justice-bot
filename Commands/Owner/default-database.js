@@ -87,7 +87,51 @@ module.exports = {
             });
         });
         await welcomescheme;
-    
+        // used for knowing what panel has what roles
+        const panelscheme = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS panelscheme (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                panelname VARCHAR(32) NOT NULL,
+                roleid BIGINT NOT NULL,
+                description VARCHAR(255)
+
+            )`, (err, result) => {
+                if(err){
+                    console.error(err);
+                    interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
+                            .setColor('Red')], ephemeral: true});
+                    reject(err);
+                }
+                else {
+
+                    table_nameListed.push('panelscheme');
+                    resolve(result);
+                }
+            });
+        });
+        await panelscheme;
+        const panelheaders = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS panelheaders (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                panelname VARCHAR(32) NOT NULL
+            )`, (err, result) => {
+                if(err){
+                    console.error(err);
+                    interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
+                            .setColor('Red')], ephemeral: true});
+                    reject(err);
+                }
+                else {
+
+                    table_nameListed.push('panelheaders');
+                    resolve(result);
+                }
+            });
+        });
+        await panelheaders;
+        
     
         let index = 1;
         for (x of table_nameListed){

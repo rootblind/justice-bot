@@ -114,29 +114,33 @@ module.exports = {
             }
             command.execute(interaction, client);
         }
-        else return;
-        /*
         else if(interaction.isStringSelectMenu()){
-            if(interaction.customId == 'reaction-roles')
-            {
+            if(interaction.customId == 'role-panel') {
                 for(let i = 0; i < interaction.values.length; i++)
                 {
                     const roleId = interaction.values[i];
+                    if(!interaction.guild.roles.cache.has(roleId)) {
+                        return interaction.reply({embeds: [new EmbedBuilder()
+                            .setTitle('Option not available')
+                            .setDescription('The role selected no longer exists, Select Menu must be resent')
+                        ]});
+                    }
                     const has_role = interaction.member.roles.cache.has(roleId);
-
                     switch(has_role)
                     {
                         case true:
                             interaction.member.roles.remove(roleId);
-                            break;
+                        break;
                         case false:
                             interaction.member.roles.add(roleId);
-                            break;
+                        break;
                     }
                 }
 
                 interaction.reply({content: "Role updated", ephemeral: true});
             }
-        }*/
+        }
+    
+        else return;
     }
 }

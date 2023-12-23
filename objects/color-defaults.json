@@ -1,0 +1,47 @@
+{
+    "Red":{
+        "name": "Red",
+        "color": "0xf62e36",
+        "permissions": []
+    },
+    "Orange":{
+        "name": "Orange",
+        "color": "0xff7f50",
+        "permissions": []
+    },
+    "Yellow":{
+        "name": "Yellow",
+        "color": "0xebd406",
+        "permissions": []
+    },
+    "Green":{
+        "name": "Green",
+        "color": "0x019a66",
+        "permissions": []
+    },
+    "Blue":{
+        "name": "Blue",
+        "color": "0x0079c2",
+        "permissions": []
+    },
+    "Pink": {
+        "name": "Pink",
+        "color": "0xff80ed",
+        "permissions": []
+    },
+    "Violet":{
+        "name": "Violet",
+        "color": "0xe44d93",
+        "permissions": []
+    },
+    "Black":{
+        "name": "Black",
+        "color": "0x000001",
+        "permissions": []
+    },
+    "White":{
+        "name": "White",
+        "color": "0xffffff",
+        "permissions": []
+    }
+}

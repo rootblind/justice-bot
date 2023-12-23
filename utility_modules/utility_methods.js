@@ -78,6 +78,11 @@ async function handleFetchFile(attachment) {
     return data;
 }
 
+function isAlphanumeric(str) { // check if a string is alphanumeric
+    const regex = /^[a-zA-Z0-9]+$/;
+    return regex.test(str);
+}
+
 /*await poolConnection.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type = 'BASE TABLE'`, (err, result) => {
     console.log(result.rows.map(row => row.table_name));
 });*/
@@ -90,4 +95,5 @@ module.exports = {
     doesTableExists,
     hexToString,
     handleFetchFile,
+    isAlphanumeric
 };
