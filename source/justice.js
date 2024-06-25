@@ -8,13 +8,13 @@ config();
 const {loadEvents} = require('../Handlers/eventHandler');
 const {loadCommands} = require('../Handlers/commandHandler');
 
-const client = new Client({ intents: [
-        Object.keys(GatewayIntentBits),
-    ],
-    partials:[
-            Object.keys(Partials)
-        ]
+
+const client = new Client({
+    intents: [...Object.values(GatewayIntentBits)],
+    partials: [...Object.values(Partials)]
 });
+
+
 client.cooldowns = new Collection(); // collection for commands cooldowns: used in interactionCreate
 //env variables
 const TOKEN = process.env.BOT_TOKEN;
@@ -25,9 +25,9 @@ const rest = new REST({ version: '10'}).setToken(TOKEN);
 client.commands = new Collection();
 
 
+
 async function main()
 {
-
     const commands = [];
     try{
         console.log('Refreshing slash commands');

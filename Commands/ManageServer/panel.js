@@ -15,7 +15,7 @@ const {config} = require('dotenv');
 config();
 // panel: create, delete, add-role, remove-role, list, send
 module.exports = {
-    testOnly: true,
+    testOnly: false,
     cooldown: 5,
     data: new SlashCommandBuilder()
         .setName('panel')
@@ -617,7 +617,26 @@ module.exports = {
             const menuDesc = interaction.options.getString('menu-description') || 'Pick some roles.';
             embed.setColor('Purple')
                 .setDescription(menuDesc);
-            sendChannel.send({embeds: [embed], components: components});
+            
+            sendChannel.send({embeds: [embed], components: components})
+                .then(async(x) =>{ // registering the message in the panelmessage table
+                    const registerMessagePromise = new Promise((resolve, reject) => {
+                        poolConnection.query(`INSERT INTO panelmessages(guild, channel, messageid, panelname)
+                                            VALUES($1, $2, $3, $4)`,
+                                            [interaction.guild.id, sendChannel.id, x.id, panelName],
+                            (err, result) => {
+                                if(err) {
+                                    console.error(err);
+                                    reject(err);
+                                }
+                                resolve(result);
+                            });
+                    });
+                    await registerMessagePromise;
+                });
+            
+            
+            
             return interaction.reply({embeds: [
                 new EmbedBuilder()
                     .setTitle('The panel has been sent')

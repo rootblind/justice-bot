@@ -12,22 +12,15 @@ module.exports = {
         .setDescription('Sends a query request to the database and fetch the results.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addStringOption(option =>
-            option.setName('items')
+            option.setName('query')
                 .setDescription('The query that will be sent.')
                 .setRequired(true)
-        )
-        .addStringOption(option =>
-            option.setName('table-name')
-                .setDescription('The name of the table to recieve the items from.')
-                .setRequired(true)    
         )
     ,
     botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client) {
         let clientResponse;
-        const queryItems = interaction.options.getString('items');
-        const queryTable = interaction.options.getString('table-name');
-        const query = `SELECT ${queryItems} FROM ${queryTable}`;
+        const query = interaction.options.getString('query');
         const queryPromise = new Promise((resolve, reject) => {
             poolConnection.query(query,(error, result) => {
                 if(error) {

@@ -87,6 +87,7 @@ module.exports = {
             });
         });
         await welcomescheme;
+
         // used for knowing what panel has what roles
         const panelscheme = new Promise((resolve, reject) => {
             poolConnection.query(`CREATE TABLE IF NOT EXISTS panelscheme (
@@ -111,6 +112,9 @@ module.exports = {
             });
         });
         await panelscheme;
+
+        // the headers of the panels. in this table, the panelname is unique and validations on panel
+        // name can be done
         const panelheaders = new Promise((resolve, reject) => {
             poolConnection.query(`CREATE TABLE IF NOT EXISTS panelheaders (
                 id SERIAL PRIMARY KEY,
@@ -131,7 +135,57 @@ module.exports = {
             });
         });
         await panelheaders;
-        
+
+        // this table stores data about panels sent as select menu messages
+        // the use of this data is to delete the sent panels upon panel deletion
+        const panelmessages = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS panelmessages (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                messageid BIGINT NOT NULL,
+                panelname VARCHAR(32) NOT NULL
+
+            )`, (err, result) => {
+                if(err){
+                    console.error(err);
+                    interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
+                            .setColor('Red')], ephemeral: true});
+                    reject(err);
+                }
+                else {
+
+                    table_nameListed.push('panelmessages');
+                    resolve(result);
+                }
+            });
+        });
+        await panelmessages;
+
+        // the table where all reaction roles are stored
+        const reactionroles = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS reactionroles (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                messageid BIGINT,
+                roleid BIGINT,
+                emoji TEXT
+            )`, (err, result) => {
+                if(err){
+                    console.error(err);
+                    interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
+                            .setColor('Red')], ephemeral: true});
+                    reject(err);
+                }
+                else {
+
+                    table_nameListed.push('reactionroles');
+                    resolve(result);
+                }
+            });
+        });
+        await reactionroles;
     
         let index = 1;
         for (x of table_nameListed){

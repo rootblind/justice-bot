@@ -11,6 +11,7 @@ function loadEvents(client)
     // Iterate through each folder in the 'Events' directory
     for(const folder of folders)
     {
+        
          
         const files = fs.readdirSync(`./Events/${folder}`).filter((file) => file.endsWith('.js'));
 
