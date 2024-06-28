@@ -186,6 +186,30 @@ module.exports = {
             });
         });
         await reactionroles;
+
+        const serverroles = new Promise((resolve, reject) => {
+            poolConnection.query(`
+                CREATE TABLE IF NOT EXISTS serverroles (
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    roletype TEXT NOT NULL,
+                    role BIGINT NOT NULL
+                )
+            `, (err, result) => {
+                if(err) {
+                    console.error(err);
+                    interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
+                        .setColor('Red')], ephemeral: true});
+                    reject(err);
+                }
+                else {
+
+                    table_nameListed.push('serverroles');
+                    resolve(result);
+                }
+            });
+        });
+        await serverroles;
     
         let index = 1;
         for (x of table_nameListed){
