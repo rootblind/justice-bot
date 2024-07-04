@@ -110,6 +110,7 @@ module.exports = {
                 .addStringOption(option =>
                     option.setName('log-type')
                         .setDescription('The logs type to be removed.')
+                        .setRequired(true)
                         .addChoices(
                             {
                                 name: 'All',
@@ -167,30 +168,34 @@ module.exports = {
                 // since the user must be of Admin perms anyway
 
                 // fetching the staff and bot role ids from the database if existing
-                const serverRolesFetch = new Promise((resolve, reject) => {
-                    poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND
-                         (roletype=$2 OR roletype=$3)`,
-                        [interaction.guildId, 'staff', 'bot'],
+
+                const botRoleFetch = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`, [interaction.guildId, 'bot'],
                         (err, result) => {
                             if(err) {
                                 console.error(err);
                                 reject(err);
-                            }
-                            else if(result.rows.length > 0) {
-                                // going through the result rows and updating the role ids if they exist within the database
-                                result.rows.forEach(row => {
-                                    if(row.roletype == 'staff')
-                                        staffRoleId = row.role;
-                                    else if(row.roletype == 'bot')
-                                        botRoleId = row.role;
-                                });
-                            }
+                            } else if(result.rows.length > 0)
+                                botRoleId = result.rows[0].role;
+                            
                             resolve(result);
-                        } 
-                    );
+                        }
+                    )
                 });
-                await serverRolesFetch;
-
+                await botRoleFetch;
+                const staffRoleFetch = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`, [interaction.guildId, 'staff'],
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            } else if(result.rows.length > 0)
+                                staffRoleId = result.rows[0].role;
+                            resolve(result);
+                        }
+                    )
+                });
+                await staffRoleFetch;
                 // this object has the perms that will be set to the auto logs channels
                 const channelPerms =  [
                     {
@@ -382,10 +387,11 @@ module.exports = {
                     .setColor('Green');
             break;
             
-            case 'info':
+            case 'info': // a preview of what setup has been done
                 embed.setTitle('Server logs setup')
                     .setColor('Purple');
                 
+                // fetching and embeding logs channels if any
                 const fetchServerLogsTable = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT * FROM serverlogs WHERE guild=$1`, [interaction.guildId],
                         (err, result) => {
@@ -418,7 +424,8 @@ module.exports = {
                 });
             await fetchServerLogsTable;
             
-            let ignoredChannels = [];
+            // fetching and embeding ignored channels if any
+            let ignoredChannels = [];// making an array of ignored channels, if there is no ignored channel, then ignoredChannels == 0 -> true
             const fetchLogsIgnoreTable = new Promise((resolve, reject) => {
                 poolConnection.query(`SELECT channel FROM serverlogsignore WHERE guild=$1 `, [interaction.guildId],
                     (err, result) => {

@@ -9,7 +9,7 @@ module.exports = {
     name: "guildMemberAdd",
     async execute(member)
     {
-        const validate = new Promise((resolve, reject) => {
+        const welcomeMessagePromise = new Promise((resolve, reject) => {
 
             poolConnection.query(`SELECT * FROM welcomescheme WHERE id=${member.guild.id}`, (err, result) => {
                 if(err){ console.error(err); reject(err); }
@@ -45,7 +45,7 @@ module.exports = {
                 
             });
         });
-        await validate;
+        await welcomeMessagePromise;
 
     }
 };
