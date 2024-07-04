@@ -103,13 +103,6 @@ module.exports = {
         const subcommands = interaction.options.getSubcommand();
         const embed = new EmbedBuilder();
 
-        if (!(await botUtils.doesTableExists('reactionroles'))) {
-            embed.setTitle('Table welcomeScheme does not exist.')
-                .setDescription('This command requires `/default-database` to be ran by my Master first!')
-                .setColor('Red');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
-
         if(subcommands === 'wipeall') {
             // checking beforehand if the server has any reaction roles set up
             let anyRowExists = false;

@@ -1,3 +1,4 @@
 {
-    "table_names": ["welcomescheme", "panelscheme", "panelheaders", "reactionroles", "panelmessages", "serverroles"]
+    "table_names": ["welcomescheme", "panelscheme", "panelheaders", "reactionroles", "panelmessages", "serverroles",
+                    "serverlogs", "serverlogsignore"]
 }

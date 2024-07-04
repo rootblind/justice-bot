@@ -12,10 +12,7 @@ module.exports = {
     async execute(message) {
         if(!message.guildId) return;
 
-        const reactionRoleBool = await botUtils.doesTableExists('reactionroles');
-        const panelMessages = await botUtils.doesTableExists('panelmessages');
-        if(reactionRoleBool) {
-            const reactionRolePromise = new Promise((resolve, reject) => {
+        const reactionRolePromise = new Promise((resolve, reject) => {
                 poolConnection.query(`SELECT messageid FROM reactionroles
                                     WHERE guild=$1 AND
                                         channel=$2 AND
@@ -32,10 +29,10 @@ module.exports = {
                 })
             });
 
-            await reactionRolePromise;
-        }
-        if(panelMessages) {
-            const panelRolePromise = new Promise((resolve, reject) => {
+        await reactionRolePromise;
+        
+
+        const panelRolePromise = new Promise((resolve, reject) => {
                 poolConnection.query(`SELECT messageid FROM panelmessages
                                     WHERE guild=$1 AND
                                         channel=$2 AND
@@ -52,7 +49,7 @@ module.exports = {
                 })
             });
 
-            await panelRolePromise;
-        }
+        await panelRolePromise;
+        
     }
 };

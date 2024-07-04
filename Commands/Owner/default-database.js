@@ -210,6 +210,42 @@ module.exports = {
             });
         });
         await serverroles;
+
+        const serverlogs = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlogs (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                eventtype TEXT NOT NULL
+            )`, (err, result) => {
+                if(err) {
+                    console.error(err);
+                    reject(err);
+                }
+                else {
+                    table_nameListed.push('serverlogs');
+                    resolve(result);
+                }
+            });
+        });
+        await serverlogs;
+        const serverlogsignore = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlogsignore (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL
+            )`, (err, result) => {
+                if(err) {
+                    console.error(err);
+                    reject(err);
+                }
+                else {
+                    table_nameListed.push('serverlogsignore');
+                    resolve(result);
+                }
+            });
+        });
+        await serverlogsignore;
     
         let index = 1;
         for (x of table_nameListed){

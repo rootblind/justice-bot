@@ -130,12 +130,7 @@ module.exports = {
         const subcommands = interaction.options.getSubcommand();
         const embed = new EmbedBuilder();
         const me = interaction.guild.members.cache.get(process.env.CLIENT_ID);
-        if(!(await botUtils.doesTableExists('panelscheme'))) {
-            embed.setTitle('Panel scheme missing!')
-                .setColor('Red')
-                .setDescription('The database table is missing, the owner must initialize.');
-            return interaction.reply({embeds: [embed], ephemeral: true});
-        }
+
 
         if(!botUtils.isAlphanumeric(panelName)) {
             embed.setTitle('Invalid input!')

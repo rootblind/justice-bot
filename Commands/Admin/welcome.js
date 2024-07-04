@@ -122,14 +122,6 @@ module.exports = {
 
 
         const embed = new EmbedBuilder();
-
-        // doing the required check on database
-        if (!(await botUtils.doesTableExists('welcomescheme'))) {
-            embed.setTitle('Table welcomeScheme does not exist.')
-                .setDescription('This command requires `/default-database` to be ran by my Master first!')
-                .setColor('Red');
-            return interaction.reply({ embeds: [embed], ephemeral: true });
-        }
         const subcommand = interaction.options.getSubcommand();
         const botMember = botUtils.getBotMember(client, interaction); // getting the bot member to check if the bot
         // has specific permissions

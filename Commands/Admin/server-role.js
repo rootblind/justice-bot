@@ -1,13 +1,8 @@
-/* 
-    Server roles represent what the bot actually recognizes as the defined roles for functions like:
-    staff member, premium user, unbanned (on probational) user, etc.
-
-*/
+/* The above code is a JavaScript module that defines a slash command for a Discord bot related to
+managing server roles. Here is a breakdown of the key functionalities: */
 
 const { SlashCommandBuilder, Client, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
-const botUtils = require('../../utility_modules/utility_methods.js');
-const { botPermissions } = require('./welcome.js');
 
 module.exports = {
     cooldown: 2,
@@ -34,6 +29,10 @@ module.exports = {
                             {
                                 name: 'Probation Member',
                                 value: 'probation' // this is the kind of user that was banned for good reason and got a second chance
+                            },
+                            {
+                                name: 'Bot',
+                                value: 'bot'
                             }
                             // more to be added as this bot evolves
                         )
@@ -63,6 +62,10 @@ module.exports = {
                             {
                                 name: 'Probation Member',
                                 value: 'probation' // this is the kind of user that was banned for good reason and got a second chance
+                            },
+                            {
+                                name: 'Bot',
+                                value: 'bot'
                             }
                             // more to be added as this bot evolves
                         )
@@ -76,17 +79,24 @@ module.exports = {
 
     async execute(interaction, client)
     {
+
         const embed = new EmbedBuilder();
         const subcommand = interaction.options.getSubcommand();
         const roleType = interaction.options.getString('role-type');
         const role = interaction.options.getRole('role');
 
         if(subcommand == 'set') {
+            // the set subcommand associates a role with a role type for the bot.
+            // the role id is stored in database and will be used as future references in other commands that depend on role types
+            // being defined
             const setRolePromise = new Promise((resolve, reject) => {
+                // Here if in a server there is no role defined for the specified role type, it will be inserted
+                // otherwise, the role of the role type is updated
                 poolConnection.query(`SELECT 1 FROM serverroles WHERE guild=$1 AND roletype=$2`,
                 [interaction.guildId, roleType],
                 (err, result) =>
                 {
+
                     if(err) {
                         console.error(err);
                         reject(err);
@@ -120,6 +130,8 @@ module.exports = {
         }
         else if (subcommand == 'remove')
             {
+                // the remove subcommand simply deletes a row from the database as specified in its parameters
+                // an improvement for user interaction would be to check if a row exists, if not, notify the user
                 const removeRolePromise = new Promise((resolve, reject) =>{
                     poolConnection.query(`DELETE FROM serverroles WHERE guild=$1 AND roletype=$2`, [interaction.guildId, roleType],
                         (err, result) => {
@@ -138,6 +150,7 @@ module.exports = {
             }
         else if(subcommand == 'info')
             {
+                // the info subcommand informs the user about what types are linked to what roles
                 embed.setTitle('Server roles')
                     .setColor('Purple');
                 const serverRolesTable = new Promise((resolve, reject) => {

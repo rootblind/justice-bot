@@ -247,6 +247,42 @@ module.exports = {
             });
             await serverroles;
 
+            const serverlogs = new Promise((resolve, reject) => {
+                poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlogs (
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    channel BIGINT NOT NULL,
+                    eventtype TEXT NOT NULL
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    else {
+                        table_nameListed.push('serverlogs');
+                        resolve(result);
+                    }
+                });
+            });
+            await serverlogs;
+            const serverlogsignore = new Promise((resolve, reject) => {
+                poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlogsignore (
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    channel BIGINT NOT NULL
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    else {
+                        table_nameListed.push('serverlogsignore');
+                        resolve(result);
+                    }
+                });
+            });
+            await serverlogsignore;
+
             for(tableName of table_nameListed){
                 table.addRow(tableName, 'Ready');
             }
@@ -255,7 +291,7 @@ module.exports = {
             console.log(
                 `${
                     client.user.username
-                } is functional! - ${currentDate.getDate()}.${currentDate.getMonth()}.${currentDate.getFullYear()} | [${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}]`
+                } is functional! - ${currentDate.getDate()}.${currentDate.getMonth() + 1}.${currentDate.getFullYear()} | [${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}]`
             );
     
 

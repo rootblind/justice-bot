@@ -18,9 +18,7 @@ module.exports = {
         const member = await guild.members.cache.get(user.id);
         let reactionRoleId = null;
         // check if the reaction role table exists
-        const reactionRoleBool = await botUtils.doesTableExists('reactionroles'); // checks if table exists
-        if(reactionRoleBool) {
-            const reactionRolePromise = new Promise((resolve, reject) => {
+        const reactionRolePromise = new Promise((resolve, reject) => {
                 poolConnection.query(`SELECT roleid FROM reactionroles
                                     WHERE guild=$1 AND
                                         channel=$2 AND
@@ -40,7 +38,7 @@ module.exports = {
             });
 
             await reactionRolePromise;
-        }
+        
         
         if(reactionRoleId && guild.roles.cache.has(reactionRoleId)) {
             if(member.roles.cache.has(reactionRoleId)) {
