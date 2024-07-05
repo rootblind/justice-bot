@@ -4,13 +4,49 @@
 const {EmbedBuilder} = require("@discordjs/builders");
 const {GuildMember, Embed} = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
+const botUtils = require('../../utility_modules/utility_methods.js');
 
 module.exports = {
-    name: "guildMemberAdd",
+    name: "guildMemberAdd", // when an user joins the server, this event is triggered
     async execute(member)
     {
-        const welcomeMessagePromise = new Promise((resolve, reject) => {
+        // if there is a logging channel for user-activity, the new member will be logged here
+        const userLogs = new Promise((resolve, reject) => {
+            poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [member.guild.id, 'user-activity'],
+                (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    } else if(result.rows.length > 0) {
+                        const userLogsChannel = member.guild.channels.cache.get(result.rows[0].channel);
+                        const userLogsEmbed = new EmbedBuilder()
+                            .setAuthor(
+                                {
+                                    name: member.user.username,
+                                    iconURL: member.displayAvatarURL({ format: 'jpg' })
+                                }
+                            )
+                            .setTitle('User joined')
+                            .setDescription(`${member.user.username} joined the server.`)
+                            .setColor(0x00fb24)
+                            .setTimestamp()
+                            .setFooter({text:`ID: ${member.id}`})
+                            .addFields(
+                                {
+                                    name: 'Account created',
+                                    value: `${botUtils.formatDate(member.user.createdAt)} | [${botUtils.formatTime(member.user.createdAt)}]`
+                                }
+                            );
+                        userLogsChannel.send({embeds: [userLogsEmbed]});
+                    }
+                    resolve(result);
+                }
+            )
+        });
+        await userLogs;
 
+        // if a welcome message was set, when a new member joins, it will be sent on the specified channel
+        const welcomeMessagePromise = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT * FROM welcomescheme WHERE id=${member.guild.id}`, (err, result) => {
                 if(err){ console.error(err); reject(err); }
                     else {

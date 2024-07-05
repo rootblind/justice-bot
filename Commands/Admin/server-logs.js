@@ -9,13 +9,22 @@ const { poolConnection } = require('../../utility_modules/kayle-db.js');
 // this function checks if a row of the event type exists, if it does, it updates the row, otherwise it inserts a new row
 // setLogChannel is used to update log channels for the set subcommand group
 async function setLogChannel(guild, channel, eventType) {
-    poolConnection.query(`SELECT 1 FROM serverlogs WHERE guild=$1 AND eventtype=$2 LIMIT 1`, [guild, eventType],
+    poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [guild, eventType],
         (err, result) => {
             if(err) {
                 console.error(err);
                 reject(err);
             }
             else if(result.rows.length > 0) {
+                // updating the log channel to be ignored from logging
+                poolConnection.query(`UPDATE serverlogsignore SET channel=$1 WHERE guild=$2 AND channel=$3`, [channel, guild, result.rows[0].channel],
+                    (err) => {
+                        if(err) {
+                            console.error(err);
+                            reject(err);
+                        }
+                    }
+                );
                 poolConnection.query(`UPDATE serverlogs SET channel=$1
                     WHERE guild=$2 AND eventtype=$3`,
                 [channel, guild, eventType], (err) => {
@@ -26,6 +35,13 @@ async function setLogChannel(guild, channel, eventType) {
                 });
             }
             else if(result.rows.length == 0) {
+                poolConnection.query(`INSERT INTO serverlogsignore(guild, channel) VALUES ($1, $2)`, [guild, channel], (err) => {
+                        if(err) {
+                            console.error(err);
+                            reject(err);
+                        }
+                    }
+                )
                 poolConnection.query(`INSERT INTO serverlogs(guild, channel, eventtype)
                     VALUES($1, $2, $3)`, [guild, channel, eventType],
                 (err) => {
@@ -38,6 +54,7 @@ async function setLogChannel(guild, channel, eventType) {
         }
     );
 }
+
 
 module.exports = {
     cooldown: 2,
@@ -103,6 +120,16 @@ module.exports = {
                                 .addChannelTypes(ChannelType.GuildText)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('server-activity')
+                        .setDescription('Server activity logs such as channels being changed.')
+                        .addChannelOption(option =>
+                            option.setName('channel')
+                                .setDescription('The channel for the logs to be stored in.')
+                                .setRequired(true)
+                                .addChannelTypes(ChannelType.GuildText)
+                        )
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('remove')
@@ -131,6 +158,10 @@ module.exports = {
                             {
                                 name: 'User Activity',
                                 value: 'user-activity'
+                            },
+                            {
+                                name: 'Server Activity',
+                                value: 'server-activity'
                             }
                         )
                 )
@@ -217,7 +248,7 @@ module.exports = {
                         ]
                     }
                 ]; // the perms for the bot and staff roles
-                
+                await interaction.deferReply(); // extend the discord time out
                 // the category
                 const logsCategory = await interaction.guild.channels.create({
                     name: 'serverlogs',
@@ -252,11 +283,17 @@ module.exports = {
                     parent: logsCategory,
 
                 });
-
+                const serverActivity = await logsCategory.children.create({
+                    name: 'server-activity',
+                    type: ChannelType.GuildText,
+                    parent: logsCategory
+                });
+                
                 // In the following lines, the auto logs channels will be registered into the database
                 // if there is any event type assigned to a channel, all rows for the guild will be deleted
                 // in order to override the current channels if any and to replace them with the auto channels
                 // since the set subcommand group should either set an event to a channel or replace the channel for the specified event
+                // also, the channels that were set to be ignored because they were logging channels will be removed from ignore list
                 const serverLogsAuto = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT eventtype FROM serverlogs WHERE guild=$1`, [interaction.guildId],
                         (err, result) => {
@@ -273,10 +310,18 @@ module.exports = {
                                         }
                                     }
                                 )
+                                poolConnection.query(`DELETE FROM serverlogsignore WHERE guild=$1`, [interaction.guildId],
+                                    (err) => {
+                                        if(err) {
+                                            console.error(err);
+                                            reject(err);
+                                        }
+                                    }
+                                )
                             }
                             poolConnection.query(`INSERT INTO serverlogs (guild, channel, eventtype) 
-                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9)`,
-                            [interaction.guildId, modLogs.id, 'moderation', voiceLogs.id, 'voice', messagesLogs.id, 'messages', userLogs.id, 'user-activity'],
+                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9), ($1, $10, $11)`,
+                            [interaction.guildId, modLogs.id, 'moderation', voiceLogs.id, 'voice', messagesLogs.id, 'messages', userLogs.id, 'user-activity', serverActivity.id, 'server-activity'],
                             (err) => {
                                 if(err) {
                                     console.error(err);
@@ -289,6 +334,18 @@ module.exports = {
                     )
                 });
             await serverLogsAuto;
+            // logging channels need to be ignored
+            const ignoreLogs = new Promise((resolve, reject) => {
+                poolConnection.query(`INSERT INTO serverlogsignore (guild, channel)
+                    VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6)`,
+                    [interaction.guildId, modLogs.id, voiceLogs.id, messagesLogs.id, userLogs.id, serverActivity.id],
+                    (err, result) => {
+                        if(err) reject(err);
+                        resolve(result);
+                    }
+                );
+            });
+            await ignoreLogs;
             embed.setTitle('Server Logs set to Auto')
                 .setColor('Aqua')
                 .setDescription(`Channels set for logging:` )
@@ -312,11 +369,17 @@ module.exports = {
                         name: 'User Logs',
                         value: `${userLogs}`,
                         inline: true
+                    },
+                    {
+                        name: 'Server Activity',
+                        value: `${serverActivity}`,
+                        inline: true
                     }
                 )
+            return await interaction.editReply({embeds: [embed]})
             break;
             case 'all':
-                const eventTypes = ["moderation", "voice", "messages", "user-activity"] // array used to iterate in for checking all event types
+                const eventTypes = ["moderation", "voice", "messages", "user-activity", "server-activity"] // array used to iterate in for checking all event types
                 // using the map function
                 // set all will set all events to a single channel
                 await Promise.all(eventTypes.map(async (xEvent) => {
@@ -327,11 +390,11 @@ module.exports = {
                 .setColor('Green')
                 .setDescription(`All events will be logged in ${channelLogs}.`);
             break;
-
             case 'moderation':
             case 'messages':
             case 'voice':
             case 'user-activity':
+            case 'server-activity':
                 await setLogChannel(interaction.guildId, channelLogs.id, subcommand);
                 embed.setTitle(`${subcommand} logs set`)
                     .setColor('Green')
@@ -342,8 +405,20 @@ module.exports = {
                 const logType = interaction.options.getString('log-type');
                 if(logType == 'all') {
                     poolConnection.query(`DELETE FROM serverlogs WHERE guild=$1`, [interaction.guildId]); // delete all rows of the server
+                    poolConnection.query(`DELETE FROM serverlogsignore WHERE guild=$1`, [interaction.guildId]); // delete all rows of the server
                 }
                 else {
+                    poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [interaction.guildId, logType],
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            else if(result.rows.length > 0) {
+                                poolConnection.query(`DELETE FROM serverlogsignore WHERE guild=$1 AND channel=$2`, [interaction.guildId, result.rows[0].channel]);
+                            }
+                        }
+                    )
                     poolConnection.query(`DELETE FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [interaction.guildId, logType]);
                 }
                 embed.setTitle(`${logType} logs were removed.`)
@@ -362,29 +437,45 @@ module.exports = {
                                 reject(err);
                             }
                             else if(result.rows.length > 0) { // removing the channel from ignore list if it exists
-                                poolConnection.query(`DELETE FROM serverlogsignore WHERE guild=$1 AND channel=$2`,
-                                    [interaction.guildId, channelLogs.id], (err) => {
+                                poolConnection.query(`SELECT 1 FROM serverlogs WHERE guild=$1 AND channel=$2 LIMIT 1`, [interaction.guildId, channelLogs.id],
+                                    (err, result) => {
                                         if(err) {
                                             console.error(err);
                                             reject(err);
                                         }
+                                        else if(result.rows.length > 0) {
+                                            embed.setTitle('Invalid operation')
+                                                .setColor('Red')
+                                                .setDescription('You can not remove a logging channel from ignore list!')
+                                        }
+                                        else if(result.rows.length == 0) {
+                                            poolConnection.query(`DELETE FROM serverlogsignore WHERE guild=$1 AND channel=$2`,
+                                                [interaction.guildId, channelLogs.id], (err) => {
+                                                    if(err) {
+                                                        console.error(err);
+                                                        reject(err);
+                                                    }
+                                                }
+                                            );
+                                            embed.setDescription(`${channelLogs} has been removed from ignore list.`)
+                                                .setTitle('Ignore list updated');
+                                        }
                                     }
-                                );
-                                embed.setDescription(`${channelLogs} has been removed from ignore list.`);
+                                )
+                                
                             }
                             else if(result.rows.length == 0) { // adding channel to ignore list if it doesn't already exists
                                 poolConnection.query(`INSERT INTO serverlogsignore(guild, channel) VALUES($1, $2)`,
                                     [interaction.guildId, channelLogs.id]
                                 );
-                                embed.setDescription(`${channelLogs} has been added from ignore list.`);
+                                embed.setDescription(`${channelLogs} has been added from ignore list.`)
+                                    .setTitle('Ignore list updated');
                             }
                             resolve(result);
                         }
                     )
                 });
                 await checkIgnoreList;
-                embed.setTitle('Ignore list updated')
-                    .setColor('Green');
             break;
             
             case 'info': // a preview of what setup has been done

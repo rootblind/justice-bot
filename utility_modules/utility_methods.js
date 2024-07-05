@@ -83,6 +83,14 @@ function isAlphanumeric(str) { // check if a string is alphanumeric
     return regex.test(str);
 }
 
+function formatDate(date) {
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+}
+
+function formatTime(date) {
+    return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
+}
+
 /*await poolConnection.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type = 'BASE TABLE'`, (err, result) => {
     console.log(result.rows.map(row => row.table_name));
 });*/
@@ -95,5 +103,7 @@ module.exports = {
     doesTableExists,
     hexToString,
     handleFetchFile,
-    isAlphanumeric
+    isAlphanumeric,
+    formatDate,
+    formatTime
 };

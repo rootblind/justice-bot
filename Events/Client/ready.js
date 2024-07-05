@@ -5,6 +5,7 @@ const { Client, ActivityType } = require("discord.js");
 const fs = require("fs");
 const { config } = require('dotenv');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
+const botUtils = require('../../utility_modules/utility_methods.js');
 
 
 config();
@@ -41,7 +42,6 @@ module.exports = {
     
         // just a little greeting in our console
         const ascii = require('ascii-table');
-        let currentDate = new Date();
         const table = new ascii().setHeading('Tables', 'Status');
         
         const readFile = async (filePath, encoding) => {
@@ -291,7 +291,7 @@ module.exports = {
             console.log(
                 `${
                     client.user.username
-                } is functional! - ${currentDate.getDate()}.${currentDate.getMonth() + 1}.${currentDate.getFullYear()} | [${currentDate.getHours()}:${currentDate.getMinutes()}:${currentDate.getSeconds()}]`
+                } is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
             );
     
 
