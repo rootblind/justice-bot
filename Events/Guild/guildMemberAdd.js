@@ -7,7 +7,7 @@ const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
 module.exports = {
-    name: "guildMemberAdd", // when an user joins the server, this event is triggered
+    name: "guildMemberAdd", // user-activity when an user joins the server, this event is triggered
     async execute(member)
     {
         // if there is a logging channel for user-activity, the new member will be logged here

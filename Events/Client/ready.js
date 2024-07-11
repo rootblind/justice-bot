@@ -3,6 +3,7 @@
 
 const { Client, ActivityType } = require("discord.js");
 const fs = require("fs");
+const path = require("path");
 const { config } = require('dotenv');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
@@ -294,6 +295,20 @@ module.exports = {
                 } is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
             );
     
+        // creating a temporary files directory
+        const dirPath = path.join(__dirname, '../../temp'); // temp directory will be used for storing txt files and such that will be
+                                                            // removed after usage, like large messages that trigger deleted or updated messages
+
+        // checking if the directory exists, if it doesn't then an error is thrown and the directory is created
+        fs.access(dirPath, fs.constants.F_OK, (err) => {
+            if(err) { // in other words, if the directory doesn't exist
+                fs.mkdir(dirPath, {recursive: true}, (err) => {
+                    if(err) {
+                        console.error(err);
+                    }
+                });
+            }
+        });
 
     }
 

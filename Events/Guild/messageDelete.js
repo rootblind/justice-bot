@@ -6,11 +6,12 @@ const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 const {config} = require('dotenv');
 const {EmbedBuilder} = require("@discordjs/builders");
-const {AuditLogEvent} = require('discord.js')
+const fs = require('fs');
+const path = require('path');
 config();
 
 module.exports = {
-    name: 'messageDelete', // when a message is deleted, this event is triggered
+    name: 'messageDelete', // message - when a message is deleted, this event is triggered
     async execute(message) {
         if(!message.guildId) return;
         if(message.member == null) return;
@@ -32,8 +33,8 @@ module.exports = {
                                 else if(result.rows.length > 0) {
                                     const messageLogEmbed = new EmbedBuilder();
                                     const logChannel = await message.guild.channels.cache.get(result.rows[0].channel);
-                                    let logMessageDescription = "";
-                                    if(message.attachments) {
+                                    let logMessageDescription = ""; // forming the description message
+                                    if(message.attachments.size) { // if attachments exist, they will be posted and added to the description
                                         await message.attachments.forEach(a => {
                                             logChannel.send({files:[a.url]});
                                             logMessageDescription += `[${a.name}](${a.url})\n`
@@ -41,19 +42,52 @@ module.exports = {
 
                                     }
                                     
-                                    logMessageDescription += `${message.content}\n
-                                            **Message author**: ${message.member}\n`;
-                                    await message.guild.fetchAuditLogs({
-                                        type: AuditLogEvent.MessageDelete,
-                                    })
-                                    .then(async audit => {
-                                        const {executor} = audit.entries.first();
-                                        if(executor != message.author)
-                                            logMessageDescription += `**Deleted by**: ${executor}\n`
-                                    });
+                                    // logging the content and the author of the message
+
+                                    if(message.content.length <= 3000)
+                                        logMessageDescription += `${message.content}\n`;
+                                    else
+                                        {
+                                            // if the content is over 3000, to avoid embed characters limitation, anything above 3000 characters will be
+                                            // parsed into a txt file and then uploaded along the log message
+                                            const filePath = path.join(__dirname, `../../temp/${message.id}.txt`);
+                                            fs.writeFile(filePath, message.content, (err) => {
+                                                console.error(err);
+                                            });
+                                            const sendFile = await logChannel.send({files:[filePath]});
+                                            logMessageDescription += `[[content]](${sendFile.url})\n`;
+                                            fs.unlink(filePath, (err) => {
+                                                if(err) throw err;
+                                            });
+                                            
+                                        }
+                                    logMessageDescription += `**Message author**: ${message.member}\n`;
+                                
+                                    /*
+                                    This code was left commented since it doesn't do its job properly
+                                    will be left so as refference until resolved
+
+                                    const entry = await message.guild.fetchAuditLogs({
+                                        type: AuditLogEvent.MessageDelete
+                                    }).then(audit => audit.entries.first());
+
+                                    if(entry.extra.channel.id === message.channel.id &&
+                                        (entry.target.id === message.author.id)
+
+                                    ) {
+                                        if(entry.extra.count == 1 && (entry.createdTimestamp > (Date.now() - 2000)) ||
+                                        entry.extra.count > 1 && entry.changes
+                                    )
+
+                                        logMessageDescription += `**Deleted by**: ${entry.executor}\n`;
+                                    }
+                                    */
+                                   
+                                    //logging the channel where the message was created
                                     logMessageDescription += `**Channel**: ${message.channel}
                                             **[Jump to context](${message.url})**`
                                     
+                                    // defining the embed
                                     messageLogEmbed
                                         .setAuthor(
                                             {
@@ -67,7 +101,7 @@ module.exports = {
                                         .setTimestamp()
                                         .setFooter({text:`ID: ${message.member.id}`});
                                     
-                                    await logChannel.send({embeds: [messageLogEmbed]});
+                                    await logChannel.send({embeds: [messageLogEmbed]}); // sending the embed to the defined channel for logging
 
 
                                 }
