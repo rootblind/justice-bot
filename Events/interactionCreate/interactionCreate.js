@@ -2,8 +2,7 @@ const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder} = requ
 const {config} = require('dotenv');
 config();
 const fs = require('fs');
-const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const botUtils = require('../../utility_modules/utility_methods.js'); 
+
 
 module.exports = {
     name: 'interactionCreate',
@@ -15,7 +14,7 @@ module.exports = {
         {
 
             const command = client.commands.get(interaction.commandName);
-            const me = interaction.guild.members.cache.get(process.env.KAYLE_CLIENT_ID);
+            const me = interaction.guild.members.cache.get(process.env.CLIENT_ID);
             if(interaction.guild === null) {
                 return interaction.reply('Private commands are not available yet!');
                 

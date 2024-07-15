@@ -2,6 +2,7 @@
 const {config} = require('dotenv');
 const {Client, GatewayIntentBits, Routes, Partials, Collection} = require('discord.js');
 const {REST} = require('@discordjs/rest');
+
 config();
 
 //loads
@@ -13,6 +14,7 @@ const client = new Client({
     intents: [...Object.values(GatewayIntentBits)],
     partials: [...Object.values(Partials)]
 });
+
 
 
 client.cooldowns = new Collection(); // collection for commands cooldowns: used in interactionCreate
@@ -42,6 +44,9 @@ async function main()
     {
         console.log(err);
     }
+
+    
+    
 }
 main();
-module.exports = client;
+module.exports = {client};

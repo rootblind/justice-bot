@@ -1,8 +1,8 @@
 {
-  "name": "kayle-bot",
+  "name": "justice",
   "version": "1.0.0",
   "description": "League of Legends Romania discord BOT",
-  "main": "kayle.js",
+  "main": "justice.js",
   "scripts": {
     "dev": "nodemon ./source/justice.js"
   },
