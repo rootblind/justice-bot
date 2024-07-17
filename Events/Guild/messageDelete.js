@@ -65,7 +65,7 @@ module.exports = {
                                 
                                     /*
                                     This code was left commented since it doesn't do its job properly
-                                    will be left so as refference until resolved
+                                    will be left so as reference until resolved
 
                                     const entry = await message.guild.fetchAuditLogs({
                                         type: AuditLogEvent.MessageDelete

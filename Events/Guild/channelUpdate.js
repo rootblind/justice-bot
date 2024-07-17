@@ -53,7 +53,7 @@ module.exports = {
 
         embed.setDescription(description);
 
-        logChannel.send({embeds: [embed]});
+        await logChannel.send({embeds: [embed]});
         
 
     }

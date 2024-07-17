@@ -6,7 +6,7 @@ const botUtils = require('../../utility_modules/utility_methods.js');
 module.exports = {
     name: 'guildMemberRemove', // user-activity this event triggers when a member leaves the server
     async execute(member) {
-        if(member == null) return;
+        if(!member.joinedAt) return;
         // logging when a member leaves the server
         const userLogs = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [member.guild.id, 'user-activity'],
