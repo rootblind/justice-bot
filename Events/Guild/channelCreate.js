@@ -36,6 +36,8 @@ module.exports = {
 
         const fetchEntry = fetchAudit.entries.first();
 
+        if(fetchEntry.executor.bot) return; // ignore bot actions
+
         let channelType = "";
         // adding the information of what kind of channel was created
         switch(channel.type) {

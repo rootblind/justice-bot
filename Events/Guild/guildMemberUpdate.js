@@ -6,6 +6,8 @@ module.exports = {
 
     async execute(oldMember, newMember) {
 
+        if(oldMember.user.bot) return; // ignore bots
+        
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
 
         const fetchLogChannel = new Promise((resolve, reject) => {
@@ -27,7 +29,7 @@ module.exports = {
         if(logChannel == null) return; // if no server activity log channel is set up, then do nothing
 
         // Upon member update event, there can be multiple types of changes, therefore will be handled independently
-        if(oldMember.premiumSince !== newMember.premiumSince) {
+        if(!oldMember.roles.premiumSubscriberRole && newMember.roles.premiumSubscriberRole) {
             // checking for nitro boosting ; permiumSince is the date of the last nitro boost, upon boosting, newMember
             // will have a different one
 
@@ -81,6 +83,31 @@ module.exports = {
 
             }
 
+        }
+
+        if(oldMember.displayName !== newMember.displayName) {
+            const embed = new EmbedBuilder()
+                .setAuthor({
+                    name: `${oldMember.user.username} changed their nickname`,
+                    iconURL: oldMember.displayAvatarURL({format: 'jpg'})
+                })
+                .addFields(
+                    {
+                        name: 'Old name',
+                        value: `${oldMember.displayName}`,
+                        inline: true
+                    },
+                    {
+                        name: 'New name',
+                        value: `${newMember.displayName}`,
+                        inline: true
+                    }
+                )
+                .setColor(0x2596be)
+                .setTimestamp()
+                .setFooter({text:`ID: ${oldMember.id}`});
+            
+            await logChannel.send({embeds: [embed]});
         }
 
         return; // unhandled events will be ignored

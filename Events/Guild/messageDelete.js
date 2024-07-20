@@ -3,9 +3,9 @@
 // logs and managing reaction roles messages being deleted.
 
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const botUtils = require('../../utility_modules/utility_methods.js');
 const {config} = require('dotenv');
 const {EmbedBuilder} = require("@discordjs/builders");
+const {AuditLogEvent} = require('discord.js')
 const fs = require('fs');
 const path = require('path');
 config();
@@ -15,6 +15,7 @@ module.exports = {
     async execute(message) {
         if(!message.guildId) return;
         if(message.member == null) return;
+        if(message.member.user.bot) return;
         // checking if the channel where the message was deleted is on ignore list, otherwise, log the event in the specified channel
         const messageLogs = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT 1 FROM serverlogsignore WHERE guild=$1 AND channel=$2 LIMIT 1`, [message.guildId, message.channelId],
@@ -61,31 +62,20 @@ module.exports = {
                                             });
                                             
                                         }
-                                    logMessageDescription += `**Message author**: ${message.member}\n`;
+                                    logMessageDescription += `\n**Message author**: ${message.member}\n`;
                                 
-                                    /*
-                                    This code was left commented since it doesn't do its job properly
-                                    will be left so as reference until resolved
 
+                                    // sending a moderation log in case the message deletion generated a recent audit log about it
                                     const entry = await message.guild.fetchAuditLogs({
                                         type: AuditLogEvent.MessageDelete
                                     }).then(audit => audit.entries.first());
 
-                                    if(entry.extra.channel.id === message.channel.id &&
-                                        (entry.target.id === message.author.id)
-
-                                    ) {
-                                        if(entry.extra.count == 1 && (entry.createdTimestamp > (Date.now() - 2000)) ||
-                                        entry.extra.count > 1 && entry.changes
-                                    )
-
-                                        logMessageDescription += `**Deleted by**: ${entry.executor}\n`;
-                                    }
-                                    */
+                                    
+                                    
                                    
                                     //logging the channel where the message was created
                                     logMessageDescription += `**Channel**: ${message.channel}
-                                            **[Jump to context](${message.url})**`
+                                            \n**[Jump to context](${message.url})**`
                                     
                                     // defining the embed
                                     messageLogEmbed
@@ -101,8 +91,53 @@ module.exports = {
                                         .setTimestamp()
                                         .setFooter({text:`ID: ${message.member.id}`});
                                     
-                                    await logChannel.send({embeds: [messageLogEmbed]}); // sending the embed to the defined channel for logging
-
+                                    const context = await logChannel.send({embeds: [messageLogEmbed]}); // sending the embed to the defined channel for logging
+                                    
+                                    if(entry.extra.channel.id == message.channel.id &&
+                                        entry.targetId == message.author.id &&
+                                        entry.createdTimestamp > (Date.now() - 2000) && !entry.target.bot){
+                                        let modChannel = null;
+                                        const fetchModLogs = new Promise((resolve, reject) => {
+                                            poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [message.guild.id, 'moderation'],
+                                                (err, result) => {
+                                                    if(err) {
+                                                        console.error(err);
+                                                        reject(err);
+                                                    }
+                                                    else if(result.rows.length > 0) {
+                                                        modChannel = message.guild.channels.cache.get(result.rows[0].channel);
+                                                    }
+                                                    resolve(result);
+                                                }
+                                            )
+                                        });
+                                        await fetchModLogs;
+                                        if(modChannel != null) {
+                                            const embed = new EmbedBuilder()
+                                                .setTitle('Action context')
+                                                .addFields(
+                                                    {
+                                                        name: `Moderator`,
+                                                        value: `${entry.executor}`,
+                                                        inline: true
+                                                    },
+                                                    {
+                                                        name: 'Message',
+                                                        value: `[click](${message.url})`,
+                                                        inline: true
+                                                    },
+                                                    {
+                                                        name: 'Logs',
+                                                        value: `[click](${context.url})`,
+                                                        inline: true
+                                                    }
+                                                )
+                                                .setColor(0xff0005)
+                                                .setTimestamp()
+                                                .setFooter({text:`Message ID: ${message.id}`})
+                                            await modChannel.send({embeds:[embed]});
+                                        }
+                                    }
 
                                 }
                             }

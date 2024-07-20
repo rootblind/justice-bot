@@ -497,7 +497,7 @@ module.exports = {
                                         {
                                             name: `${row.eventtype}`,
                                             value: `${currentEventChannel}`,
-                                            inline: true
+                                            inline: false
                                         }
                                     )
                                 });

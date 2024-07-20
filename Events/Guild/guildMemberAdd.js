@@ -10,6 +10,7 @@ module.exports = {
     name: "guildMemberAdd", // user-activity when an user joins the server, this event is triggered
     async execute(member)
     {
+        if(member.user.bot) return;
         // if there is a logging channel for user-activity, the new member will be logged here
         const userLogs = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [member.guild.id, 'user-activity'],

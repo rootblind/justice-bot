@@ -31,7 +31,6 @@ module.exports = {
         });
 
         const fetchEntry = fetchAudit.entries.first();
-
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: `[UNBAN] ${ban.user.username}`,
@@ -53,7 +52,7 @@ module.exports = {
                 },
                 {
                     name: 'Reason',
-                    value: ban.reason || 'No reason specified',
+                    value: `${fetchEntry.reason || 'No reason specified'}`,
                     inline: true
                 }
             )

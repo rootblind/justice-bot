@@ -90,7 +90,7 @@ module.exports = {
 
         // composing the description for new message
 
-        logMessageDescription += `\n**New message**:\n`
+        logMessageDescription += `\n\n**New message**:\n`
         
         if(newMessage.content.length <= 1500)
             logMessageDescription += `${newMessage.content || "[no content]\n"}`

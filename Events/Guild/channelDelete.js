@@ -38,6 +38,8 @@ module.exports = {
 
         const fetchEntry = fetchAudit.entries.first();
 
+        if(fetchEntry.executor.bot) return; // ignore bot actions
+
         const embed = new EmbedBuilder()
         .setTitle('Channel Deleted')
         .setAuthor({
