@@ -20,6 +20,18 @@ function randNum(maxNumber) {
     return Math.floor(Math.random() * maxNumber);
 }
 
+function directoryCheck(dirPath) {
+    fs.access(dirPath, fs.constants.F_OK, (err) => {
+        if(err) { // in other words, if the directory doesn't exist
+            fs.mkdir(dirPath, {recursive: true}, (err) => {
+                if(err) {
+                    console.error(err);
+                }
+            });
+        }
+    });
+}
+
 // the function that handles bot's presence
 async function statusSetter (client, presence, actList) {
     let selectNum = randNum(4); // selecting a random number between 0 to 3
@@ -321,19 +333,17 @@ module.exports = {
             );
     
         // creating a temporary files directory
-        const dirPath = path.join(__dirname, '../../temp'); // temp directory will be used for storing txt files and such that will be
+        const tempDir = path.join(__dirname, '../../temp'); // temp directory will be used for storing txt files and such that will be
                                                             // removed after usage, like large messages that trigger deleted or updated messages
 
         // checking if the directory exists, if it doesn't then an error is thrown and the directory is created
-        fs.access(dirPath, fs.constants.F_OK, (err) => {
-            if(err) { // in other words, if the directory doesn't exist
-                fs.mkdir(dirPath, {recursive: true}, (err) => {
-                    if(err) {
-                        console.error(err);
-                    }
-                });
-            }
-        });
+        directoryCheck(tempDir);
+
+        const assetsDir = path.join(__dirname, '../../assets'); // in assets there will be the images media used for the bot presence
+        directoryCheck(assetsDir);
+
+        const avatarDir = path.join(__dirname, '../../assets/avatar');
+        directoryCheck(avatarDir);
 
         await checkModApi(process.env.MOD_API_URL); // the call of the function
     }
