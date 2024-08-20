@@ -7,7 +7,7 @@ const path = require("path");
 const { config } = require('dotenv');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
-
+const axios = require('axios');
 
 config();
 const commandComparing = require('../../utility_modules/commandComparing');
@@ -34,6 +34,31 @@ async function statusSetter (client, presence, actList) {
         ],
         status: "online",
     });
+}
+
+async function checkModApi(api) { // checking the connection to the specified API endpoint
+    try {
+
+        const response = await axios.get(api);
+        
+        if (response.status === 200) {
+            console.log('Successfully connected to the API: ' + process.env.MOD_API_URL);
+        } else {
+            console.log(`Received unexpected status code: ${response.status}`);
+        }
+    } catch (error) {
+        if (error.response) {
+            // The request was made and the server responded with a status code
+            // that falls out of the range of 2xx
+            console.log('Error response from API:', error.response.status);
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.log('No response received from API:', error.request);
+        } else {
+            // Something happened in setting up the request that triggered an Error
+            console.log('Error setting up request:', error.message);
+        }
+    }
 }
 
 module.exports = {
@@ -310,6 +335,10 @@ module.exports = {
             }
         });
 
+        await checkModApi(process.env.MOD_API_URL); // the call of the function
     }
+
+    
+
 
 };

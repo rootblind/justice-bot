@@ -11,6 +11,7 @@
   "dependencies": {
     "@discordjs/rest": "^2.0.1",
     "ascii-table": "^0.0.9",
+    "axios": "^1.7.4",
     "colors": "^1.4.0",
     "cpu-stat": "^2.0.1",
     "discord.js": "^14.13.0",

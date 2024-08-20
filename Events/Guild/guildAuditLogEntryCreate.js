@@ -7,7 +7,7 @@ module.exports = {
 
     async execute(auditLogEntry, guild) {
         if(!auditLogEntry) return;
-        
+        if(!auditLogEntry.target) return;
 
         let logChannel = null;
         const fetchLogChannel = new Promise((resolve, reject) => {

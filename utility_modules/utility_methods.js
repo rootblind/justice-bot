@@ -91,11 +91,56 @@ function formatTime(date) {
     return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
 }
 
+
 /*await poolConnection.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_type = 'BASE TABLE'`, (err, result) => {
     console.log(result.rows.map(row => row.table_name));
 });*/
 
+const axios = require('axios');
+
+async function text_classification(api, text) {
+    // preparing the text for the classification
+    const alphabetPattern = /^[a-zA-Z]/;
+    const urlPattern = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/;
+    const emojiPattern = /<[^>]*>/g;
+    function filter(text) {
+        if(text.length < 3) return text;
+        text = text.replace('+rep', '')
+                    .replace('-rep', '')
+                    .replace('\n', ' ')
+                    .replace('\r', ' ')
+                    .replace(/^\s+/, '')
+                    .replace(emojiPattern, '');
+        if(text.endsWith(','))
+            text = text.slice(0,-1);
+        return text;
+
+    }
+
+    const filteredText = filter(text);
+
+    if (filteredText.length > 2 && alphabetPattern.test(filteredText) && !urlPattern.test(filteredText))
+    {
+        let classifier = null;
+        const url = api + 'classify';
+        const data = {
+            'text' : filteredText
+        };
+
+        await axios.post(url, data)
+            .then(response => {
+                classifier = response.data['labels'];
+            }) 
+            .catch(err => { console.error(err); })
+        
+        return classifier;
+    }
+    else return false;
+
+}
+
 module.exports = {
+    text_classification,
     getBotMember,
     getPermsInChannel,
     botPermsCheckInChannel,

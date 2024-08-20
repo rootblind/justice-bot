@@ -53,7 +53,7 @@ module.exports = {
                 {
                     name: 'Reason',
                     value: `${fetchEntry.reason || 'No reason specified'}`,
-                    inline: true
+                    inline: false
                 }
             )
         await logChannel.send({embeds: [embed]});

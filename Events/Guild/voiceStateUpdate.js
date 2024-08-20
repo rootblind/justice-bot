@@ -5,7 +5,8 @@ module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
         if(!oldState) return;
-
+        if(!oldState.member) return;
+        if(!oldState.member.user) return;
         if(oldState.member.user.bot) return; // ignore bots
 
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored

@@ -32,13 +32,13 @@ module.exports = {
         let isChannelIgnored = false;
 
         const fetchIgnoreList = new Promise((resolve, reject) => {
-            poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [channel.guildId, 'messages'],
+            poolConnection.query(`SELECT channel FROM serverlogsignore WHERE guild=$1 AND channel=$2`, [channel.guildId, channel.id],
                 (err, result) => {
                     if(err) {
                         console.error(err);
                         reject(err);
                     }
-                    else if(result.rows.length == 0) {
+                    else if(result.rows.length > 0) {
                         isChannelIgnored = true
                     }
                     resolve(result);

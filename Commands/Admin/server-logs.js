@@ -130,6 +130,16 @@ module.exports = {
                                 .addChannelTypes(ChannelType.GuildText)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('flagged-messages')
+                        .setDescription('Messages flagged by the bot.')
+                        .addChannelOption(option =>
+                            option.setName('channel')
+                                .setDescription('The channel for the logs to be stored in.')
+                                .setRequired(true)
+                                .addChannelTypes(ChannelType.GuildText)
+                        )
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('remove')
@@ -162,6 +172,10 @@ module.exports = {
                             {
                                 name: 'Server Activity',
                                 value: 'server-activity'
+                            },
+                            {
+                                name: 'Flagged Messages',
+                                value: 'flagged-messages'
                             }
                         )
                 )
@@ -288,6 +302,11 @@ module.exports = {
                     type: ChannelType.GuildText,
                     parent: logsCategory
                 });
+                const flaggedMessages = await logsCategory.children.create({
+                    name: 'flagged-messages',
+                    type: ChannelType.GuildText,
+                    parent: logsCategory
+                });
                 
                 // In the following lines, the auto logs channels will be registered into the database
                 // if there is any event type assigned to a channel, all rows for the guild will be deleted
@@ -320,8 +339,8 @@ module.exports = {
                                 )
                             }
                             poolConnection.query(`INSERT INTO serverlogs (guild, channel, eventtype) 
-                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9), ($1, $10, $11)`,
-                            [interaction.guildId, modLogs.id, 'moderation', voiceLogs.id, 'voice', messagesLogs.id, 'messages', userLogs.id, 'user-activity', serverActivity.id, 'server-activity'],
+                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9), ($1, $10, $11), ($1, $12, $13)`,
+                            [interaction.guildId, modLogs.id, 'moderation', voiceLogs.id, 'voice', messagesLogs.id, 'messages', userLogs.id, 'user-activity', serverActivity.id, 'server-activity', flaggedMessages.id, 'flagged-messages'],
                             (err) => {
                                 if(err) {
                                     console.error(err);
@@ -338,7 +357,7 @@ module.exports = {
             const ignoreLogs = new Promise((resolve, reject) => {
                 poolConnection.query(`INSERT INTO serverlogsignore (guild, channel)
                     VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6)`,
-                    [interaction.guildId, modLogs.id, voiceLogs.id, messagesLogs.id, userLogs.id, serverActivity.id],
+                    [interaction.guildId, modLogs.id, voiceLogs.id, messagesLogs.id, userLogs.id, serverActivity.id, flaggedMessages.id],
                     (err, result) => {
                         if(err) reject(err);
                         resolve(result);
@@ -374,12 +393,16 @@ module.exports = {
                         name: 'Server Activity',
                         value: `${serverActivity}`,
                         inline: true
+                    },
+                    {
+                        name: 'Flagged Messages',
+                        value: 'flagged-messages'
                     }
                 )
             return await interaction.editReply({embeds: [embed]})
             break;
             case 'all':
-                const eventTypes = ["moderation", "voice", "messages", "user-activity", "server-activity"] // array used to iterate in for checking all event types
+                const eventTypes = ["moderation", "voice", "messages", "user-activity", "server-activity", "flagged-messages"] // array used to iterate in for checking all event types
                 // using the map function
                 // set all will set all events to a single channel
                 await Promise.all(eventTypes.map(async (xEvent) => {
@@ -395,6 +418,7 @@ module.exports = {
             case 'voice':
             case 'user-activity':
             case 'server-activity':
+            case 'flagged-messages':
                 await setLogChannel(interaction.guildId, channelLogs.id, subcommand);
                 embed.setTitle(`${subcommand} logs set`)
                     .setColor('Green')
