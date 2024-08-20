@@ -100,9 +100,19 @@ To run this project, you will need to add the following environment variables to
 
 `The database name: DBNAME`
 
+`The text classification LM API: MOD_API_URL`
+
 The environment file should look like this example: [env_vars](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
 
 You can change the name of the variables, but make sure to make the change the code as well!
+
+## Language Model API
+
+The bot uses an API provided by my own language model. At the moment there is only one classification model that helps with auto moderation if you set up a `flagged-messages` logging channel.
+
+Please visit the LM repository [here](https://github.com/rootblind/opjustice-lm).
+
+Do note, that project is still in work as well!
 
 ## Technologies used
  - [Nodejs](https://nodejs.org/en/)
