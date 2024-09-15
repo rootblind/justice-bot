@@ -1,4 +1,4 @@
 {
     "table_names": ["welcomescheme", "panelscheme", "panelheaders", "reactionroles", "panelmessages", "serverroles",
-                    "serverlogs", "serverlogsignore"]
+                    "serverlogs", "serverlogsignore", "premiummembers", "premiumkey"]
 }

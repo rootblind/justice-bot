@@ -22,7 +22,7 @@ async function checkModApi(api) { // checking if there is a connection to the sp
             console.log('Error response from API:', error.response.status);
         } else if (error.request) {
             // The request was made but no response was received
-            console.log('No response received from API:', error.request);
+            console.log('No response received from API');
         } else {
             // Something happened in setting up the request that triggered an Error
             console.log('Error setting up request:', error.message);

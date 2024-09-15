@@ -84,5 +84,50 @@ module.exports = {
         });
         await welcomeMessagePromise;
 
+        // if member has premium status, checks if the member has the premium role, otherwise gives it to them.
+
+        // checking for server premium role
+        let premiumRole = null;
+        const fetchPremiumRole = new Promise((resolve, reject) =>{
+            poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`, [member.guild.id, "premium"],
+                (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    if(result.rows.length > 0) {
+                        premiumRole = result.rows[0].role;
+                    }
+                    resolve(result);
+                }
+            )
+        });
+        await fetchPremiumRole;
+
+        if(premiumRole != null) { // if no server premium role is set, no point in checking premium status
+            const checkPremiumStatus = new Promise((resolve, reject) => {
+                poolConnection.query(`SELECT member FROM premiummembers WHERE member=$1 AND guild=$2`,
+                    [member.id, member.guild.id],
+                    (err, result) => {
+                        if(err) {
+                            console.error(err);
+                            reject(err);
+                        }
+                        if(result.rows.length > 0) {
+                            member.roles.add(member.guild.roles.cache.get(premiumRole));
+                            // if the member also has a custom role, assign it
+                            if(result.rows[0].customrole)
+                                member.roles.add(member.guild.roles.cache.get(result.rows[0].customrole));
+                                
+                        }
+                        resolve(result);
+                    }
+                )
+            });
+
+            await checkPremiumStatus;
+
+        }
+
     }
 };

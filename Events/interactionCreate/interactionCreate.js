@@ -138,6 +138,9 @@ module.exports = {
 
                 interaction.reply({content: "Role updated", ephemeral: true});
             }
+            else if(interaction.customId === 'custom-color-menu') {
+                return;
+            }
         }
     
         else return;

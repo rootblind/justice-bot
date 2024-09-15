@@ -4,6 +4,7 @@
 */
 const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits} = require('discord.js');
 const {config} = require('dotenv');
+const fs = require('graceful-fs')
 config();
 module.exports = {
     cooldown: 2,
@@ -26,6 +27,15 @@ module.exports = {
                             .setDescription('The hexcode of the role')
                             .setMinValue(0)
                             .setRequired(true)
+                    )
+                    .addAttachmentOption(option => 
+                        option.setName('image-icon')
+                            .setDescription('Upload an image as the role icon')
+                    )
+                    .addStringOption(option => 
+                        option.setName('emoji-icon')
+                            .setDescription('Emoji as role icon.')
+
                     )
             )
         .addSubcommand(subcommand =>
@@ -110,9 +120,46 @@ module.exports = {
             const reason = options.getString('reason') || "No reason given.";
             const user = options.getUser('member');
             let position = options.getNumber('position');
-
+            const imageIcon = options.getAttachment('image-icon') || null;
+            let emojiIcon = options.getString('emoji-icon') || null;
+            let roleIcon = null;
             const embed = new EmbedBuilder();
 
+            if(imageIcon) {
+                if(!imageIcon.contentType.includes('image'))
+                    {
+                        embed.setColor('Red').setDescription('The attachment provided is not an image!');
+                        return interaction.reply({embeds: [embed], ephemeral: true});
+                    }
+    
+                if(imageIcon.size > 262100) {
+                    // the image is too large
+                    embed.setColor('Red').setDescription('The image is too large! 256KB is the maximum size!');
+                    return interaction.reply({embeds: [embed], ephemeral: true});
+                }
+                roleIcon = imageIcon.url;
+                console.log(roleIcon);
+            } else if(emojiIcon) {
+                
+                if(emojiIcon.match(/\d+/))
+                    emojiIcon = emojiIcon.match(/\d+/)[0];
+                else {
+                    embed.setColor('Red').setDescription('Invalid emoji format!');
+                    return interaction.reply({embeds: [embed], ephemeral: true});
+                }
+                if(emojiIcon.length != 19 && emojiIcon.length != 1)
+                {
+                    embed.setColor('Red').setDescription('Invalid emoji format!');
+                    return interaction.reply({embeds: [embed], ephemeral: true});
+                }
+                try {
+                    emojiIcon = await interaction.guild.emojis.fetch(emojiIcon);
+                } catch(e) {
+                    embed.setColor('Red').setDescription('Emoji not found on this server!');
+                    return interaction.reply({embeds: [embed], ephemeral: true});
+                }
+                roleIcon = emojiIcon.imageURL();
+            }
             if(position)
                 if(position >= interaction.member.roles.highest.position && guild.ownerId !== interaction.member.id)
                 {
@@ -167,17 +214,18 @@ module.exports = {
             
             switch(subCmd){
                 case "create":
-                    guild.roles.create({
+                    const newRole = await guild.roles.create({
                         name: name,
                         color: color,
                         permissions: [],
                         position: 1,
+                        icon: roleIcon
                     }).catch(err => console.log(err));
-                    embed.setColor(color).setTitle('Role Created').setDescription(`**${name}** role has been created!`);
+                    embed.setColor(color).setTitle('Role Created').setDescription(`**${newRole}** role has been created!`);
                     break;
                 case "delete":
                     embed.setColor('Green').setTitle('Role Removed').setDescription(`**${role.name}** has been removed!`);
-                    guild.roles.delete(role, [reason])
+                    await guild.roles.delete(role, [reason])
                         .catch(err => console.log(err));
                     
                     break;
@@ -199,7 +247,7 @@ module.exports = {
                     if(!name)
                         name = role.name;
                     embed.setColor(color).setTitle('Role Edited').setDescription(`**${role.name}** has been edited with the input provided now.`);
-                    guild.roles.edit(role, {
+                    await guild.roles.edit(role, {
                         name: name,
                         color: color,
                         position: position

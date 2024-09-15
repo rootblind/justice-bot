@@ -65,7 +65,7 @@ async function checkModApi(api) { // checking the connection to the specified AP
             console.log('Error response from API:', error.response.status);
         } else if (error.request) {
             // The request was made but no response was received
-            console.log('No response received from API:', error.request);
+            console.log('No response received from API.');
         } else {
             // Something happened in setting up the request that triggered an Error
             console.log('Error setting up request:', error.message);
@@ -320,6 +320,48 @@ module.exports = {
                 });
             });
             await serverlogsignore;
+
+            const premiumKey = new Promise((resolve, reject) => {
+                poolConnection.query(`CREATE TABLE IF NOT EXISTS premiumkey (
+                    code TEXT PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    generatedby BIGINT NOT NULL,
+                    createdat BIGINT NOT NULL,
+                    expiresat BIGINT NOT NULL,
+                    usesnumber INT,
+                    dedicateduser BIGINT
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    else {
+                        table_nameListed.push("premiumkey");
+                        resolve(result);
+                    }
+                });
+            });
+            await premiumKey;
+
+            const premiumMembersReg = new Promise((resolve, reject) => {
+                poolConnection.query(`CREATE TABLE IF NOT EXISTS premiummembers (
+                    id SERIAL PRIMARY KEY,
+                    member BIGINT NOT NULL,
+                    guild BIGINT NOT NULL,
+                    code TEXT,
+                    customrole BIGINT
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    else {
+                        table_nameListed.push("premiummembers");
+                        resolve(result);
+                    }
+                });
+            });
+            await premiumMembersReg;
 
             for(tableName of table_nameListed){
                 table.addRow(tableName, 'Ready');

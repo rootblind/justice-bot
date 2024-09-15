@@ -246,7 +246,50 @@ module.exports = {
             });
         });
         await serverlogsignore;
-    
+
+        const premiumKey = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS premiumkey (
+                code TEXT PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                generatedby BIGINT NOT NULL,
+                createdat BIGINT NOT NULL,
+                expiresat BIGINT NOT NULL,
+                usesnumber INT,
+                dedicateduser BIGINT
+            )`, (err, result) => {
+                if(err) {
+                    console.error(err);
+                    reject(err);
+                }
+                else {
+                    table_nameListed.push("premiumkey");
+                    resolve(result);
+                }
+            });
+        });
+        await premiumKey;
+
+        const premiumMembersReg = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS premiummembers (
+                id SERIAL PRIMARY KEY,
+                member BIGINT NOT NULL,
+                guild BIGINT NOT NULL,
+                code TEXT,
+                customrole BIGINT
+            )`, (err, result) => {
+                if(err) {
+                    console.error(err);
+                    reject(err);
+                }
+                else {
+                    table_nameListed.push("premiummembers");
+                    resolve(result);
+                }
+            });
+        });
+        await premiumMembersReg;
+
+        
         let index = 1;
         for (x of table_nameListed){
             embed.addFields({name: `[${index}] - ${x}`, value: 'exists'});
