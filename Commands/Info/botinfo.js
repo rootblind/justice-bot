@@ -31,6 +31,7 @@ module.exports = {
 
                 const embed = new EmbedBuilder()
                     .setTitle('Bot Info & Stats')
+                    .setThumbnail(client.user.displayAvatarURL({extension: 'png'}))
                     .setColor('Aqua')
                     .setAuthor({ name: 'Check on github', iconURL: 'https://pngimg.com/uploads/github/github_PNG67.png', url: 'https://github.com/rootblind/justice-bot'})
                     .addFields(
