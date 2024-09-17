@@ -110,7 +110,7 @@ To run this project, you will need to add the following environment variables to
 
 The environment file should look like this example: [env_vars](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
 
-You can change the name of the variables, but make sure to make the change the code as well!
+You can change the name of the variables, but make sure to make the changes in the code as well!
 
 ## Language Model API
 
