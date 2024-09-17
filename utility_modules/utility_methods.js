@@ -139,7 +139,32 @@ async function text_classification(api, text) {
 
 }
 
+// for the encryption methods, there is a need to load environment variables.
+const crypto = require('crypto');
+const {config} = require('dotenv');
+config();
+
+const key = Buffer.from(process.env.ENCRYPT_KEY, 'hex'); // encryption key
+const iv = Buffer.from(process.env.IV, 'hex'); // initializator vector
+const algorithm = process.env.ALGORITHM; // the algorithm used to encrypt
+
+function encryptor(data) {
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+}
+
+function decryptor(data) {
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
 module.exports = {
+    decryptor,
+    encryptor,
     text_classification,
     getBotMember,
     getPermsInChannel,

@@ -138,7 +138,7 @@ module.exports = {
                     return interaction.reply({embeds: [embed], ephemeral: true});
                 }
                 roleIcon = imageIcon.url;
-                console.log(roleIcon);
+               
             } else if(emojiIcon) {
                 
                 if(emojiIcon.match(/\d+/))

@@ -11,7 +11,7 @@
 const {SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, ModalBuilder,
     TextInputBuilder, TextInputStyle, StringSelectMenuBuilder, StringSelectMenuOptionBuilder
 } = require('discord.js');
-const {text_classification} = require('../../utility_modules/utility_methods.js');
+const {text_classification, encryptor, decryptor} = require('../../utility_modules/utility_methods.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {config} = require('dotenv');
 config();
@@ -55,8 +55,12 @@ module.exports = {
         .setName('premium')
         .setDescription('Premium related menus and options.')
         .addSubcommand(subcommand =>
+            subcommand.setName('dashboard')
+                .setDescription('Dashboard for premium users to access their features.')
+        )
+        .addSubcommand(subcommand =>
             subcommand.setName('menu')
-                .setDescription('Premium status main menu.')
+                .setDescription('Opens the main menu to get more information and redeem premium key codes.')
         )
         ,
 
@@ -91,16 +95,227 @@ module.exports = {
         }
         const premiumRole = interaction.guild.roles.cache.get(premiumRoleId);
 
-        if(!interaction.member.roles.cache.has(premiumRoleId)  && cmd == 'menu') {
+        // if member somehow doesn't have the premium role, but is registered as premium user
+        let roleMustBeAssigned = false;
+
+        const fetchMembership = new Promise((resolve, reject) => {
+            poolConnection.query(`SELECT member FROM premiummembers WHERE guild=$1 AND member=$2`,
+                [interaction.guild.id, interaction.user.id],
+                (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    if(result.rows.length > 0) {
+                        roleMustBeAssigned = true;
+                    }
+                    resolve(result);
+                }
+            )
+        });
+        await fetchMembership;
+        // using a boolean since assigning a role must be awaited and the promise doesn't wait until discord finishes its processes
+        if(roleMustBeAssigned)
+            await interaction.member.roles.add(premiumRole);
+
+        if(!interaction.member.roles.cache.has(premiumRoleId)  && cmd == 'dashboard') {
             embed.setTitle('You lack premium status!') 
                 .setColor(Colors['red'])
                 .setDescription('You require an active premium status in order to use this command.')
             return interaction.reply({embeds: [embed], ephemeral: true});
         }
 
-        switch(cmd) {
-            case 'menu':
+        let logChannel = null
+        const fetchLogChannel = new Promise((resolve, reject) => {
+            poolConnection.query(`SELECT channel FROM serverlogs WHERE eventtype=$1 AND guild=$2`, ['premium-activity', interaction.guild.id],
+                (err, results) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    if(results.rows.length > 0) {
+                        logChannel = interaction.guild.channels.cache.get(results.rows[0].channel);
+                    }
+                    resolve(results);
+                }
+            )
+        });
+        await fetchLogChannel;
 
+        switch(cmd) {
+            case 'menu': // while this is not a premium feature, here will be implemented commands about premium, such as info page, redeem codes and more
+                const mainMenu = new EmbedBuilder()
+                    .setAuthor({
+                        name: `${interaction.user.username}`,
+                        iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                    })
+                    .setColor(Colors['premium'])
+                    .setDescription('Redeem codes and find out about the premium features!\n\n_If the redeem button is disabled, you can not redeem another key while having premium!_')
+                    .addFields(
+                        {
+                            name: 'Redeem',
+                            value: `Redeem a premium key to unlock premium features!`
+                        }
+                    );
+
+                    const redeemKeyButton = new ButtonBuilder() // redeem premium key
+                        .setCustomId('redeem-key')
+                        .setLabel('Redeem')
+                        .setStyle(ButtonStyle.Success);
+                    const closeMenuButton = new ButtonBuilder() // closes the menu
+                        .setCustomId('close-menu')
+                        .setLabel('Close')
+                        .setStyle(ButtonStyle.Danger);
+                    
+
+                    if(interaction.member.roles.cache.has(premiumRoleId)) {
+                        // premium users can not redeem another key while theirs is still active
+                        redeemKeyButton.setDisabled(true);
+                    }
+
+                   
+
+                    const mainMenuActionRow = new ActionRowBuilder()
+                        .addComponents(redeemKeyButton, closeMenuButton);
+                    
+                    const mainMenuMessage = await interaction.reply({embeds: [mainMenu], components: [mainMenuActionRow], ephemeral: true});
+                    
+                    const redeemKeyInput = new TextInputBuilder()
+                        .setCustomId('redeem-key-input')
+                        .setLabel('The code of the key')
+                        .setStyle(TextInputStyle.Short)
+                        .setMinLength(5)
+                        .setMaxLength(10)
+                    
+                    const redeemModal = new ModalBuilder()
+                        .setCustomId(`redeem-modal-${interaction.user.id}`)
+                        .setTitle('Redeem premium key')
+
+                    let filterRedeemModal = (interaction) => interaction.customId === `redeem-modal-${interaction.user.id}`;
+
+                    const redeemCodeRow = new ActionRowBuilder()
+                        .addComponents(redeemKeyInput)
+
+                    redeemModal.addComponents(redeemCodeRow);
+
+                    let collectorMenu = mainMenuMessage.createMessageComponentCollector({
+                        ComponentType: ComponentType.Button,
+                        filterRedeemModal,
+                        time: 120_000,
+    
+                    });
+
+                    collectorMenu.on('collect', async (interaction) => {
+                        switch (interaction.customId) {
+                            case 'redeem-key':
+                                interaction.showModal(redeemModal);
+
+                                interaction.awaitModalSubmit({filterRedeemModal, time: 120_000})
+                                    .then(async (modalInteraction) => {
+                                        const codeInput = modalInteraction.fields.getTextInputValue('redeem-key-input');
+                                        const encrypted_code = encryptor(codeInput);
+                                        let usage;
+                                        let duration = 0;
+                                        let isValidKey = false;
+                                        await modalInteraction.deferReply({ephemeral: true});
+                                        const checkCode = new Promise((resolve, reject) => {
+                                            poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1 AND code=$2`,
+                                                [interaction.guild.id, encrypted_code],
+                                                (err, result) => {
+                                                    if(err) {
+                                                        console.error(err);
+                                                        reject(err);
+                                                    }
+                                                    if(result.rows.length > 0) {
+                                                        if(result.rows[0].usesnumber && 
+                                                            (result.rows[0].dedicateduser == null ||
+                                                            result.rows[0].dedicateduser == interaction.user.id)) {
+                                                                // meaning if there is still at least a usage left and there is no dedicated user or
+                                                                // the dedicated user is the interaction user themselves, then it's valid
+                                                                isValidKey = true;
+                                                                usage = result.rows[0].usesnumber - 1;
+                                                                duration = result.rows[0].expiresat;
+                                                            }
+                                                    }
+                                                    resolve(result);
+                                                }
+                                            );
+                                        });
+                                        await checkCode;
+
+                                        if(!isValidKey) { // if isValidKey remains false, then the code provided is invalid
+                                            return await modalInteraction.editReply({content: 'The code key provided is invalid, reached maximum usage or is dedicated to another member!!', ephemeral: true});
+                                        }
+
+                                        poolConnection.query(`UPDATE premiumkey SET usesnumber=$1 WHERE guild=$2 AND code=$3`,
+                                            [usage, interaction.guild.id, encrypted_code]
+                                        ); // updating the premium key by decrementing the uses number
+
+                                        // adding the new premium member
+                                        poolConnection.query(`INSERT INTO premiummembers(member, guild, code)
+                                            VALUES($1, $2, $3)`, [interaction.user.id, interaction.guild.id, encrypted_code]);
+                                        
+                                        // adding the premium role
+                                        await interaction.member.roles.add(premiumRole);
+
+                                        await modalInteraction.editReply({embeds: [
+                                            new EmbedBuilder()
+                                                .setAuthor({
+                                                    name: `${modalInteraction.user.username} is now a premium member!`,
+                                                    iconURL: modalInteraction.member.displayAvatarURL({extension: 'png'})
+                                                })
+                                                .setThumbnail('https://i.imgur.com/fPibNVC.png')
+                                                .setTitle('Congratulation!')
+                                                .setDescription(`You have redeemed a premium key!\nEligibility: ${duration > 0 ? `<t:${duration}:R>` : 'Permanent'}`)
+                                                .setColor(Colors['premium'])
+                                        ]});
+                                        
+                                        if(logChannel) {
+                                            const logRedeemCode = new EmbedBuilder()
+                                                .setAuthor({
+                                                    name: modalInteraction.user.username,
+                                                    iconURL: modalInteraction.member.displayAvatarURL({extension: 'png'})
+                                                })
+                                                .setColor(Colors['premium'])
+                                                .addFields(
+                                                    {
+                                                        name: 'Member',
+                                                        value: `${modalInteraction.member}`,
+                                                        inline: true
+                                                    },
+                                                    {
+                                                        name: 'Code',
+                                                        value: `${codeInput}`,
+                                                        inline: true
+                                                    },
+                                                    {
+                                                        name: 'Expires',
+                                                        value: `${duration > 0 ? `<t:${duration}:R>` : 'Permanent'}`,
+                                                        inline: true
+                                                    },
+                                                    {
+                                                        name: 'Uses left:',
+                                                        value: `${usage}`,
+                                                        inline: true
+                                                    }
+                                                )
+                                                .setTimestamp()
+                                                .setFooter({text: `ID: ${modalInteraction.user.id}`});
+                                            await logChannel.send({embeds: [logRedeemCode]});
+                                        }
+                                    });
+                            break;
+                            case 'close-menu':
+                                collectorMenu.stop();
+                            break;
+                        }
+                    });
+
+                collectorMenu.on('end', () => {
+                    mainMenuMessage.delete();
+                });
+            break;
+            case 'dashboard': // premium users can access their features from the dashboard
             // fetching information from database about the current member premium status
                 let code = null;
                 let createdAt = null;
@@ -114,7 +329,7 @@ module.exports = {
                                 reject(err);
                             }
                             if(result.rows.length > 0) {
-                                code = result.rows[0].code;
+                                code = decryptor(result.rows[0].code.toString());
                                 customRole = result.rows[0].customrole;
    
                             }
@@ -124,7 +339,7 @@ module.exports = {
                 });
                 await premiumStatusPromise;
                 const premiumKeyPromise = new Promise((resolve, reject) => {
-                    poolConnection.query(`SELECT * FROM premiumkey WHERE code=$1`, [code],
+                    poolConnection.query(`SELECT * FROM premiumkey WHERE code=$1`, [encryptor(code)],
                         (err, res) => {
                             if(err) reject(err);
                             if(res.rows.length > 0) {
@@ -141,7 +356,7 @@ module.exports = {
                 let roleMenuEmbed = new EmbedBuilder()
                     .setTitle('Role Menu')
                     .setAuthor({
-                        name: `${interaction.member.user.username}'s premium menu`,
+                        name: `${interaction.member.user.username}'s premium dashboard`,
                         iconURL: interaction.member.displayAvatarURL({extension: 'png'})
                     })
                     .setColor(Colors['premium'])
@@ -190,9 +405,9 @@ module.exports = {
 
                 // declaring the embeded messages for each menu
                 const embedMainMenu = new EmbedBuilder()
-                    .setTitle('Main Menu')
+                    .setTitle('Dashboard')
                     .setAuthor({
-                        name: `${interaction.member.user.username}'s premium menu`,
+                        name: `${interaction.member.user.username}'s premium dashboard`,
                         iconURL: interaction.member.displayAvatarURL({extension: 'png'})
                     })
                     .setColor(Colors['premium'])
@@ -210,7 +425,7 @@ module.exports = {
                 const embedStatusMenu = new EmbedBuilder()
                     .setTitle('Premium Status')
                     .setAuthor({
-                        name: `${interaction.member.user.username}'s premium menu`,
+                        name: `${interaction.member.user.username}'s premium dashboard`,
                         iconURL: interaction.member.displayAvatarURL({extension: 'png'})
                     })
                     .setColor(Colors['premium'])
@@ -227,7 +442,7 @@ module.exports = {
                         },
                         {
                             name: 'Expires:',
-                            value: `<t:${expiresAt}:R>`,
+                            value: expiresAt > 0 ? `<t:${expiresAt}:R>` : `Permanent`,
                             inline: true
                         },
                         {
@@ -240,7 +455,7 @@ module.exports = {
                 const noRoleMenu = new EmbedBuilder()
                     .setTitle('You have no custom role yet!')
                     .setAuthor({
-                        name: `${interaction.member.user.username}'s premium menu`,
+                        name: `${interaction.member.user.username}'s premium dashboard`,
                         iconURL: interaction.member.displayAvatarURL({extension: 'png'})
                     })
                     .setColor(Colors['premium'])
@@ -432,6 +647,22 @@ module.exports = {
                                         position: premiumRole.position
                                     });
 
+                                    if(logChannel) {
+                                        const embedLog = new EmbedBuilder()
+                                            .setAuthor({
+                                                name: `${modalInteraction.user.username} created a custom role.`,
+                                                iconURL: modalInteraction.user.displayAvatarURL({ extension: 'png' })
+                                            })
+                                            .setColor(Colors["premium"])
+                                            .addFields({
+                                                name: 'Role:',
+                                                value: `${customRole}`
+                                            })
+                                            .setTimestamp()
+                                            .setFooter({text: `ID: ${modalInteraction.user.id}`});
+                                        
+                                        await logChannel.send({embeds: [embedLog]});
+                                    }
                                     await modalInteraction.member.roles.add(customRole); // assigning the new role
 
                                     await poolConnection.query(`UPDATE premiummembers SET customrole=$1 WHERE member=$2 AND guild=$3`,
@@ -648,6 +879,7 @@ module.exports = {
                                     icon: imageAttachment.url
                                 });
                                 roleMenuEmbed.setThumbnail(customRole.iconURL());
+                                await message.delete(); // deleting the input message
                                 await interaction.followUp({content: 'Role icon set successfully!', ephemeral: true});
                             });
 
@@ -662,8 +894,26 @@ module.exports = {
                             await poolConnection.query(`UPDATE premiummembers SET customrole=NULL WHERE member=$1 AND guild=$2`,
                                 [interaction.user.id, interaction.guild.id]
                             ); // updating the db
+                            if(logChannel){
+                                const deleteRoleLog = new EmbedBuilder()
+                                    .setAuthor({
+                                        name: `${interaction.user.username} deleted the custom role.`,
+                                        iconURL: interaction.user.displayAvatarURL({ extension: 'png' })
+                                    })
+                                    .setColor(Colors["red"])
+                                    .addFields({
+                                        name: 'Role:',
+                                        value: `${customRole.name}`
+                                    })
+                                    .setTimestamp()
+                                    .setFooter({text: `ID: ${interaction.user.id}`});
+                                await logChannel.send({embeds: [deleteRoleLog]});
+                            }
+                            
                             await customRole.delete();
+                            
                             roleMenuEmbed.setThumbnail(null);
+                            
                             interaction.update({embeds: [noRoleMenu], components: [noRoleMenuRow], ephemeral: true});
                         break;
                         

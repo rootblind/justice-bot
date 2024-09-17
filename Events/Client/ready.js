@@ -323,7 +323,8 @@ module.exports = {
 
             const premiumKey = new Promise((resolve, reject) => {
                 poolConnection.query(`CREATE TABLE IF NOT EXISTS premiumkey (
-                    code TEXT PRIMARY KEY,
+                    id SERIAL PRIMARY KEY,
+                    code BYTEA,
                     guild BIGINT NOT NULL,
                     generatedby BIGINT NOT NULL,
                     createdat BIGINT NOT NULL,
@@ -348,7 +349,7 @@ module.exports = {
                     id SERIAL PRIMARY KEY,
                     member BIGINT NOT NULL,
                     guild BIGINT NOT NULL,
-                    code TEXT,
+                    code BYTEA,
                     customrole BIGINT
                 )`, (err, result) => {
                     if(err) {
