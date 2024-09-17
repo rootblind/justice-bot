@@ -2,7 +2,6 @@
 // What the code below does is reading the welcomescheme table from database and making an embed to be sent.
 
 const {EmbedBuilder} = require("@discordjs/builders");
-const {GuildMember, Embed} = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
@@ -104,27 +103,31 @@ module.exports = {
         });
         await fetchPremiumRole;
 
+        premiumRole = await member.guild.roles.fetch(premiumRole);
+
         if(premiumRole != null) { // if no server premium role is set, no point in checking premium status
             const checkPremiumStatus = new Promise((resolve, reject) => {
-                poolConnection.query(`SELECT member FROM premiummembers WHERE member=$1 AND guild=$2`,
+                poolConnection.query(`SELECT member, customrole FROM premiummembers WHERE member=$1 AND guild=$2`,
                     [member.id, member.guild.id],
-                    (err, result) => {
+                    async (err, result) => {
                         if(err) {
                             console.error(err);
                             reject(err);
                         }
                         if(result.rows.length > 0) {
-                            member.roles.add(member.guild.roles.cache.get(premiumRole));
+                            
+                            await member.roles.add(premiumRole);
                             // if the member also has a custom role, assign it
                             if(result.rows[0].customrole)
-                                member.roles.add(member.guild.roles.cache.get(result.rows[0].customrole));
-                                
+                            {
+                                const customRole = await member.guild.roles.fetch(result.rows[0].customrole)
+                                await member.roles.add(customRole);
+                            } 
                         }
                         resolve(result);
                     }
                 )
             });
-
             await checkPremiumStatus;
 
         }

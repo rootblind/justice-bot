@@ -61,7 +61,7 @@ module.exports = {
         .setDescription('Administrative commands for premium membership.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommandGroup(subcommandGroup =>
-            subcommandGroup.setName('key')
+            subcommandGroup.setName('key') // add edit subcommand
                 .setDescription('Commands to administrate premium keys.')
                 .addSubcommand(subcommand => 
                     subcommand.setName('generate')
@@ -113,6 +113,26 @@ module.exports = {
                         )
                 )
         )
+        .addSubcommandGroup(subcommandGroup =>
+            subcommandGroup.setName('membership')
+                .setDescription('Commands to administrate memberships.')
+                .addSubcommand(subcommand =>
+                    subcommand.setName('assign-key')
+                        .setDescription('Assign premium membership to a member')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The member to assign the key to.')
+                                .setRequired(true)
+                        )
+                        .addStringOption(option =>
+                            option.setName('code')
+                                .setDescription('The premium key code.')
+                                .setMinLength(5)
+                                .setMaxLength(10)
+                                .setRequired(true)
+                        )
+                )
+        )
     ,
     cooldown: 5,
     async execute(interaction, client) {
@@ -143,7 +163,7 @@ module.exports = {
             return interaction.reply({embeds: [embed], ephemeral: true});
         }
 
-        const premiumRole = interaction.guild.roles.cache.get(premiumRoleId);
+        const premiumRole = await interaction.guild.roles.cache.get(premiumRoleId);
 
         let logChannel = null // if defined, logging the premium activity
         const fetchLogChannel = new Promise((resolve, reject) => {
@@ -163,6 +183,166 @@ module.exports = {
         await fetchLogChannel;
 
         switch(subcmd) {
+            case 'assign-key': // assigning a premium key for someone
+                                // the key must exist, have at least 1 uses number and have the target as dedicated user or no dedicated user at all
+                let codeKey = interaction.options.getString('code');
+                const targetUser = interaction.options.getUser('member');
+                const targetMember = await interaction.guild.members.cache.get(targetUser.id)
+
+                if(targetUser.bot)
+                    return await interaction.reply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid user')
+                            .setDescription('Bots can not recieve membership.')
+                ], ephemeral: true});
+
+                let isKeyValid = false; // boolean for key's eligiblity to be redeemed
+                let usesnumber = 0;
+                let expiresat;
+                await interaction.deferReply({ephemeral: true});
+
+                const checkCodeKey = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT expiresat, usesnumber, dedicateduser FROM premiumkey WHERE guild=$1 AND code=$2`, [interaction.guild.id, encryptor(codeKey)],
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+
+                            }
+                            if(result.rows.length > 0) { // if the code exists
+                                if(result.rows[0].usesnumber > 0 && // and the code has uses left
+                                    (!result.rows[0].dedicateduser || //and either has no dedicated user or the target user is the dedicated one
+                                        targetMember.id == result.rows[0].dedicateduser)) {
+                                            isKeyValid = true; // then the key is valid
+                                            usesnumber = result.rows[0].usesnumber - 1;
+                                            expiresat = result.rows[0].expiresat;
+                                        }
+                            }
+                            resolve(result);
+                        }
+                    );
+                });
+                await checkCodeKey;
+
+                if(!isKeyValid) {
+                    return await interaction.editReply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid code key')
+                            .setDescription('The code key provided doesn\'t exist, is left out of usage or is dedicated to another user.')
+                    ], ephemeral: true});
+                }
+                
+                // checking the code key is done, now the following lines will check the member's eligibility
+
+                let memberHasPremium = false; // if member already has premium, he is not eligible for assignment of premium
+
+                const checkPremiumStatus = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT member FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, targetUser.id], 
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                memberHasPremium = true;
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await checkPremiumStatus;
+
+                if(memberHasPremium) {
+                    return await interaction.editReply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Target is already a premium user')
+                            .setDescription('The member selected already has a membership going.')
+                    ], ephemeral: true});
+                }
+
+                // after botch checkers, everything is valid
+
+                await targetMember.roles.add(premiumRole); // assigning the premium role
+
+                // updating database
+                // inserting the new membership
+                await poolConnection.query(`INSERT INTO premiummembers(member, guild, code)
+                    VALUES($1, $2, $3)`, [targetMember.id, interaction.guild.id, encryptor(codeKey)]);
+                // decrementing the uses number
+                await poolConnection.query(`UPDATE premiumkey SET usesnumber=$1 WHERE guild=$2 AND code=$3`, 
+                    [usesnumber, interaction.guild.id, encryptor(codeKey)]
+                );
+
+                if(logChannel) {
+                    // logging the event of assigning a key
+                    const logAssignEmbed = new EmbedBuilder()
+                        .setColor(0xd214c7)
+                        .setAuthor({
+                            name: `${interaction.user.username} assigned a premium key`,
+                            iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                        })
+                        .setDescription(`${targetMember} recieved membership.`)
+                        .addFields(
+                            {
+                                name: 'Code',
+                                value: `${codeKey}`,
+                                inline: true
+                            },
+                            {
+                                name: 'Uses left',
+                                value: `${usesnumber}`,
+                                inline: true
+                            },
+                            {
+                                name: 'Expires',
+                                value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent',
+                                inline: true
+                            }
+                        )
+                    await logChannel.send({embeds: [logAssignEmbed]});
+                }
+
+                // announcing the member that he got membership
+                await targetUser.send({embeds: [
+                    new EmbedBuilder()
+                        .setTitle('You were assigned with premium membership!')
+                        .setDescription(`${interaction.user.username} assigned a premium code key to you in **${interaction.guild.name}**!\nCheck out \`/premium dashboard\` on the server.`)
+                        .addFields({
+                            name: 'Expires',
+                            value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent'
+                        })
+                        .setThumbnail(interaction.guild.iconURL({extension: 'jpg'}))
+                        .setColor(0xd214c7)
+                        .setImage(interaction.guild.bannerURL({size: 1024}))
+                ]});
+
+                await interaction.editReply({embeds: [
+                    new EmbedBuilder()
+                        .setTitle('Successfully assigned membership.')
+                        .setDescription(`Membership was assigned to ${targetMember}`)
+                        .addFields(
+                            {
+                                name: 'Code',
+                                value: `${codeKey}`,
+                                inline: true
+                            },
+                            {
+                                name: 'Uses left',
+                                value: `${usesnumber}`,
+                                inline: true
+                            },
+                            {
+                                name: 'Expires',
+                                value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent',
+                                inline: true
+                            }
+                        )
+                        .setColor(0xd214c7)
+                ], ephemeral: true});
+            break;
             case 'list': // listing premium keys and getting details about them
                 const codeDetails = interaction.options.getString('code') || null;
                 let generatedBy = null;

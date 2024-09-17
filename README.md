@@ -102,6 +102,12 @@ To run this project, you will need to add the following environment variables to
 
 `The text classification LM API: MOD_API_URL`
 
+`Encryption key: ENCRYPT_KEY`
+
+`Initialization vector: IV`
+
+`Encryption algorithm: ALGORITHM`
+
 The environment file should look like this example: [env_vars](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
 
 You can change the name of the variables, but make sure to make the change the code as well!
