@@ -61,7 +61,7 @@ module.exports = {
         .setDescription('Administrative commands for premium membership.')
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommandGroup(subcommandGroup =>
-            subcommandGroup.setName('key') // add edit subcommand
+            subcommandGroup.setName('key') 
                 .setDescription('Commands to administrate premium keys.')
                 .addSubcommand(subcommand => 
                     subcommand.setName('generate')
@@ -101,6 +101,34 @@ module.exports = {
                                 .setRequired(true)
 
                         )
+                )
+                .addSubcommand(subcommand => 
+                    subcommand.setName('edit')
+                        .setDescription('Edit the selected key code.')
+                        .addStringOption(option =>
+                            option.setName('code')
+                                .setDescription('The code of the key.')
+                                .setMinLength(5)
+                                .setMaxLength(10)
+                                .setRequired(true)
+                        )
+                        .addStringOption(option => 
+                            option.setName('duration')
+                                .setDescription('The duration of the premium code. Ex: 3d')
+                                .setMaxLength(3)
+                                .setMinLength(2)
+                        )
+                        .addNumberOption(option =>
+                            option.setName('usesnumber')
+                                .setDescription('The number of uses of the premium code.')
+                                .setMinValue(1)
+                                .setMaxValue(100_000)
+                        )
+                        .addUserOption(option =>
+                            option.setName('dedicateduser')
+                                .setDescription('Not providing one, will remove the existing user if it exists.')
+                        )
+
                 )
                 .addSubcommand(subcommand =>
                     subcommand.setName('list')
@@ -183,6 +211,130 @@ module.exports = {
         await fetchLogChannel;
 
         switch(subcmd) {
+            case 'edit': // updates the selected key
+                let editKey = interaction.options.getString('code');
+                let editDuration = interaction.options.getString('duration') || null;
+                let editUses = interaction.options.getNumber('usesnumber') || null;
+                let editDedicatedUser = interaction.options.getUser('dedicateduser') || null;
+                let userId = null;
+
+                if(editDedicatedUser) userId = editDedicatedUser.id;
+
+                const editEmbedError = new EmbedBuilder().setColor('Red');
+
+                if(!editDuration && !editUses && !editDedicatedUser) {
+                    // this means nothing was edited.
+                    return await interaction.reply({embeds: [
+                        editEmbedError.setTitle('There is nothing to change!')
+                            .setDescription('No changes were provided!')
+                    ], ephemeral: true})
+                }
+
+                let keyExists = false;
+
+                editKey = encryptor(editKey); // checking if the code already exists
+
+                const checkDB = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT code FROM premiumkey WHERE guild=$1 AND code=$2`, [interaction.guild.id, editKey],
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                keyExists = true;
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await checkDB;
+
+                if(!keyExists) {
+                    editEmbedError.setTitle('The code provided doesn\'t exist!')
+                        .setDescription('You must provide an existing code in order to edit the key!')
+                    return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                }
+
+                if(editDuration){ // validation for duration when specified
+                    if(!durationRegex.test(editDuration))
+                    {
+                        editEmbedError.setTitle('Invalid input!')
+                            .setDescription('The duration format is invalid.\n Provide a duration that respects the format: <number: 1-99>< m | h | d | w | y >')
+                        return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                    }
+                    const match = editDuration.match(durationRegex); // breaking the duration format into value and time unit in order to validate the input
+                    if(parseInt(match[1]) < 1 || parseInt(match[1] > 99)) {
+                        editEmbedError.setTitle('Duration value is out of range')
+                            .setDescription('The value must be a number between 0 and 99!')
+                        
+                        return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                    }
+
+                    editDuration = duration_timestamp(editDuration);
+                }
+
+                const updatePremiumKey = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1 AND code=$2`, [interaction.guild.id, editKey], 
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                // update only the changed columns
+                                editDuration = editDuration != null ? editDuration : result.rows[0].expiresat;
+                                editUses = editUses != null ? editUses : result.rows[0].usesnumber;
+                                poolConnection.query(`UPDATE premiumkey SET expiresat=$1, usesnumber=$2, dedicateduser=$3 WHERE guild=$4 AND code=$5`,
+                                    [editDuration, editUses, userId, interaction.guild.id, editKey]
+                                );
+                                userId = userId != null ? userId : result.rows[0].dedicateduser;
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await updatePremiumKey;
+
+                const embedUpdateKeySuccess = new EmbedBuilder()
+                    .setAuthor({
+                        name: `${interaction.user.username} edited a key.`,
+                        iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                    })
+                    .setDescription('A premium key was edited!')
+                    .addFields(
+                        {
+                            name: 'Code:',
+                            value: `${decryptor(editKey)}`
+                        },
+                        {
+                            name: 'Edited by',
+                            value: `${interaction.member}`
+                        },
+                        {
+                            name: 'Expires:',
+                            value: editDuration > 0 ? `<t:${editDuration}:R>` : 'Permanent'
+                        },
+                        {
+                            name: 'Number of uses:',
+                            value: `${editUses}`
+                        },
+                        {
+                            name: 'Dedicated user:',
+                            value: `${editDedicatedUser || 'None'}`
+                        }
+
+                    )
+                    .setColor(0xd214c7)
+                    .setTimestamp()
+                    .setFooter({text: `ID: ${interaction.user.id}`});
+            
+            if(logChannel) {
+                await logChannel.send({embeds: [embedUpdateKeySuccess]});
+            }
+            await interaction.reply({embeds: [embedUpdateKeySuccess], ephemeral: true});
+
+            break;
             case 'assign-key': // assigning a premium key for someone
                                 // the key must exist, have at least 1 uses number and have the target as dedicated user or no dedicated user at all
                 let codeKey = interaction.options.getString('code');
@@ -698,7 +850,7 @@ module.exports = {
                     },
                     {
                         name: 'Expires:',
-                        value: duration ? `<t:${duration}:R>` : 'Permanent'
+                        value: duration > 0 ? `<t:${duration}:R>` : 'Permanent'
                     },
                     {
                         name: 'Number of uses:',
