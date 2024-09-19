@@ -257,6 +257,9 @@ module.exports = {
                                         
                                         // adding the premium role
                                         await interaction.member.roles.add(premiumRole);
+                                        // disabling the redeem button
+                                        redeemKeyButton.setDisabled(true);
+                                        await mainMenuMessage.edit({embeds: [mainMenu], components: [mainMenuActionRow], ephemeral: true});
 
                                         await modalInteraction.editReply({embeds: [
                                             new EmbedBuilder()

@@ -160,11 +160,68 @@ module.exports = {
                                 .setRequired(true)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('revoke')
+                        .setDescription('Revoke premium membership of a member.')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The member to revoke the premium from.')
+                                .setRequired(true)
+                        )
+                        
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('create-customrole')
+                        .setDescription('Create a custom role for the specified premium member.')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The premium member to create the role for.')
+                                .setRequired(true)
+                        )
+                        .addStringOption(option =>
+                            option.setName('role-name')
+                                .setDescription('The name of the role.')
+                                .setMaxLength(100)
+                                .setRequired(true)
+                        )
+                        .addNumberOption(option =>
+                            option.setName('hexcolor')
+                                .setDescription('The hexcode of the role')
+                                .setMinValue(0)
+                                .setRequired(true)
+                        )
+                        .addAttachmentOption(option => 
+                            option.setName('image-icon')
+                                .setDescription('Upload an image as the role icon')
+                        )
+                        .addStringOption(option => 
+                            option.setName('emoji-icon')
+                                .setDescription('Emoji as role icon.')
+    
+                        )
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('display')
+                        .setDescription('Displays all premium members and their codes.')
+
+                )
         )
     ,
     cooldown: 5,
     async execute(interaction, client) {
         const subcmd = interaction.options.getSubcommand();
+        const guildMember = interaction.options.getUser('member');
+
+        if(guildMember)// making sure user is a member of the guild
+        {
+            if(!(await interaction.guild.members.cache.get(guildMember.id)))
+                return await interaction.reply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                        .setTitle('Invalid user')
+                        .setColor('Red')
+                        .setDescription('The user provided is not of this guild!')
+                ]});
+        }
         // fetching and checking if premium system is set up.
         let premiumRoleId = null;
         const fetchRoles = new Promise((resolve, reject) => {
@@ -211,6 +268,292 @@ module.exports = {
         await fetchLogChannel;
 
         switch(subcmd) {
+            case 'create-customrole':
+                // will require multiple awaits so interaction will defer
+                await interaction.deferReply({ephemeral: true});
+
+                let membershipUser = interaction.options.getUser('member');
+                let member = await interaction.guild.members.cache.get(membershipUser.id);
+                let boolMember = false;
+
+                // check membership for user
+                const checkIfMember = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, member.id],
+                        (err, results) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(results.rows.length > 0) {
+                                boolMember = true;
+                            }
+                            resolve(results);
+                        }
+                    )
+                });
+                await checkIfMember;
+
+                if(!boolMember) {
+                    return await interaction.editReply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('User has no membership.')
+                            .setDescription('The user selected doesn\'t have a premium membership!')
+                    ]});
+                }
+
+                let roleName = interaction.options.getString('role-name');
+                let hexColor = interaction.options.getNumber('hexcolor');
+                const imageIcon = interaction.options.getAttachment('image-icon') || null;
+                let emojiIcon = interaction.options.getString('emoji-icon') || null;
+                let roleIcon = null;
+
+                const embed = new EmbedBuilder();
+
+                if(hexColor > 0xffffff)
+                {
+                    return await interaction.editReply({embeds: [embed.setColor('Red').setDescription('The hexcolor is invalid!')], ephemeral: true});
+                }
+
+                // validating the role icon
+                if(imageIcon) {
+                    if(!imageIcon.contentType.includes('image'))
+                        {
+                            embed.setColor('Red').setDescription('The attachment provided is not an image!');
+                            return interaction.editReply({embeds: [embed], ephemeral: true});
+                        }
+        
+                    if(imageIcon.size > 262100) {
+                        // the image is too large
+                        embed.setColor('Red').setDescription('The image is too large! 256KB is the maximum size!');
+                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                    }
+                    roleIcon = imageIcon.url;
+                   
+                } else if(emojiIcon) {
+                    
+                    if(emojiIcon.match(/\d+/))
+                        emojiIcon = emojiIcon.match(/\d+/)[0];
+                    else {
+                        embed.setColor('Red').setDescription('Invalid emoji format!');
+                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                    }
+                    try {
+                        emojiIcon = await interaction.guild.emojis.fetch(emojiIcon);
+                    } catch(e) {
+                        embed.setColor('Red').setDescription('Emoji not found on this server!');
+                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                    }
+                    roleIcon = emojiIcon.imageURL();
+                }
+
+                // after all is validated
+                const newRole = await interaction.guild.roles.create({
+                    name: roleName,
+                    color: hexColor,
+                    position: premiumRole.position,
+                    icon: roleIcon
+                }).catch(err => console.log(err));
+                await member.roles.add(newRole);
+                // updating the db
+                const removeOldRole = new Promise((resolve, reject) => { // if member already has a custom role, delete it
+                    poolConnection.query(`SELECT customrole FROM premiummembers WHERE guild=$1 AND member=$2`, 
+                        [interaction.guild.id, member.id],
+                        async (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                if(result.rows[0].customrole)
+                                    await interaction.guild.roles.delete(result.rows[0].customrole);
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await removeOldRole;
+                await poolConnection.query(`UPDATE premiummembers SET customrole=$1 WHERE guild=$2 AND member=$3`,
+                    [newRole.id, interaction.guild.id, member.id]);
+                
+                //log
+                if(logChannel) {
+                    logChannel.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setAuthor({
+                                name: `${interaction.user.username} created a custom role for a member`,
+                                iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Member:',
+                                    value: `${member}`,
+                                    inline: true
+                                },
+                                {
+                                    name: `Custom role:`,
+                                    value: `${newRole}`,
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${interaction.user.id}`})
+                            .setThumbnail(roleIcon)
+                    ]});
+                }
+
+                //reply
+                await interaction.editReply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setTitle('You created a custom role for a member!')
+                            .addFields(
+                                {
+                                    name: 'Member:',
+                                    value: `${member}`,
+                                    inline: true
+                                },
+                                {
+                                    name: `Custom role:`,
+                                    value: `${newRole}`,
+                                    inline: true
+                                }
+                            )
+                            .setFooter({text: `ID: ${member.id}`})
+                            .setThumbnail(roleIcon)
+                ]});
+
+            break;
+            case 'revoke': // removing a member from premium membership
+                // do note that the user can still re-claim the code
+                const revokeUser = interaction.options.getUser('member');
+                const revokeMember = await interaction.guild.members.cache.get(revokeUser.id);
+                let revokeCode = null; // the code uses must be updated
+
+                // if reason to do anything if the user is not a premium user
+                const checkMembership = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, revokeUser.id],
+                        async (err, results) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(results.rows.length > 0) {
+                                revokeCode = decryptor(results.rows[0].code.toString()); // fetching the code
+                                if(results.rows[0].customrole) {
+                                    // fetch the custom role and remove it
+                                    const customRole = await interaction.guild.roles.fetch(results.rows[0].customrole)
+                                    await customRole.delete();
+                                }
+
+                                await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, revokeUser.id]);
+                            }
+                            resolve(results);
+                        }
+                    )
+                });
+                await checkMembership;
+
+                if(!revokeCode) { // if no code was fetched, then the member doesn't have premium membership
+                    return await interaction.reply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid user!')
+                            .setDescription('The user to have his membership revoked is not a premium member!')
+                    ]});
+                }
+
+                await revokeMember.roles.remove(premiumRole);  // revoking the premium role
+
+                // updating the uses number or deleting the key if it was eedicated
+                const removeKeyIfDedicated = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1 AND code=$2`,
+                        [interaction.guild.id, encryptor(revokeCode)],
+                        async (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                // remove key if the key was dedicated
+                                if(result.rows[0].dedicateduser) {
+                                    await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [interaction.guild.id, result.rows[0].code]);
+                                } else {
+                                    // if not dedicated, simply increment the uses number
+                                    await poolConnection.query(`UPDATE premiumkey SET usesnumber=$1 WHERE guild=$2 AND code=$3`,
+                                        [result.rows[0].usesnumber + 1, interaction.guild.id, result.rows[0].code]
+                                    );
+                                }
+                                
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await removeKeyIfDedicated;
+                
+
+                // logging
+                if(logChannel) {
+                    await logChannel.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setAuthor({
+                                name: `${interaction.user.username} revoked a membership`,
+                                iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Target:',
+                                    value: `${revokeMember}`,
+                                    inline: true
+                                    
+                                },
+                                {
+                                    name: 'Code:',
+                                    value: `||${revokeCode}||`,
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${interaction.user.id}`})
+                    ]});
+                }
+
+                // announce the member of his revoked membership
+                await revokeUser.send({embeds: [
+                    new EmbedBuilder()
+                        .setColor('Red')
+                        .setAuthor({
+                            name: `${interaction.user.username} revoked your premium membership`,
+                            iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                        })
+                        .setDescription(`You are no longer a premium member of **${interaction.guild.name}**, you may speak to their staff to find out why.`)
+                ]});
+                // reply to the interaction
+                await interaction.reply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('You revoked a membership')
+                            .addFields(
+                                {
+                                    name: 'Target:',
+                                    value: `${revokeMember}`,
+                                    inline: true
+                                    
+                                },
+                                {
+                                    name: 'Code:',
+                                    value: `||${revokeCode}||`,
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${revokeUser.id}`})
+                ]});
+
+            break;
             case 'edit': // updates the selected key
                 let editKey = interaction.options.getString('code');
                 let editDuration = interaction.options.getString('duration') || null;
@@ -218,7 +561,10 @@ module.exports = {
                 let editDedicatedUser = interaction.options.getUser('dedicateduser') || null;
                 let userId = null;
 
-                if(editDedicatedUser) userId = editDedicatedUser.id;
+                if(editDedicatedUser) {
+                    userId = editDedicatedUser.id;
+                    editUses = 1; // dedicated keys can have only one use
+                }
 
                 const editEmbedError = new EmbedBuilder().setColor('Red');
 
@@ -305,7 +651,7 @@ module.exports = {
                     .addFields(
                         {
                             name: 'Code:',
-                            value: `${decryptor(editKey)}`
+                            value: `||${decryptor(editKey)}||`
                         },
                         {
                             name: 'Edited by',
@@ -440,7 +786,7 @@ module.exports = {
                         .addFields(
                             {
                                 name: 'Code',
-                                value: `${codeKey}`,
+                                value: `||${codeKey}||`,
                                 inline: true
                             },
                             {
@@ -478,7 +824,7 @@ module.exports = {
                         .addFields(
                             {
                                 name: 'Code',
-                                value: `${codeKey}`,
+                                value: `||${codeKey}||`,
                                 inline: true
                             },
                             {
@@ -494,6 +840,55 @@ module.exports = {
                         )
                         .setColor(0xd214c7)
                 ], ephemeral: true});
+            break;
+            case 'display':
+                let displayEmbed = new EmbedBuilder().setTitle('Display membership list.')
+                let membersArray = [];
+                await interaction.deferReply({ephemeral: true});
+                // fetching the member ids and codes
+                const fetchMembersData = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT member, code FROM premiummembers WHERE guild=$1`, [interaction.guild.id], 
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                result.rows.forEach(async (row) => {
+                                    let fetchedMember = await interaction.guild.members.cache.get(row.member);
+                                    membersArray.push({
+                                        member: fetchedMember ? fetchedMember.user.username : `User[${row.member}]`,
+                                        code: decryptor(row.code.toString())
+                                    });
+                                });
+                            }
+                            else
+                                displayEmbed.setDescription('There no membership active currently.');
+                            resolve(result);
+                        }
+                    )
+                });
+                await fetchMembersData;
+
+                if(membersArray.length == 0) {
+                    return await interaction.editReply({embeds: [displayEmbed], ephemeral: true});
+                }
+
+                let memberCount = 0;
+                for(let m of membersArray) {
+                    ++memberCount;
+                    displayEmbed.addFields(
+                        {
+                            name: `[${memberCount}] - ${m.member}`,
+                            value: `Code: \`${m.code}\``,
+                        }
+                    );
+                    
+                    if(memberCount % 25 == 0 || memberCount == membersArray.length) {
+                        await interaction.followUp({embeds: [displayEmbed], ephemeral: true});
+                        displayEmbed = new EmbedBuilder();
+                    }
+                }
             break;
             case 'list': // listing premium keys and getting details about them
                 const codeDetails = interaction.options.getString('code') || null;
@@ -724,7 +1119,7 @@ module.exports = {
                             .addFields(
                                 {
                                     name: 'Code:',
-                                    value: `${interaction.options.getString('code')}`
+                                    value: `||${interaction.options.getString('code')}||`
                                 }
                             )
                             .setTimestamp()
@@ -842,7 +1237,7 @@ module.exports = {
                 .addFields(
                     {
                         name: 'Code:',
-                        value: `${decryptor(code)}`
+                        value: `||${decryptor(code)}||`
                     },
                     {
                         name: 'Generated by',

@@ -37,6 +37,11 @@ module.exports = {
                             .setDescription('Emoji as role icon.')
 
                     )
+                    .addNumberOption(option =>
+                        option.setName('position')
+                            .setDescription('The position of this role')
+                            .setMinValue(1)
+                )
             )
         .addSubcommand(subcommand =>
                 subcommand.setName('delete')
@@ -74,7 +79,16 @@ module.exports = {
                         option.setName('position')
                             .setDescription('The position of this role')
                             .setMinValue(1)
-                    )
+                )
+                .addAttachmentOption(option => 
+                    option.setName('image-icon')
+                        .setDescription('Upload an image as the role icon')
+                )
+                .addStringOption(option => 
+                    option.setName('emoji-icon')
+                        .setDescription('Emoji as role icon.')
+
+                )
         )
         .addSubcommand(subcommand =>
                 subcommand.setName('assign')
@@ -119,12 +133,21 @@ module.exports = {
             const role = options.getRole('role');
             const reason = options.getString('reason') || "No reason given.";
             const user = options.getUser('member');
-            let position = options.getNumber('position');
+            if(user)// making sure user is a member of the guild
+            {
+                if(!(await interaction.guild.members.cache.get(user.id)))
+                    return await interaction.reply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setTitle('Invalid user')
+                            .setColor('Red')
+                            .setDescription('The user provided is not of this guild!')
+                    ]});
+            }
+            let position = options.getNumber('position') || null;
             const imageIcon = options.getAttachment('image-icon') || null;
             let emojiIcon = options.getString('emoji-icon') || null;
             let roleIcon = null;
             const embed = new EmbedBuilder();
-
             if(imageIcon) {
                 if(!imageIcon.contentType.includes('image'))
                     {
@@ -147,11 +170,6 @@ module.exports = {
                     embed.setColor('Red').setDescription('Invalid emoji format!');
                     return interaction.reply({embeds: [embed], ephemeral: true});
                 }
-                if(emojiIcon.length != 19 && emojiIcon.length != 1)
-                {
-                    embed.setColor('Red').setDescription('Invalid emoji format!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
-                }
                 try {
                     emojiIcon = await interaction.guild.emojis.fetch(emojiIcon);
                 } catch(e) {
@@ -160,6 +178,7 @@ module.exports = {
                 }
                 roleIcon = emojiIcon.imageURL();
             }
+            
             if(position)
                 if(position >= interaction.member.roles.highest.position && guild.ownerId !== interaction.member.id)
                 {
@@ -218,10 +237,11 @@ module.exports = {
                         name: name,
                         color: color,
                         permissions: [],
-                        position: 1,
+                        position: position,
                         icon: roleIcon
                     }).catch(err => console.log(err));
-                    embed.setColor(color).setTitle('Role Created').setDescription(`**${newRole}** role has been created!`);
+                    embed.setColor(color).setTitle('Role Created').setDescription(`**${newRole}** role has been created!`)
+                        .setThumbnail(roleIcon);
                     break;
                 case "delete":
                     embed.setColor('Green').setTitle('Role Removed').setDescription(`**${role.name}** has been removed!`);
@@ -240,17 +260,21 @@ module.exports = {
                         .setDescription(`**${role.name}** has been removed from **${member.user.username}**!`);
                     break;
                 case "edit":
+                    if(!roleIcon)
+                        roleIcon = role.iconURL();
                     if(!position)
                         position = role.position;
                     if(!color)
                         color = role.color;
                     if(!name)
                         name = role.name;
-                    embed.setColor(color).setTitle('Role Edited').setDescription(`**${role.name}** has been edited with the input provided now.`);
+                    embed.setColor(color).setTitle('Role Edited').setDescription(`**${role.name}** has been edited with the input provided now.`)
+                        .setThumbnail(roleIcon);
                     await guild.roles.edit(role, {
                         name: name,
                         color: color,
-                        position: position
+                        position: position,
+                        icon: roleIcon
                     });
                     
                     break;

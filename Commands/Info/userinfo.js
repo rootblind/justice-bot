@@ -27,6 +27,16 @@ module.exports = {
                 
             }
         const user = interaction.options.getUser('user') || interaction.user; // if no user is provided, the command is self targeted
+        if(user)// making sure user is a member of the guild
+        {
+            if(!(await interaction.guild.members.cache.get(user.id)))
+                return await interaction.reply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                        .setTitle('Invalid user')
+                        .setColor('Red')
+                        .setDescription('The user provided is not of this guild!')
+                ]});
+        }
         const member = await interaction.guild.members.cache.get(user.id); // fetching the guild member
         let highestRole;
         const boostingSince = member.premiumSinceTimestamp || 'Not boosing';
