@@ -8,11 +8,9 @@ const { config } = require('dotenv');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 const axios = require('axios');
+const cron = require('node-cron');
 
 config();
-const commandComparing = require('../../utility_modules/commandComparing');
-const getApplicationCommands = require('../../utility_modules/getApplicationCommands');
-const getLocalCommands = require('../../utility_modules/getLocalCommands');
 require('colors');
 
 function randNum(maxNumber) {
@@ -48,28 +46,19 @@ async function statusSetter (client, presence, actList) {
     });
 }
 
-async function checkModApi(api) { // checking the connection to the specified API endpoint
+async function checkAPI(api) { // checking the connection to the specified API endpoint
     try {
 
         const response = await axios.get(api);
         
         if (response.status === 200) {
-            console.log('Successfully connected to the API: ' + process.env.MOD_API_URL);
+            return true;
         } else {
             console.log(`Received unexpected status code: ${response.status}`);
+            return false;
         }
     } catch (error) {
-        if (error.response) {
-            // The request was made and the server responded with a status code
-            // that falls out of the range of 2xx
-            console.log('Error response from API:', error.response.status);
-        } else if (error.request) {
-            // The request was made but no response was received
-            console.log('No response received from API.');
-        } else {
-            // Something happened in setting up the request that triggered an Error
-            console.log('Error setting up request:', error.message);
-        }
+        return false;
     }
 }
 
@@ -350,7 +339,8 @@ module.exports = {
                     member BIGINT NOT NULL,
                     guild BIGINT NOT NULL,
                     code BYTEA,
-                    customrole BIGINT
+                    customrole BIGINT,
+                    from_boosting BOOLEAN DEFAULT FALSE
                 )`, (err, result) => {
                     if(err) {
                         console.error(err);
@@ -388,7 +378,61 @@ module.exports = {
         const avatarDir = path.join(__dirname, '../../assets/avatar');
         directoryCheck(avatarDir);
 
-        await checkModApi(process.env.MOD_API_URL); // the call of the function
+        // checking connection status to the MOD API
+        if(await checkAPI(process.env.MOD_API_URL)) {
+            console.log('Successfully connected to the Moderation API: ', process.env.MOD_API_URL);
+        }
+
+        // This section will manage cron schedulers
+
+        const reportAPIDowntime = cron.schedule('0 * * * *', async () => {
+            if(!(await checkAPI(process.env.MOD_API_URL))) {
+                console.log(`Connection to ${process.env.MOD_API_URL} was lost - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`)
+            }
+        })
+        
+        // checking every 5 minutes therefore there can be a delay between 0 and 5 minutes
+        const expirationPremium_schedule = cron.schedule('*/5 * * * *', async () => { 
+            // managing expiration of premium key codes
+
+            // fetching premium roles from db
+            const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
+
+            // firstly, checking the database and making the neccesary changes on the discord server before
+            // updating the db
+            let currentTimestamp = parseInt(Date.now() / 1000); // fetching current timestamp in seconds
+            const {rows : expiredMembers} = await poolConnection.query(`SELECT pm.guild, pm.member, customrole FROM premiummembers pm
+                JOIN premiumkey pc ON pm.code = pc.code AND pm.guild = pc. guild
+                WHERE pc.expiresat <=$1 AND pc.expiresat > 0`, [currentTimestamp]);
+            
+            // removing premium and custom roles from expired memberships
+            for(let user of expiredMembers) {
+                const fetchGuild = await client.guilds.fetch(user.guild); // fetching the guild
+                let guildMember;
+                try{
+                    guildMember = await fetchGuild.members.fetch(user.member); // fetching the member
+                }catch(e) { continue; }
+                
+                if(!guildMember) continue; // if the user is no longer a member of the guild, skip the rest of the steps
+                // fetch the premium role of the guild
+                const premiumRoleObj = premiumRolesData.find(role => role.guild === user.guild) // the db object
+                const premiumRole = await fetchGuild.roles.fetch(premiumRoleObj.role); // the discord api object
+                guildMember.roles.remove(premiumRole); // removing the premium role from the user.
+                // removing the custom role if it exists
+                if(user.customrole)
+                {
+                    let customRole = await fetchGuild.roles.fetch(user.customrole);
+                    customRole.delete();
+                }
+            }
+
+            // clearing the rows
+            await poolConnection.query(`DELETE FROM premiummembers
+                WHERE code IN (SELECT code FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0)`, [currentTimestamp]);
+            await poolConnection.query(`DELETE FROM premiumkey WHERE expiresat <= $1`, [currentTimestamp]);
+            
+        });
+
     }
 
     

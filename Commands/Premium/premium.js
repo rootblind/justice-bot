@@ -324,6 +324,7 @@ module.exports = {
                 let createdAt = null;
                 let expiresAt = null;
                 let customRole = null;
+                let from_boosting = false;
                 const premiumStatusPromise = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, interaction.member.id],
                         (err, result) => {
@@ -334,6 +335,7 @@ module.exports = {
                             if(result.rows.length > 0) {
                                 code = decryptor(result.rows[0].code.toString());
                                 customRole = result.rows[0].customrole;
+                                from_boosting = result.rows[0].from_boosting;
    
                             }
                             resolve(result);
@@ -403,6 +405,7 @@ module.exports = {
                             value: `${customRole.hexColor}`,
                             inline: true
                         },
+                        
                     )
                 }
 
@@ -451,6 +454,10 @@ module.exports = {
                         {
                             name: 'Custom role:',
                             value: `${customRole || 'None'}`
+                        },
+                        {
+                            name: 'From boosting:',
+                            value: from_boosting ? 'True' : 'False'
                         }
 
                     );
@@ -912,8 +919,10 @@ module.exports = {
                                     .setFooter({text: `ID: ${interaction.user.id}`});
                                 await logChannel.send({embeds: [deleteRoleLog]});
                             }
-                            
-                            await customRole.delete();
+                            if(customRole.members.size - 1 <= 0)
+                                await customRole.delete();
+                            else
+                                await interaction.member.roles.remove(customRole);
                             
                             roleMenuEmbed.setThumbnail(null);
                             

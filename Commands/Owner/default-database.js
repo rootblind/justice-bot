@@ -276,7 +276,8 @@ module.exports = {
                 member BIGINT NOT NULL,
                 guild BIGINT NOT NULL,
                 code BYTEA,
-                customrole BIGINT
+                customrole BIGINT,
+                from_boosting BOOLEAN DEFAULT FALSE
             )`, (err, result) => {
                 if(err) {
                     console.error(err);

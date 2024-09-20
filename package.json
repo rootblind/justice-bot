@@ -18,6 +18,7 @@
     "dotenv": "^16.3.1",
     "fs": "^0.0.1-security",
     "graceful-fs": "^4.2.11",
+    "node-cron": "^3.0.3",
     "nodemon": "^3.0.1",
     "pg": "^8.11.3"
   }

@@ -159,6 +159,14 @@ module.exports = {
                                 .setMaxLength(10)
                                 .setRequired(true)
                         )
+                        .addBooleanOption(option =>
+                            option.setName('from-boosting')
+                                .setDescription('If the key is assigned for boosting the server.')
+                        )
+                        .addBooleanOption(option =>
+                            option.setName('send-dm')
+                                .setDescription('Toggle if member should be announced. Will default to true.')
+                        )
                 )
                 .addSubcommand(subcommand =>
                     subcommand.setName('revoke')
@@ -167,6 +175,10 @@ module.exports = {
                             option.setName('member')
                                 .setDescription('The member to revoke the premium from.')
                                 .setRequired(true)
+                        )
+                        .addBooleanOption(option =>
+                            option.setName('send-dm')
+                                .setDescription('Toggle if member should be announced. Will default to true.')
                         )
                         
                 )
@@ -201,16 +213,49 @@ module.exports = {
                         )
                 )
                 .addSubcommand(subcommand =>
+                    subcommand.setName('set-customrole')
+                        .setDescription('Set the custom role of a member from existing ones.')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The targeted member.')
+                                .setRequired(true)
+                        )
+                        .addRoleOption(option =>
+                            option.setName('role')
+                                .setDescription('The role to be set.')
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand(subcommand =>
                     subcommand.setName('display')
                         .setDescription('Displays all premium members and their codes.')
 
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('toggle-booster')
+                        .setDescription('Toggle if the membership should be considered from boosting or not.')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The target member.')
+                                .setRequired(true)
+                        )
+                        .addBooleanOption(option =>
+                            option.setName('from-boosting')
+                                .setDescription('True if membership is from boosting the server.')
+                                .setRequired(true)
+                        )
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName('migrate')
+                .setDescription('Registers membership to every member that has the premium role. Also fetches their custom role.')
         )
     ,
     cooldown: 5,
     async execute(interaction, client) {
         const subcmd = interaction.options.getSubcommand();
         const guildMember = interaction.options.getUser('member');
+        const sendDmBool = interaction.options.getBoolean('send-dm') || true;
 
         if(guildMember)// making sure user is a member of the guild
         {
@@ -268,6 +313,109 @@ module.exports = {
         await fetchLogChannel;
 
         switch(subcmd) {
+            case 'migrate':
+                // every member that has the premium role and is not registered in the premiummebers table
+                // will have a dedicated key generated and automatically redeemed for them that lasts 30 days.
+                // also if a member has a role positioned between the premium and nitro booster role, it means that role is a custom role
+                // and must be assigned to the customrole column from premiummembers
+                await interaction.deferReply({ephemeral: true});
+                // array of all members that have the defined premium role
+                const arrayMembers = await interaction.guild.members.cache.filter(member => member.roles.cache.has(premiumRoleId));
+
+                // for each member, the following lines must be executed
+                arrayMembers.forEach(async (member) => {
+                    // generate a dedicated unique key
+                    let code;
+                    const generateCode = new Promise((resolve, reject) => {
+                        poolConnection.query(`SELECT code FROM premiumkey WHERE guild=$1`, [interaction.guild.id],
+                            (err, result) => {
+                                if(err) {
+                                    console.error(err);
+                                    reject(err);
+                                }
+                                code = encryptor(random_code_generation());
+                                if(result.rows.length > 0) {
+                                    const codes = result.rows.map(row => row.code);
+                                    // keep generating codes until an unique one is found
+                                    while(codes.includes(code))
+                                        code = encryptor(random_code_generation());
+                                }
+                                resolve(result);
+                            }
+                        )
+                    });
+                    await generateCode;
+
+                    // fetching the custom role if it exists
+                    const fetchCustomRole = await member.roles
+                        .cache
+                        .find(role => role.position > member.guild.roles.premiumSubscriberRole.position
+                            && role.position < premiumRole.position
+                        );
+                    
+                    let isBooster = false;
+                    if(member.roles.cache.has(member.guild.roles.premiumSubscriberRole.id))
+                        isBooster = true; // for from_boosting column
+
+                    //registering the key
+                    await poolConnection.query(`INSERT INTO premiumkey(code, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                    [encryptor(code), interaction.guild.id, interaction.user.id, parseInt(Date.now() / 1000)], 0, 0, member.id);
+                    //registering membership
+                    await poolConnection.query(`INSERT INTO premiummembers (member, guild, code, customrole, from_boosting)
+                        VALUES ($1, $2, $3, $4, $5)
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM premiummembers WHERE guild = $2 AND member = $1
+                        )`, [member.id, interaction.guild.id, encryptor(code), fetchCustomRole.id, isBooster]);
+                });
+
+                const{rows : memberships} = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1`, [interaction.guild.id]);
+                const {rows : keyss} = await poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1`, [interaction.guild.id]);
+                //logging
+                if(logChannel)
+                {
+                    logChannel.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setAuthor({
+                                name: `${interaction.user.username} generated a migration for premium`,
+                                iconURL: interaction.user.displayAvatarURL({extension: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Total premium users',
+                                    value: `${memberships.length}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Total active keys',
+                                    value: `${keyss.length}`,
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${interaction.user.id}`})
+                    ]})
+                }
+
+                await interaction.editReply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setTitle('Members with premium role migrated successfully')
+                            .addFields(
+                                {
+                                    name: 'Total premium users',
+                                    value: `${memberships.length}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Total active keys',
+                                    value: `${keyss.length}`,
+                                    inline: true
+                                }
+                            )
+                    ]});
+            break;
             case 'create-customrole':
                 // will require multiple awaits so interaction will defer
                 await interaction.deferReply({ephemeral: true});
@@ -366,7 +514,13 @@ module.exports = {
                             }
                             if(result.rows.length > 0) {
                                 if(result.rows[0].customrole)
-                                    await interaction.guild.roles.delete(result.rows[0].customrole);
+                                {// if there are more members with this role, then only remove it from the member, else delete it
+                                    const fetchCustomrole = await interaction.guild.roles.fetch(result.rows[0].customrole);
+                                    if(fetchCustomrole.members.size - 1 <= 0)
+                                        await interaction.guild.roles.delete(result.rows[0].customrole);
+                                    else
+                                        await member.roles.remove(fetchCustomrole);
+                                }
                             }
                             resolve(result);
                         }
@@ -444,7 +598,10 @@ module.exports = {
                                 if(results.rows[0].customrole) {
                                     // fetch the custom role and remove it
                                     const customRole = await interaction.guild.roles.fetch(results.rows[0].customrole)
-                                    await customRole.delete();
+                                    if(customRole.members.size - 1 <= 0)
+                                        await customRole.delete();
+                                    else
+                                        await revokeMember.roles.remove(customRole);
                                 }
 
                                 await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, revokeUser.id]);
@@ -466,7 +623,7 @@ module.exports = {
 
                 await revokeMember.roles.remove(premiumRole);  // revoking the premium role
 
-                // updating the uses number or deleting the key if it was eedicated
+                // updating the uses number or deleting the key if it was dedicated
                 const removeKeyIfDedicated = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1 AND code=$2`,
                         [interaction.guild.id, encryptor(revokeCode)],
@@ -522,15 +679,17 @@ module.exports = {
                 }
 
                 // announce the member of his revoked membership
-                await revokeUser.send({embeds: [
-                    new EmbedBuilder()
-                        .setColor('Red')
-                        .setAuthor({
-                            name: `${interaction.user.username} revoked your premium membership`,
-                            iconURL: interaction.member.displayAvatarURL({extension: 'png'})
-                        })
-                        .setDescription(`You are no longer a premium member of **${interaction.guild.name}**, you may speak to their staff to find out why.`)
-                ]});
+                if(sendDmBool) {
+                    await revokeUser.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setAuthor({
+                                name: `${interaction.user.username} revoked your premium membership`,
+                                iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                            })
+                            .setDescription(`You are no longer a premium member of **${interaction.guild.name}**, you may speak to their staff to find out why.`)
+                    ]});
+                }
                 // reply to the interaction
                 await interaction.reply({ephemeral: true, embeds: [
                     new EmbedBuilder()
@@ -685,7 +844,8 @@ module.exports = {
                                 // the key must exist, have at least 1 uses number and have the target as dedicated user or no dedicated user at all
                 let codeKey = interaction.options.getString('code');
                 const targetUser = interaction.options.getUser('member');
-                const targetMember = await interaction.guild.members.cache.get(targetUser.id)
+                const targetMember = await interaction.guild.members.cache.get(targetUser.id);
+                const fromboosting = interaction.options.getBoolean('from-boosting') || false;
 
                 if(targetUser.bot)
                     return await interaction.reply({embeds: [
@@ -767,8 +927,8 @@ module.exports = {
 
                 // updating database
                 // inserting the new membership
-                await poolConnection.query(`INSERT INTO premiummembers(member, guild, code)
-                    VALUES($1, $2, $3)`, [targetMember.id, interaction.guild.id, encryptor(codeKey)]);
+                await poolConnection.query(`INSERT INTO premiummembers(member, guild, code, from_boosting)
+                    VALUES($1, $2, $3, $4)`, [targetMember.id, interaction.guild.id, encryptor(codeKey), fromboosting]);
                 // decrementing the uses number
                 await poolConnection.query(`UPDATE premiumkey SET usesnumber=$1 WHERE guild=$2 AND code=$3`, 
                     [usesnumber, interaction.guild.id, encryptor(codeKey)]
@@ -798,25 +958,38 @@ module.exports = {
                                 name: 'Expires',
                                 value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent',
                                 inline: true
+                            },
+                            {
+                                name: 'From boosting',
+                                value: fromboosting ? 'True' : 'False',
+                                inline: true
                             }
                         )
                     await logChannel.send({embeds: [logAssignEmbed]});
                 }
 
                 // announcing the member that he got membership
-                await targetUser.send({embeds: [
-                    new EmbedBuilder()
-                        .setTitle('You were assigned with premium membership!')
-                        .setDescription(`${interaction.user.username} assigned a premium code key to you in **${interaction.guild.name}**!\nCheck out \`/premium dashboard\` on the server.`)
-                        .addFields({
-                            name: 'Expires',
-                            value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent'
-                        })
-                        .setThumbnail(interaction.guild.iconURL({extension: 'jpg'}))
-                        .setColor(0xd214c7)
-                        .setImage(interaction.guild.bannerURL({size: 1024}))
-                ]});
-
+                if(sendDmBool) {
+                    await targetUser.send({embeds: [
+                        new EmbedBuilder()
+                            .setTitle('You were assigned with premium membership!')
+                            .setDescription(`**${interaction.user.username}** assigned a premium code key to you in **${interaction.guild.name}**!\n\nCheck out \`/premium dashboard\` on the server.\n\n If \`from boosting\` is true, the membership will be revoked once you stop boosting the server!`)
+                            .addFields(
+                                {
+                                    name: 'Expires',
+                                    value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent'
+                                },
+                                {
+                                    name: 'From boosting',
+                                    value: fromboosting ? 'True' : 'False',
+                                    inline: true
+                                }
+                            )
+                            .setThumbnail(interaction.guild.iconURL({extension: 'jpg'}))
+                            .setColor(0xd214c7)
+                            .setImage(interaction.guild.bannerURL({size: 1024}))
+                    ]});
+                }
                 await interaction.editReply({embeds: [
                     new EmbedBuilder()
                         .setTitle('Successfully assigned membership.')
@@ -835,6 +1008,11 @@ module.exports = {
                             {
                                 name: 'Expires',
                                 value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent',
+                                inline: true
+                            },
+                            {
+                                name: 'From boosting',
+                                value: fromboosting ? 'True' : 'False',
                                 inline: true
                             }
                         )
@@ -863,7 +1041,7 @@ module.exports = {
                                 });
                             }
                             else
-                                displayEmbed.setDescription('There no membership active currently.');
+                                displayEmbed.setDescription('There is no membership active currently.');
                             resolve(result);
                         }
                     )
@@ -1007,6 +1185,10 @@ module.exports = {
 
                     // if the array's length is greater than 0 it means the primarykey table is not empty
                     let keyCount = 0;
+
+                    if(keysArray.length == 0) // if the list is empty
+                        return await interaction.followUp({embeds: [listEmbed], ephemeral: true});
+
                     for(let key of keysArray) {
                         ++keyCount;
                         listEmbed.addFields(
@@ -1073,18 +1255,21 @@ module.exports = {
                             if(result.rows.length > 0) {
                                 membershipsRemoved = result.rowCount; // considering how many users are affected
                                 // fetching each member to remove the premium role
-                                const premiumMembers = result.rows.map(row => row.member);
-                                premiumMembers.forEach(async (member) => {
-                                    const guildMember = await interaction.guild.members.cache.get(member);
+                                result.rows.forEach(async(row) => {
+                                    const guildMember = await interaction.guild.members.cache.get(row.member);
                                     await guildMember.roles.remove(premiumRole);
-                                });
-                                // once all affected users got their premium role removed, their custom roles must be deleted
-                                const customRoles = result.rows.map(row => row.customrole).filter(role => role !== null); // the array of custom roles that exist
-                                customRoles.forEach(async (customrole) => {
-                                    const customRole = await interaction.guild.roles.fetch(customrole);
-                                    await customRole.delete();
-                                });
+                                    // once all affected users got their premium role removed, their custom roles must be deleted
+                                    if(row.customrole) {
+                                        const customRole = await interaction.guild.roles.fetch(row.customrole);
+                                        if(customRole.members.size - 1 <= 0) // deleting the role if no other member has it or just remove it from the member
+                                            await customRole.delete();
+                                        else
+                                            await guildMember.roles.remove(customRole);
+                                    }
+                                
 
+                                });
+                                
                                 // clear all rows that contain the key
                                 await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND code=$2`, [interaction.guild.id, removeCode]);
                             }
@@ -1266,6 +1451,182 @@ module.exports = {
             }
             await interaction.reply({embeds: [embedNewKeySuccess], ephemeral: true});
                 
+            break;
+            case 'set-customrole':
+                const setUser = interaction.options.getUser('member');
+                const setMember = await interaction.guild.members.fetch(setUser.id);
+                const role = interaction.options.getRole('role');
+                if(setUser.bot)
+                    return await interaction.reply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid user')
+                            .setDescription('Bots can not recieve membership.')
+                ], ephemeral: true});
+                
+                const { rows } = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, setUser.id]);
+                
+                if(rows.length == 0) {
+                    return await interaction.reply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid user')
+                            .setDescription('User lacks premium membership.')
+                    ], ephemeral: true});
+                }
+
+                if(role.position > premiumRole.position ||  // validate role
+                    role.position < interaction.guild.roles.premiumSubscriberRole.position) {
+                            return await interaction.reply({embeds: [
+                                new EmbedBuilder()
+                                    .setColor('Red')
+                                    .setTitle('Role is not valid')
+                                    .setDescription('The role selected is not valid for such action!\nSelect a role that is between the Nitro booster role and the premium role.')
+                            ], ephemeral: true});
+                    }
+                await poolConnection.query(`UPDATE premiummembers SET customrole=$1 WHERE guild=$2 AND member=$3`, [role.id, interaction.guild.id, setUser.id]);
+                
+                //logging
+                if(logChannel) {
+                    await logChannel.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setAuthor({
+                                name: `${interaction.user.id} set a custom role for a member`,
+                                iconURL: interaction.user.displayAvatarURL({extension: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Target member',
+                                    value: `${setMember}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Target role',
+                                    value: `${role}`,
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${interaction.user.id}`})
+                    ]});
+                }
+                
+                await setMember.roles.add(role);
+                await interaction.reply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                        .setColor(0xd214c7)
+                        .setTitle('Successfully set a custom role')
+                        .addFields(
+                            {
+                                name: 'Target member',
+                                value: `${setMember}`,
+                                inline: true
+                            },
+                            {
+                                name: 'Target role',
+                                value: `${role}`,
+                                inline: true
+                            }
+                        )
+                ]});
+            break;
+            case 'toggle-booster':
+                const boosterUser = interaction.options.getUser('member');
+                const boosterMember = await interaction.guild.members.fetch(boosterUser.id);
+                const from_boosting = interaction.options.getBoolean('from-boosting');
+
+                if(boosterUser.bot)
+                    return await interaction.reply({embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid user')
+                            .setDescription('Bots can not recieve membership.')
+                ], ephemeral: true});
+
+                if(!boosterMember.roles.cache.has(interaction.guild.roles.premiumSubscriberRole.id)) {
+                    return await interaction.reply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid member')
+                            .setDescription('You can not set a membership `from boosting` parameter if the member is not boosting the server')
+                    ]});
+                }
+
+                let hasPremium = false; // if member already has premium, he is not eligible for assignment of premium
+
+                const checkHasPremium = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT member FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, boosterUser.id], 
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            if(result.rows.length > 0) {
+                                hasPremium = true;
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await checkHasPremium;
+
+                if(!hasPremium) {
+                    return await interaction.reply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Member has no premium membership')
+                            .setDescription('You can not change a membership that does not exist!')
+                    ]});
+                }
+
+                await poolConnection.query(`UPDATE premiummembers SET from_boosting=$1 WHERE guild=$2 AND member=$3`, 
+                    [from_boosting, interaction.guild.id, boosterUser.id]);
+                
+                //logging
+                if(logChannel) {
+                    await logChannel.send({embeds: [
+                        new EmbedBuilder()
+                        .setColor(0xd214c7)
+                            .setAuthor({
+                                name: `${interaction.user.username} set premium membership type`,
+                                iconURL: interaction.member.displayAvatarURL({extension: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Member',
+                                    value: `${boosterMember}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'From boosting',
+                                    value: from_boosting ? 'True' : 'False',
+                                    inline: true
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${interaction.user.id}`})
+                    ]})
+                }
+
+                // interaction reply
+                await interaction.reply({ephemeral: true, embeds: [
+                    new EmbedBuilder()
+                        .setTitle('Membership changed')
+                        .setColor(0xd214c7)
+                        .addFields(
+                            {
+                                name: 'Member',
+                                value: `${boosterMember}`,
+                                inline: true
+                            },
+                            {
+                                name: 'From boosting',
+                                value: from_boosting ? 'True' : 'False',
+                                inline: true
+                            }
+                        )
+                ]})
             break;
         }
     }
