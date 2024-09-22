@@ -133,7 +133,7 @@ async function text_classification(api, text) {
             }) 
             .catch(err => { console.error(err); })
         
-        return classifier;
+        return {labels: classifier, text: filteredText}; // returning the model's labels and the filtered text that was analyzed by the model
     }
     else return false;
 
@@ -162,7 +162,65 @@ function decryptor(data) {
     return decrypted;
 }
 
+const csvWriter = require('csv-write-stream');
+const fs = require('graceful-fs');
+const csvParse = require('csv-parser');
+
+
+function csvRead(path) {
+    return new Promise((resolve, reject) => {
+        const data = [];
+        fs.createReadStream(path)
+            .pipe(csvParse({delimiter: ',', from_line: 2}))
+            .on('data', (row) => {
+                data.push(row);
+            })
+            .on('error', (err) => {
+                console.error(err);
+                reject(err);
+            })
+            .on('end', () => {
+                resolve(data);
+            });
+    });
+}
+
+function csvAppend(data, flags, path) {
+    const writer = csvWriter({sendHeaders: false});
+    const stream = fs.createWriteStream(path, {flags: 'a'});
+    writer.pipe(stream);
+    writer.write({
+       Message: data,
+       OK: flags['OK'],
+       Insult: flags['Insult'],
+       Violence: flags['Violence'],
+       Sexual: flags['Sexual'],
+       Hateful: flags['Hateful'],
+       Flirt: flags['Flirt'],
+       Spam: flags['Spam'],
+       Aggro: flags['Aggro']
+    });
+    writer.end();
+}
+
+//returns if the file exists or not
+async function isFileOk(path) {
+    let fileExists = true;
+
+    try{
+        await fs.promises.access(path, fs.constants.R_OK);
+    } catch(err) {
+        fileExists = false;
+
+    }
+
+    return fileExists
+}
+
 module.exports = {
+    isFileOk,
+    csvRead,
+    csvAppend,
     decryptor,
     encryptor,
     text_classification,

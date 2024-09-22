@@ -314,8 +314,8 @@ module.exports = {
                         }
                     });
 
-                collectorMenu.on('end', () => {
-                    mainMenuMessage.delete();
+                collectorMenu.on('end', async () => {
+                    await mainMenuMessage.delete();
                 });
             break;
             case 'dashboard': // premium users can access their features from the dashboard
@@ -648,9 +648,10 @@ module.exports = {
                                     // using the moderation API to check if the role name violates the rules
                                     if(checkModApi(mod_api)) { // checks connection
                                         const response = await text_classification(mod_api, roleName);
-                                        if(response && !response.includes('OK')) {
-                                            return modalInteraction.reply({content: 'The role name provided is not appropiated! If you think this is a mistake, contact a staff member.', ephemeral: true});
-                                        }
+                                        if(response)
+                                            if(!response['labels'].includes('OK')) {
+                                                return modalInteraction.reply({content: 'The role name provided is not appropiated! If you think this is a mistake, contact a staff member.', ephemeral: true});
+                                            }
                                     }
                                     customRole = await modalInteraction.guild.roles.create({
                                         name: roleName,
@@ -724,9 +725,10 @@ module.exports = {
                                     // using the moderation API to check if the role name violates the rules
                                     if(checkModApi(mod_api)) { // checks connection
                                         const response = await text_classification(mod_api, roleName);
-                                        if(response && !response.includes('OK')) {
-                                            return await modalInteraction.reply({content: 'The role name provided is not appropiated! If you think this is a mistake, contact a staff member.', ephemeral: true});
-                                        }
+                                        if(response)
+                                            if(!response['labels'].includes('OK')) {
+                                                return await modalInteraction.reply({content: 'The role name provided is not appropiated! If you think this is a mistake, contact a staff member.', ephemeral: true});
+                                            }
                                     }
                                     customRole = await modalInteraction.guild.roles.edit(customRole, {
                                         name: roleName,
@@ -857,8 +859,8 @@ module.exports = {
                                 
                             });
 
-                            selectCollector.on('end', () => {
-                                selectMessage.delete();
+                            selectCollector.on('end', async () => {
+                                await selectMessage.delete();
                             })
                             
                         break;
@@ -933,8 +935,8 @@ module.exports = {
 
                 });
 
-                collector.on('end', () => {
-                    menuMessage.delete();
+                collector.on('end', async () => {
+                    await menuMessage.delete();
                 });
             break;
         }

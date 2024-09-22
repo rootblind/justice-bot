@@ -1,8 +1,9 @@
 const {config} = require('dotenv');
 config();
-const {EmbedBuilder} = require('discord.js');
+const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, StringSelectMenuBuilder} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const {text_classification} = require('../../utility_modules/utility_methods.js');
+const {text_classification, csvAppend} = require('../../utility_modules/utility_methods.js');
+const fs = require('graceful-fs');
 
 const axios = require('axios')
 
@@ -85,45 +86,273 @@ module.exports = {
 
         const response = await text_classification(mod_api, message.content);
         
-        if(response && !response.includes('OK')) { // ignoring OK messages
-            const embed = new EmbedBuilder()
-                .setTitle('Flagged Message')
-                .setAuthor({
-                    name: message.author.username,
-                    iconURL: message.member.displayAvatarURL({format: 'jpg'})
-                })
-                .setColor(0xff0005)
-                .addFields(
-                    {
-                        name: 'Channel',
-                        value: `${message.channel}`
-                    },
-                    {
-                        name: 'Flags',
-                        value: `${response.join(', ')}`
-                    },
-                    {
-                        name: 'Link',
-                        value: `[reference](${message.url})`
+        if(response)
+        {
+            if(!response['labels'].includes('OK')) { // ignoring OK messages
+                // note for stage two: each message will have buttons:
+                // Confirm: Confirms that the labels are correct and stores the message and labels as they are in the dataset
+                // Correct: Opens a select menu in order to select the appropiated labels and store the corrected version in the dataset
+                const embed = new EmbedBuilder()
+                    .setTitle('Flagged Message')
+                    .setAuthor({
+                        name: message.author.username,
+                        iconURL: message.member.displayAvatarURL({format: 'jpg'})
+                    })
+                    .setColor(0xff0005)
+                    .addFields(
+                        {
+                            name: 'Channel',
+                            value: `${message.channel}`
+                        },
+                        {
+                            name: 'Flags',
+                            value: `${response['labels'].join(', ')}`
+                        },
+                        {
+                            name: 'Link',
+                            value: `[reference](${message.url})`
+                        }
+                    )
+                    .setTimestamp()
+                    .setFooter({text:`ID: ${message.author.id}`})
+                
+                if(message.content.length <= 3000)
+                    embed.setDescription(`**Content**: ${message.content}`)
+                else { // handling large messages through temp files and posting the file instead of overflowing the embed description
+                    const filePath = path.join(__dirname, `../../temp/${message.id}.txt`);
+                    fs.writeFile(filePath, message.content, (err) => {
+                    console.error(err);
+                    });
+                    const sendFile = await logChannel.send({files:[filePath]});
+                    embed.setDescription(`[[Content]](${sendFile.url})`);
+                    fs.unlink(filePath, (err) => {
+                        if(err) throw err;
+                    });
+                }
+
+                // declaring the confirm correct buttons
+                const confirmFlagsButton = new ButtonBuilder() // used to store the message and its labels as it is
+                    .setCustomId(`confirm`)
+                    .setLabel('Confirm')
+                    .setStyle(ButtonStyle.Success)
+                const correctFlagsButton = new ButtonBuilder() // used to correct and store the message and its corrected labels
+                    .setCustomId(`correct`)
+                    .setLabel('Correct')
+                    .setStyle(ButtonStyle.Primary)
+                const isOKBUtton = new ButtonBuilder() // the message is a false positive
+                    .setCustomId('ok-button')
+                    .setLabel('OK')
+                    .setStyle(ButtonStyle.Primary)
+
+                const flaggedMessageActionRow = new ActionRowBuilder()
+                    .addComponents(confirmFlagsButton, isOKBUtton, correctFlagsButton)
+
+                const flaggedMessage = await logChannel.send({embeds:[embed], components: [flaggedMessageActionRow]});
+
+                // creating a button collector
+                const collector = flaggedMessage.createMessageComponentCollector({
+                    ComponentType: ComponentType.Button,
+                    time: 43_200_000
+                });
+
+                collector.on('collect', async (interaction) => {
+                    let justiceLogChannel = null;
+                    const fetchLogChannel = new Promise((resolve, reject) => {
+                        poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [message.guildId, 'justice-logs'],
+                            (err, result) => {
+                                if(err) {
+                                    console.error(err);
+                                    reject(err);
+                                }
+                                else if(result.rows.length > 0) {
+                                    justiceLogChannel = message.guild.channels.cache.get(result.rows[0].channel);
+                                }
+                                resolve(result);
+                            }
+                        )
+                    });
+                    await fetchLogChannel;
+                    // creating a labels object for the flags in order to write the confirmed flags to the csv
+                    const flagTags = {
+                        OK: 0,
+                        Insult: 0,
+                        Violence: 0,
+                        Sexual: 0,
+                        Hateful: 0,
+                        Flirt: 0,
+                        Spam: 0,
+                        Aggro: 0
                     }
-                )
-                .setTimestamp()
-                .setFooter({text:`ID: ${message.author.id}`})
-            
-            if(message.content.length <= 3000)
-                embed.setDescription(`**Content**: ${message.content}`)
-            else { // handling large messages through temp files and posting the file instead of overflowing the embed description
-                const filePath = path.join(__dirname, `../../temp/${message.id}.txt`);
-                fs.writeFile(filePath, message.content, (err) => {
-                console.error(err);
+                    if(interaction.customId === 'confirm') {
+                        for(let label of response['labels']) {
+                            if(label == 'OK')
+                            {
+                                flagTags['OK'] = 1;
+                                break;
+                            }
+                            flagTags[label] = 1;
+                        }
+                        if(justiceLogChannel)
+                            await justiceLogChannel.send({embeds: [
+                                new EmbedBuilder()
+                                    .setColor('Green')
+                                    .setAuthor({
+                                        name: `${interaction.user.username} confirmed a flagged message.`,
+                                        iconURL: interaction.user.displayAvatarURL({extension: 'png'})
+                                    })
+                                    .addFields(
+                                        {
+                                            name: 'Flags',
+                                            value: `${response['labels'].join(', ')}`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: 'Message',
+                                            value: `[click](${flaggedMessage.url})`,
+                                            inline: true
+                                        }
+                                    )
+                                    .setTimestamp()
+                                    .setFooter({text: `ID: ${interaction.user.id}`})
+                            ]});
+                        await interaction.reply({ephemeral: true, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
+                        // appending the message
+                        csvAppend(response['text'], flagTags, 'train.csv');
+                        collector.stop();
+                    
+                    }
+                    else if(interaction.customId === 'correct') {
+                        const tags = ["Insult","Violence","Sexual","Hateful","Flirt","Spam","Aggro"]
+                        const  selectMenuOptions = [];
+                        for(let x of tags) {
+                            selectMenuOptions.push({
+                                label: x,
+                                description: `Flag as ${x}`,
+                                value: x
+                            })
+                        }
+                        const selectFlagsMenu = new StringSelectMenuBuilder()
+                            .setCustomId('select-flags-menu')
+                            .setPlaceholder('Pick the correct flags for the message.')
+                            .setMinValues(1)
+                            .setMaxValues(tags.length)
+                            .addOptions( selectMenuOptions )
+
+                        const selectFlagsActionRow = new ActionRowBuilder().addComponents(selectFlagsMenu);
+
+                        const selectFlagsMessage = await interaction.reply({ephemeral: true, components: [selectFlagsActionRow], embeds: [
+                            new EmbedBuilder()
+                                .setDescription('Please select all the appropiate flags for the message.')
+                                .addFields(
+                                    {
+                                        name: 'Insult',
+                                        value: 'Usage of insults against another person.'
+                                    },
+                                    {
+                                        name: 'Violence',
+                                        value: 'Threats or encouraging violence against another person.'
+                                    },
+                                    {
+                                        name: 'Sexual',
+                                        value: 'Usage of sexual words to insult or to describe a sexual activity.'
+                                    },
+                                    {
+                                        name: 'Hateful',
+                                        value: 'Hateful messages and slurs against minorities and other people.'
+                                    },
+                                    {
+                                        name: 'Flirt',
+                                        value: 'Flirting with another person or engaging in romantical situations.'
+                                    },
+                                    {
+                                        name: 'Spam',
+                                        value: 'Copypastas and spam messages.'
+                                    },
+                                    {
+                                        name: 'Aggro',
+                                        value: 'Provoking someone else into an argument.'
+                                    }
+                                )
+                        ]});
+
+                        const selectFlagsReply = await interaction.fetchReply();
+                        const selectCollector = await selectFlagsReply.createMessageComponentCollector({
+                            ComponentType: ComponentType.StringSelect,
+                            time: 300_000,
+                        });
+
+                        selectCollector.on('collect', async (interaction) => {
+                            for(let label of interaction.values) {
+                                flagTags[label] = 1;
+                            }
+                            await interaction.reply({ephemeral: true, content:`The flags were corrected to: ${interaction.values.join(', ')}\nMessage ID: ${flaggedMessage.id}`});
+                            if(justiceLogChannel)
+                                await justiceLogChannel.send({embeds: [
+                                    new EmbedBuilder()
+                                        .setColor('Green')
+                                        .setAuthor({
+                                            name: `${interaction.user.username} corrected a flagged message.`,
+                                            iconURL: interaction.user.displayAvatarURL({extension: 'png'})
+                                        })
+                                        .addFields(
+                                            {
+                                                name: 'Flags',
+                                                value: `${interaction.values.join(', ')}`,
+                                                inline: true
+                                            },
+                                            {
+                                                name: 'Message',
+                                                value: `[click](${flaggedMessage.url})`,
+                                                inline: true
+                                            }
+                                        )
+                                        .setTimestamp()
+                                        .setFooter({text: `ID: ${interaction.user.id}`})
+                                ]});
+                            selectCollector.stop();
+                        });
+                        selectCollector.on('end', async () => {
+                            await selectFlagsMessage.delete();
+                            // appending the message
+                            csvAppend(response['text'], flagTags, 'train.csv');
+                            collector.stop();
+                        });
+                    } else if(interaction.customId === 'ok-button') {
+                        flagTags['OK'] = 1;
+                        await interaction.reply({ephemeral: true, content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${flaggedMessage.id}`});
+                        if(justiceLogChannel)
+                            await justiceLogChannel.send({embeds: [
+                                new EmbedBuilder()
+                                    .setColor('Green')
+                                    .setAuthor({
+                                        name: `${interaction.user.username} corrected a flagged message.`,
+                                        iconURL: interaction.user.displayAvatarURL({extension: 'png'})
+                                    })
+                                    .addFields(
+                                        {
+                                            name: 'Flags',
+                                            value: `OK`,
+                                            inline: true
+                                        },
+                                        {
+                                            name: 'Message',
+                                            value: `[click](${flaggedMessage.url})`,
+                                            inline: true
+                                        }
+                                    )
+                                    .setTimestamp()
+                                    .setFooter({text: `ID: ${interaction.user.id}`})
+                            ]});
+                        // appending the message
+                        csvAppend(response['text'], flagTags, 'train.csv');
+                        collector.stop();
+                    }
+                    
                 });
-                const sendFile = await logChannel.send({files:[filePath]});
-                embed.setDescription(`[[Content]](${sendFile.url})`);
-                fs.unlink(filePath, (err) => {
-                    if(err) throw err;
-                });
+                collector.on('end', () => {
+                    flaggedMessage.edit({components: []});
+                })
             }
-            await logChannel.send({embeds:[embed]});
         }
 
     }

@@ -10,6 +10,7 @@ const botUtils = require('../../utility_modules/utility_methods.js');
 const axios = require('axios');
 const cron = require('node-cron');
 
+
 config();
 require('colors');
 
@@ -434,9 +435,10 @@ module.exports = {
             
         }, { scheduled: true});
 
+
+        // making sure that the train.csv exists
+        if(!(await botUtils.isFileOk('train.csv'))) {
+            await fs.promises.writeFile('train.csv', 'Message,OK,Insult,Violence,Sexual,Hateful,Flirt,Spam,Aggro\n', 'utf8');
+        }
     }
-
-    
-
-
 };
