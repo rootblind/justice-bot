@@ -229,6 +229,10 @@ module.exports = {
                 .addSubcommand(subcommand =>
                     subcommand.setName('display')
                         .setDescription('Displays all premium members and their codes.')
+                        .addUserOption(option =>
+                            option.setName('member')
+                                .setDescription('The member to display its premium membership.')
+                        )       
 
                 )
                 .addSubcommand(subcommand =>
@@ -347,30 +351,83 @@ module.exports = {
                     await generateCode;
 
                     // fetching the custom role if it exists
-                    const fetchCustomRole = await member.roles
+                    const fetchCustomRole = await member
+                        .roles
                         .cache
                         .find(role => role.position > member.guild.roles.premiumSubscriberRole.position
                             && role.position < premiumRole.position
                         );
-                    
+
+                    let customRoleId = null;
+                    if(fetchCustomRole)
+                        customRoleId = fetchCustomRole.id;
+
                     let isBooster = false;
-                    if(member.roles.cache.has(member.guild.roles.premiumSubscriberRole.id))
+                    if(member.roles.premiumSubscriberRole)
                         isBooster = true; // for from_boosting column
 
                     //registering the key
-                    await poolConnection.query(`INSERT INTO premiumkey(code, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                    [encryptor(code), interaction.guild.id, interaction.user.id, parseInt(Date.now() / 1000)], 0, 0, member.id);
+                    const insertKeyPromise = new Promise((resolve, reject) => {
+                        poolConnection.query(`INSERT INTO premiumkey(code, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7)
+                            ON CONFLICT (guild, dedicateduser)
+                            DO NOTHING`,
+                            [code, interaction.guild.id, interaction.user.id, parseInt(Date.now() / 1000), 0, 0, member.id],
+                            (err, result) => {
+                                if(err) {
+                                    console.error(err);
+                                    reject(err);
+                                }
+                                resolve(result);
+                            }
+                        );
+                    });
+                    await insertKeyPromise;
                     //registering membership
-                    await poolConnection.query(`INSERT INTO premiummembers (member, guild, code, customrole, from_boosting)
+                    const insertMemberPromise = new Promise((resolve, reject) => {
+                        poolConnection.query(`INSERT INTO premiummembers (member, guild, code, customrole, from_boosting)
                         VALUES ($1, $2, $3, $4, $5)
-                        WHERE NOT EXISTS (
-                            SELECT 1 FROM premiummembers WHERE guild = $2 AND member = $1
-                        )`, [member.id, interaction.guild.id, encryptor(code), fetchCustomRole.id, isBooster]);
+                        ON CONFLICT (guild, member)
+                        DO NOTHING`,
+                        [member.id, interaction.guild.id, code, customRoleId, isBooster],
+                            (err, result) => {
+                                if(err) {
+                                    console.error(err);
+                                    reject(err);
+                                }
+                                resolve(result);
+                            }
+                        );
+                    });
+                    await insertMemberPromise;
+                    
+                    
                 });
 
-                const{rows : memberships} = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1`, [interaction.guild.id]);
-                const {rows : keyss} = await poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1`, [interaction.guild.id]);
+                let membersCount = 0;
+                let keysCount = 0;
+                const fetchRowsNumMembers = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1`, [interaction.guild.id], 
+                        (err, result) => {
+                            if(err) reject(err);
+                            membersCount = result.rowCount;
+                            resolve(result);
+                        }
+                    );
+                });
+                await fetchRowsNumMembers;
+
+                const fetchRowsNumKeys = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT * FROM premiumkey WHERE guild=$1`, [interaction.guild.id], 
+                        (err, result) => {
+                            if(err) reject(err);
+                            keysCount = result.rowCount;
+                            resolve(result);
+                        }
+                    );
+                });
+                await fetchRowsNumKeys;
+               
                 //logging
                 if(logChannel)
                 {
@@ -384,12 +441,12 @@ module.exports = {
                             .addFields(
                                 {
                                     name: 'Total premium users',
-                                    value: `${memberships.length}`,
+                                    value: `${membersCount}`,
                                     inline: true
                                 },
                                 {
                                     name: 'Total active keys',
-                                    value: `${keyss.length}`,
+                                    value: `${keysCount}`,
                                     inline: true
                                 }
                             )
@@ -405,12 +462,12 @@ module.exports = {
                             .addFields(
                                 {
                                     name: 'Total premium users',
-                                    value: `${memberships.length}`,
+                                    value: `${membersCount}`,
                                     inline: true
                                 },
                                 {
                                     name: 'Total active keys',
-                                    value: `${keyss.length}`,
+                                    value: `${keysCount}`,
                                     inline: true
                                 }
                             )
@@ -1020,6 +1077,49 @@ module.exports = {
                 ], ephemeral: true});
             break;
             case 'display':
+                const displayUser = interaction.options.getUser('member') || null;
+                if(displayUser) { // if an user is provided, then the command must display a profile instead of a  list
+                    const {rows: displayMemberData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, displayUser.id]);
+                    if(displayMemberData.length == 0) {
+                        return await interaction.reply({ephemeral: true, embeds: [
+                            new EmbedBuilder()
+                                .setColor('Red')
+                                .setTitle('Invalid user')
+                                .setDescription('The user provided is not a premium member.')
+                        ]});
+                    }
+                    // responding if valid
+                    let displayCustomRole = null;
+                    if(displayMemberData[0].customrole) {
+                        displayCustomRole = await interaction.guild.roles.fetch(displayMemberData[0].customrole);
+                    }
+                    return await interaction.reply({ephemeral: true, embeds: [
+                        new EmbedBuilder()
+                            .setColor(0xd214c7)
+                            .setAuthor({
+                                name: `${displayUser.username}'s membership profile`,
+                                iconURL: displayUser.displayAvatarURL({extensions: 'png'})
+                            })
+                            .addFields(
+                                {
+                                    name: 'Code',
+                                    value: `||${decryptor(displayMemberData[0].code.toString())}||`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'From boosting?',
+                                    value: displayMemberData[0].from_boosting ? 'True' : 'False',
+                                    inline: true
+                                },
+                                {
+                                    name: 'Custom role',
+                                    value: `${displayCustomRole || "None"}`
+                                }
+                            )
+                            .setFooter({text: `ID: ${displayMemberData[0].member}`})
+                    ]});
+                }
+                // if no user is provided, list all members
                 let displayEmbed = new EmbedBuilder().setTitle('Display membership list.')
                 let membersArray = [];
                 await interaction.deferReply({ephemeral: true});

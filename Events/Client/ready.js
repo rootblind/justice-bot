@@ -319,7 +319,8 @@ module.exports = {
                     createdat BIGINT NOT NULL,
                     expiresat BIGINT NOT NULL,
                     usesnumber INT,
-                    dedicateduser BIGINT
+                    dedicateduser BIGINT,
+                    CONSTRAINT unique_guild_dedicateduser UNIQUE (guild, dedicateduser)
                 )`, (err, result) => {
                     if(err) {
                         console.error(err);
@@ -340,7 +341,8 @@ module.exports = {
                     guild BIGINT NOT NULL,
                     code BYTEA,
                     customrole BIGINT,
-                    from_boosting BOOLEAN DEFAULT FALSE
+                    from_boosting BOOLEAN DEFAULT FALSE,
+                    CONSTRAINT unique_guild_member UNIQUE (guild, member)
                 )`, (err, result) => {
                     if(err) {
                         console.error(err);
@@ -397,14 +399,13 @@ module.exports = {
 
             // fetching premium roles from db
             const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
-
+            
             // firstly, checking the database and making the neccesary changes on the discord server before
             // updating the db
             let currentTimestamp = parseInt(Date.now() / 1000); // fetching current timestamp in seconds
             const {rows : expiredMembers} = await poolConnection.query(`SELECT pm.guild, pm.member, customrole FROM premiummembers pm
                 JOIN premiumkey pc ON pm.code = pc.code AND pm.guild = pc. guild
                 WHERE pc.expiresat <=$1 AND pc.expiresat > 0`, [currentTimestamp]);
-            
             // removing premium and custom roles from expired memberships
             for(let user of expiredMembers) {
                 const fetchGuild = await client.guilds.fetch(user.guild); // fetching the guild
@@ -429,9 +430,9 @@ module.exports = {
             // clearing the rows
             await poolConnection.query(`DELETE FROM premiummembers
                 WHERE code IN (SELECT code FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0)`, [currentTimestamp]);
-            await poolConnection.query(`DELETE FROM premiumkey WHERE expiresat <= $1`, [currentTimestamp]);
+            await poolConnection.query(`DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`, [currentTimestamp]);
             
-        });
+        }, { scheduled: true});
 
     }
 

@@ -48,7 +48,7 @@ module.exports = {
         if(logChannel == null) return; // if no server activity log channel is set up, then do nothing
 
         //fetching the premium role, if it doesn't exist, no premium membership is assigned
-        const {rows : premiumRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`);
+        const {rows : premiumRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`, [newMember.guild.id, 'premium']);
         const premiumRole = await newMember.guild.roles.fetch(premiumRoleData[0].role);
         if(premiumRoleData.length > 0){
             let premiumLogChannel = null // if defined, logging the premium activity
@@ -73,7 +73,7 @@ module.exports = {
                 // if old member didn't have nitro booster and the new one has, it means the member just boosted the server
                 // and is eligible for premium membership from boosting
                 let code = encryptor(random_code_generation());
-                const keyData = await poolConnection.query(`SELECT code FROM premiumkey WHERE guild=$1`, [oldMember.guild.id, code]); // already encrypted
+                const keyData = await poolConnection.query(`SELECT code FROM premiumkey WHERE guild=$1`, [oldMember.guild.id]); // already encrypted
                 if(keyData.length > 0) { // while code already exists, keep generating
                     const keys = keyData.map(row => row.code);
                     while(keys.includes(code))

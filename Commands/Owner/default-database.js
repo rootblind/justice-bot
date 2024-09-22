@@ -256,7 +256,8 @@ module.exports = {
                 createdat BIGINT NOT NULL,
                 expiresat BIGINT NOT NULL,
                 usesnumber INT,
-                dedicateduser BIGINT
+                dedicateduser BIGINT,
+                CONSTRAINT unique_guild_dedicateduser UNIQUE (guild, dedicateduser)
             )`, (err, result) => {
                 if(err) {
                     console.error(err);
@@ -277,7 +278,8 @@ module.exports = {
                 guild BIGINT NOT NULL,
                 code BYTEA,
                 customrole BIGINT,
-                from_boosting BOOLEAN DEFAULT FALSE
+                from_boosting BOOLEAN DEFAULT FALSE,
+                CONSTRAINT unique_guild_member UNIQUE (guild, member)
             )`, (err, result) => {
                 if(err) {
                     console.error(err);
