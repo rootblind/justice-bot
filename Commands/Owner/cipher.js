@@ -4,13 +4,14 @@ const {encryptor, decryptor} = require('../../utility_modules/utility_methods.js
 
 config();
 
-const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
+const {SlashCommandBuilder, PermissionFlagsBits} = require('discord.js');
 
 module.exports = {
     ownerOnly: true,
     data: new SlashCommandBuilder()
         .setName('cipher')
         .setDescription('Encrypt and decrypt input using the keys.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(subcommand =>
             subcommand.setName('encrypt')
                 .setDescription('Encrypt data')

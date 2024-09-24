@@ -357,17 +357,23 @@ module.exports = {
             });
             await premiumMembersReg;
 
-            for(tableName of table_nameListed){
+        for(tableName of table_nameListed){
                 table.addRow(tableName, 'Ready');
-            }
-            console.log(table.toString(), '\nDatabase tables');
+        }
+        console.log(table.toString(), '\nDatabase tables');
 
-            console.log(
+        console.log(
                 `${
                     client.user.username
                 } is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
             );
+
     
+        
+        // making sure that the train.csv exists
+        if(!(await botUtils.isFileOk('train.csv'))) {
+            await fs.promises.writeFile('train.csv', 'Message,OK,Insult,Violence,Sexual,Hateful,Flirt,Spam,Aggro\n', 'utf8');
+        }
         // creating a temporary files directory
         const tempDir = path.join(__dirname, '../../temp'); // temp directory will be used for storing txt files and such that will be
                                                             // removed after usage, like large messages that trigger deleted or updated messages
@@ -381,18 +387,33 @@ module.exports = {
         const avatarDir = path.join(__dirname, '../../assets/avatar');
         directoryCheck(avatarDir);
 
-        // checking connection status to the MOD API
-        if(await checkAPI(process.env.MOD_API_URL)) {
-            console.log('Successfully connected to the Moderation API: ', process.env.MOD_API_URL);
-        }
-
         // This section will manage cron schedulers
-
         const reportAPIDowntime = cron.schedule('0 * * * *', async () => {
             if(!(await checkAPI(process.env.MOD_API_URL))) {
                 console.log(`Connection to ${process.env.MOD_API_URL} was lost - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`)
             }
-        })
+        });
+
+        // this section will be about on ready checks on db.
+
+        // checking if invalid boosters are still in db (if a nitro booster leaves the server when the bot is offline, will mentain 
+        // premium membership until they return, such events must be handled)
+        const {rows: premiumBoostersData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE from_boosting=$1`, [true]);
+        for(let booster of premiumBoostersData) {
+            const fetchGuild = await client.guilds.fetch(booster.guild);
+            if(await fetchGuild.members.cache.has(booster.member))
+                continue; // this filtering is targeting rows of boosters that are no longer members of the guild; those that are still members must be excluded
+
+            if(booster.customrole) {
+                const customRole = await fetchGuild.roles.fetch(booster.customrole);
+                if(customRole.members)
+                    if(customRole.members.size == 0)
+                        await customRole.delete();
+            }
+
+            await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [fetchGuild.id, booster.member]);
+
+        }
         
         // checking every 5 minutes therefore there can be a delay between 0 and 5 minutes
         const expirationPremium_schedule = cron.schedule('*/5 * * * *', async () => { 
@@ -419,12 +440,12 @@ module.exports = {
                 // fetch the premium role of the guild
                 const premiumRoleObj = premiumRolesData.find(role => role.guild === user.guild) // the db object
                 const premiumRole = await fetchGuild.roles.fetch(premiumRoleObj.role); // the discord api object
-                guildMember.roles.remove(premiumRole); // removing the premium role from the user.
+                await guildMember.roles.remove(premiumRole); // removing the premium role from the user.
                 // removing the custom role if it exists
                 if(user.customrole)
                 {
                     let customRole = await fetchGuild.roles.fetch(user.customrole);
-                    customRole.delete();
+                    await customRole.delete();
                 }
             }
 
@@ -436,9 +457,6 @@ module.exports = {
         }, { scheduled: true});
 
 
-        // making sure that the train.csv exists
-        if(!(await botUtils.isFileOk('train.csv'))) {
-            await fs.promises.writeFile('train.csv', 'Message,OK,Insult,Violence,Sexual,Hateful,Flirt,Spam,Aggro\n', 'utf8');
-        }
+       
     }
 };

@@ -111,7 +111,7 @@ module.exports = {
                 .setColor(0xff0004);
             return interaction.reply({ embeds: [embed], ephemeral: true });
         }
-        const premiumRole = interaction.guild.roles.cache.get(premiumRoleId);
+        const premiumRole = await interaction.guild.roles.cache.get(premiumRoleId);
 
         // if member somehow doesn't have the premium role, but is registered as premium user
         let roleMustBeAssigned = false;

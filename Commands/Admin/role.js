@@ -119,7 +119,16 @@ module.exports = {
                             .setRequired(true)
                     )
                     
-            ),
+            )
+        .addSubcommand(subcommand =>
+            subcommand.setName('info')
+                .setDescription('Recieve informations about a role')
+                .addRoleOption(option =>
+                    option.setName('info-role')
+                        .setDescription('The targeted role.')
+                        .setRequired(true)
+                )
+        ),
         botPermissions: [PermissionFlagsBits.ManageRoles],
         userPermissions: [PermissionFlagsBits.ManageRoles],
         
@@ -232,6 +241,28 @@ module.exports = {
             }
             
             switch(subCmd){
+                case 'info':
+                    const infoRole = interaction.options.getRole('info-role');
+                    embed
+                        .setColor(infoRole.hexColor)
+                        .setTitle(`Info about ${infoRole.name}`)
+                        .setThumbnail(infoRole.iconURL({extension: 'png'}))
+                        .addFields(
+                            {
+                                name: 'Created',
+                                value: `<t:${parseInt(infoRole.createdTimestamp / 1000)}:R>`
+                            },
+                            {
+                                name: 'Hexcolor',
+                                value:`${infoRole.hexColor}`
+                            },
+                            {
+                                name: 'Members',
+                                value: `${infoRole.members.size}`
+                            }
+                        )
+                        .setFooter({text:`Role ID: ${infoRole.id}`});
+                break;
                 case "create":
                     const newRole = await guild.roles.create({
                         name: name,
@@ -282,7 +313,7 @@ module.exports = {
                 
             }
 
-            return interaction.reply({embeds: [embed]});
+            return await interaction.reply({embeds: [embed]});
 
         }
 

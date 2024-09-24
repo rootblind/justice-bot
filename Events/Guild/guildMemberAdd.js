@@ -4,12 +4,14 @@
 const {EmbedBuilder} = require("@discordjs/builders");
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
+const {config} = require('dotenv');
+config();
 
 module.exports = {
     name: "guildMemberAdd", // user-activity when an user joins the server, this event is triggered
     async execute(member)
     {
-        if(member.user.bot) return;
+        if(member.user.bot || !member || !member.user) return;
         // if there is a logging channel for user-activity, the new member will be logged here
         const userLogs = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [member.guild.id, 'user-activity'],
@@ -44,6 +46,47 @@ module.exports = {
             )
         });
         await userLogs;
+
+        // using mod api to filter for bad words in names
+        try{
+            const response = await botUtils.text_classification(process.env.MOD_API_URL, `${member.displayName} ${member.user.username}`);
+            if(response)
+                if(!response.labels.includes('OK')) {
+                    const {rows: modLogsData} = await poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`,
+                        [member.guild.id, 'moderation']
+                    );
+                    if(modLogsData.length > 0) {
+                        const modLogsChannel = await member.guild.channels.fetch(modLogsData[0].channel);
+                        await modLogsChannel.send({embeds: [
+                            new EmbedBuilder()
+                                .setAuthor({name: `${member.displayName} / ${member.user.username}`,
+                                    iconURL: member.displayAvatarURL({extension: 'png'})
+                                })
+                                .setDescription(`Member name(s) flagged as [${response.labels.join(', ')}]`)
+                                .setColor(0xfb0409)
+                                .setTimestamp()
+                                .setFooter({text:`ID: ${member.id}`})
+                        ]});
+                        await member.user.send({embeds: [
+                            new EmbedBuilder()
+                                .setColor(0xfb0409)
+                                .setAuthor({
+                                    name: `${member.guild.name}`,
+                                    iconURL: member.guild.iconURL({extension: 'png'})
+                                })
+                                .setTitle('Warning!')
+                                .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
+                                .addFields({
+                                    name: 'Flags',
+                                    value: `${response.labels.join(', ')}`
+                                })
+
+                        ]});
+                    }
+                }
+        } catch(err) {
+            console.error(err.name);
+        }
 
         // if a welcome message was set, when a new member joins, it will be sent on the specified channel
         const welcomeMessagePromise = new Promise((resolve, reject) => {
@@ -84,7 +127,6 @@ module.exports = {
         await welcomeMessagePromise;
 
         // if member has premium status, checks if the member has the premium role, otherwise gives it to them.
-
         // checking for server premium role
         let premiumRole = null;
         const fetchPremiumRole = new Promise((resolve, reject) =>{

@@ -57,6 +57,9 @@ module.exports = {
                 }
             )
         await logChannel.send({embeds: [embed]});
+
+        // checking if the member has active premium membership
+       
     }
 
 };

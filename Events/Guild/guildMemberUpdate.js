@@ -1,6 +1,6 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {EmbedBuilder} = require('discord.js');
-const {encryptor, decryptor} = require('../../utility_modules/utility_methods.js');
+const {encryptor, decryptor, text_classification} = require('../../utility_modules/utility_methods.js');
 const {config} = require('dotenv');
 config();
 
@@ -67,6 +67,13 @@ module.exports = {
                 )
             });
             await fetchLogChannel;
+            // premium membership must be removed from boosters that are no longer boosting
+            // checking if 1- member has premium membership and from boosting 2- checking if member still has nitro booster role
+            // fetching the membership from db
+            const {rows : premiumMemberData} = await poolConnection.query(`SELECT * FROM premiummembers 
+                WHERE guild=$1 AND member=$2 AND from_boosting=$3`,
+                [newMember.guild.id, newMember.id, true]
+            );
             if(!oldMember.roles.premiumSubscriberRole && newMember.roles.premiumSubscriberRole) { // when a  member is boosting
                 // assign user with premium role
                 await newMember.roles.add(premiumRole);
@@ -133,17 +140,9 @@ module.exports = {
                 await newMember.user.send({embeds: [embedThanks]});
 
             }
-            else if(oldMember.roles.premiumSubscriberRole && !newMember.roles.premiumSubscriberRole){ // when a member stops boosting
-                // fetching the membership from db
-                const {rows : premiumMemberData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`,
-                    [newMember.guild.id, newMember.id]
-                );
-
-                if(!premiumMemberData[0].from_boosting) {
-                    // if the membership is not gained from boosting, then it shouldn't be removed from losing nitro boosting
-                    // membership gained through other means have an expiration timstamp
-                    return;
-                } // if membership is gained through boosting the server, proceed with removal
+            else if(premiumMemberData.length > 0 && !newMember.roles.premiumSubscriberRole){
+                // when a member stops boosting means they no longer have nitro booster role and are still in the database
+                // with from_boosting parameter as true
 
                 // fetching custom role to remove from member
                 let customRole = null;
@@ -194,30 +193,58 @@ module.exports = {
             }
         }
 
-        
+        const clientMember = await newMember.guild.members.fetch(process.env.CLIENT_ID)
         if(oldMember.displayName !== newMember.displayName) {
-            const embed = new EmbedBuilder()
-                .setAuthor({
-                    name: `${oldMember.user.username} changed their nickname`,
-                    iconURL: oldMember.displayAvatarURL({format: 'jpg'})
-                })
-                .addFields(
-                    {
-                        name: 'Old name',
-                        value: `${oldMember.displayName}`,
-                        inline: true
-                    },
-                    {
-                        name: 'New name',
-                        value: `${newMember.displayName}`,
-                        inline: true
-                    }
-                )
-                .setColor(0x2596be)
-                .setTimestamp()
-                .setFooter({text:`ID: ${oldMember.id}`});
+            try{
+                const response = await text_classification(process.env.MOD_API_URL, `${newMember.displayName}`);
+                if(response && newMember.roles.highest.position < clientMember.roles.highest.position)
+                    if(!response.labels.includes('OK')) {
+                            await newMember.user.send({embeds: [
+                                new EmbedBuilder()
+                                    .setColor(0xfb0409)
+                                    .setAuthor({
+                                        name: `${newMember.guild.name}`,
+                                        iconURL: newMember.guild.iconURL({extension: 'png'})
+                                    })
+                                    .setTitle('Warning!')
+                                    .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
+                                    .addFields({
+                                        name: 'Flags',
+                                        value: `${response.labels.join(', ')}`
+                                    })
+    
+                            ]});
+                            await newMember.setNickname(oldMember.displayName); // if the bot has perms, will revert the nickname change
+                        }
+                const embed = new EmbedBuilder()
+                    .setAuthor({
+                        name: `${oldMember.user.username} changed their nickname`,
+                        iconURL: oldMember.displayAvatarURL({format: 'jpg'})
+                    })
+                    .addFields(
+                        {
+                            name: 'Old name',
+                            value: `${oldMember.displayName}`,
+                            inline: true
+                        },
+                        {
+                            name: 'New name',
+                            value: `${newMember.displayName}`,
+                            inline: true
+                        },
+                        {
+                            name: 'Flags',
+                            value: response ? `${response.labels.join(', ')}` : 'None'
+                        }
+                    )
+                    .setColor(0x2596be)
+                    .setTimestamp()
+                    .setFooter({text:`ID: ${oldMember.id}`});        
+                await logChannel.send({embeds: [embed]});
+            } catch(err) {
+                console.error(err);
+            }
             
-            await logChannel.send({embeds: [embed]});
         }
 
         return; // unhandled events will be ignored
