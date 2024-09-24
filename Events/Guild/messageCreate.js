@@ -81,7 +81,7 @@ module.exports = {
         if(isChannelIgnored) return; // if the channel is ignored from this type of logging, ignore the event
 
         const mod_api = process.env.MOD_API_URL; // for ease of coding
-        if(!checkModApi(mod_api)) return; // at the moment, the event of sending a message has no other goal other than
+        if(!(await checkModApi(mod_api))) return; // at the moment, the event of sending a message has no other goal other than
         // evaluating the messages through the mod_api
 
         const response = await text_classification(mod_api, message.content);

@@ -149,8 +149,11 @@ module.exports = {
                 let customRole = null;
                 if(premiumMemberData[0].customrole) {
                     customRole = await newMember.guild.roles.fetch(premiumMemberData[0].roles);
-                    if(customRole.members.size - 1 > 0)
-                        await newMember.roles.remove(customRole.id);
+                    if(customRole.members)
+                        if(customRole.members.size - 1 > 0)
+                            await newMember.roles.remove(customRole.id);
+                        else
+                            await customRole.delete();
                     else
                         await customRole.delete();
                 }
@@ -173,7 +176,7 @@ module.exports = {
                             .setDescription(`${newMember} lost membership due to lack of nitro boosting!`)
                             .addFields({
                                 name: 'Removed code',
-                                value: decryptor(premiumMemberData[0].code.toString())
+                                value: `||${decryptor(premiumMemberData[0].code.toString())}||`
                             })
                             .setTimestamp()
                             .setFooter({text: `ID: ${newMember.id}`})
@@ -185,7 +188,7 @@ module.exports = {
                     new EmbedBuilder()
                         .setColor(0xff0004)
                         .setTitle('You lost premium membership!')
-                        .setThumbnail(newMember.iconURL({extension: 'png'}))
+                        .setThumbnail(newMember.user.displayAvatarURL({extension: 'png'}))
                         .setDescription(`Your membership was gained through nitro boosting. Since your boost ended, you lost premium membership on **${newMember.guild.name}**!\nYou can boost again or get a premium key code through other means.\n\n_If you think this message is a mistake, contact a staff member!_`)
                 ]});
             }

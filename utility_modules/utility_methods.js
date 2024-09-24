@@ -97,7 +97,6 @@ function formatTime(date) {
 });*/
 
 const axios = require('axios');
-
 async function text_classification(api, text) {
     // preparing the text for the classification
     const alphabetPattern = /^[a-zA-Z]/;
@@ -217,7 +216,36 @@ async function isFileOk(path) {
     return fileExists
 }
 
+function curated_text(text) {
+    // preparing the text for the classification
+    const alphabetPattern = /^[a-zA-Z]/;
+    const urlPattern = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/;
+    const emojiPattern = /<[^>]*>/g;
+    function filter(text) {
+        if(text.length < 3) return text;
+        text = text.replace('+rep', '')
+                    .replace('-rep', '')
+                    .replace('\n', ' ')
+                    .replace('\r', ' ')
+                    .replace(/^\s+/, '')
+                    .replace(emojiPattern, '');
+        if(text.endsWith(','))
+            text = text.slice(0,-1);
+        return text;
+
+    }
+
+    const filteredText = filter(text);
+
+    if (filteredText.length > 2 && alphabetPattern.test(filteredText) && !urlPattern.test(filteredText))
+    {
+        return filteredText;
+    }
+    else return false;
+}
+
 module.exports = {
+    curated_text,
     isFileOk,
     csvRead,
     csvAppend,

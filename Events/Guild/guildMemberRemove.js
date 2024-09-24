@@ -45,5 +45,17 @@ module.exports = {
             )
         });
         await userLogs;
+
+        // if a premium member with from_boosting true leaves, remove their membership and code
+        const {rows : membership} = await poolConnection.query(`SELECT code, from_boosting FROM premiummembers WHERE guild=$1 AND member=$2`, [member.guild.id, member.id]);
+        if(membership.length > 0) {
+            // if member has premium
+
+            //if membership is through boosting
+            if(membership[0].from_boostng) {
+                await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [member.guild.id, member.id]);
+                await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [member.guild.id, membership[0].code])
+            }
+        }
     }
 };
