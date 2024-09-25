@@ -641,7 +641,7 @@ module.exports = {
                 const revokeUser = interaction.options.getUser('member');
                 const revokeMember = await interaction.guild.members.cache.get(revokeUser.id);
                 let revokeCode = null; // the code uses must be updated
-
+                await interaction.deferReply({ephemeral: true});
                 // if reason to do anything if the user is not a premium user
                 const checkMembership = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, revokeUser.id],
@@ -670,7 +670,7 @@ module.exports = {
                 await checkMembership;
 
                 if(!revokeCode) { // if no code was fetched, then the member doesn't have premium membership
-                    return await interaction.reply({ephemeral: true, embeds: [
+                    return await interaction.editReply({ephemeral: true, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('Invalid user!')
@@ -748,7 +748,7 @@ module.exports = {
                     ]});
                 }
                 // reply to the interaction
-                await interaction.reply({ephemeral: true, embeds: [
+                await interaction.editReply({ephemeral: true, embeds: [
                     new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('You revoked a membership')
@@ -1027,25 +1027,27 @@ module.exports = {
 
                 // announcing the member that he got membership
                 if(sendDmBool) {
-                    await targetUser.send({embeds: [
-                        new EmbedBuilder()
-                            .setTitle('You were assigned with premium membership!')
-                            .setDescription(`**${interaction.user.username}** assigned a premium code key to you in **${interaction.guild.name}**!\n\nCheck out \`/premium dashboard\` on the server.\n\n If \`from boosting\` is true, the membership will be revoked once you stop boosting the server!`)
-                            .addFields(
-                                {
-                                    name: 'Expires',
-                                    value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent'
-                                },
-                                {
-                                    name: 'From boosting',
-                                    value: fromboosting ? 'True' : 'False',
-                                    inline: true
-                                }
-                            )
-                            .setThumbnail(interaction.guild.iconURL({extension: 'jpg'}))
-                            .setColor(0xd214c7)
-                            .setImage(interaction.guild.bannerURL({size: 1024}))
-                    ]});
+                    try{
+                        await targetUser.send({embeds: [
+                            new EmbedBuilder()
+                                .setTitle('You were assigned with premium membership!')
+                                .setDescription(`**${interaction.user.username}** assigned a premium code key to you in **${interaction.guild.name}**!\n\nCheck out \`/premium dashboard\` on the server.\n\n If \`from boosting\` is true, the membership will be revoked once you stop boosting the server!`)
+                                .addFields(
+                                    {
+                                        name: 'Expires',
+                                        value: expiresat > 0 ? `<t:${expiresat}:R>` : 'Permanent'
+                                    },
+                                    {
+                                        name: 'From boosting',
+                                        value: fromboosting ? 'True' : 'False',
+                                        inline: true
+                                    }
+                                )
+                                .setThumbnail(interaction.guild.iconURL({extension: 'jpg'}))
+                                .setColor(0xd214c7)
+                                .setImage(interaction.guild.bannerURL({size: 1024}))
+                        ]});
+                    } catch(err) {};
                 }
                 await interaction.editReply({embeds: [
                     new EmbedBuilder()

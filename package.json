@@ -12,6 +12,7 @@
     "@discordjs/rest": "^2.0.1",
     "ascii-table": "^0.0.9",
     "axios": "^1.7.4",
+    "child_process": "^1.0.2",
     "colors": "^1.4.0",
     "cpu-stat": "^2.0.1",
     "csv-parser": "^3.0.0",

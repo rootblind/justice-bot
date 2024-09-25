@@ -387,6 +387,9 @@ module.exports = {
         const avatarDir = path.join(__dirname, '../../assets/avatar');
         directoryCheck(avatarDir);
 
+        const backupDir = path.join(__dirname, '../../backup-db');
+        directoryCheck(backupDir);
+
         // This section will manage cron schedulers
         const reportAPIDowntime = cron.schedule('0 * * * *', async () => {
             if(!(await checkAPI(process.env.MOD_API_URL))) {
@@ -395,15 +398,22 @@ module.exports = {
         });
 
         // this section will be about on ready checks on db.
+        const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
 
-        // checking if invalid boosters are still in db (if a nitro booster leaves the server when the bot is offline, will mentain 
-        // premium membership until they return, such events must be handled)
+        // checking if invalid boosters have premium membership (due to them losing membership during downtime)
         const {rows: premiumBoostersData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE from_boosting=$1`, [true]);
         for(let booster of premiumBoostersData) {
             const fetchGuild = await client.guilds.fetch(booster.guild);
             if(await fetchGuild.members.cache.has(booster.member))
-                continue; // this filtering is targeting rows of boosters that are no longer members of the guild; those that are still members must be excluded
-
+            {
+                const boosterMember = await fetchGuild.members.fetch(booster.member);
+                if(!boosterMember.premiumSince) { // meaning the member is in the server and is no longer boosting
+                    const premiumGuildRole = premiumRolesData.find(r => r.guild === fetchGuild.id);
+                    const premiumRole = await fetchGuild.roles.fetch(premiumGuildRole);
+                    await boosterMember.roles.remove(premiumRole);
+                }
+                else continue; // skip boosters that are still boosting
+            }
             if(booster.customrole) {
                 const customRole = await fetchGuild.roles.fetch(booster.customrole);
                 if(customRole.members)
@@ -412,6 +422,7 @@ module.exports = {
             }
 
             await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [fetchGuild.id, booster.member]);
+            await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [fetchGuild.id, booster.code])
 
         }
         

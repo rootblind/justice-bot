@@ -67,21 +67,23 @@ module.exports = {
                                 .setTimestamp()
                                 .setFooter({text:`ID: ${member.id}`})
                         ]});
-                        await member.user.send({embeds: [
-                            new EmbedBuilder()
-                                .setColor(0xfb0409)
-                                .setAuthor({
-                                    name: `${member.guild.name}`,
-                                    iconURL: member.guild.iconURL({extension: 'png'})
-                                })
-                                .setTitle('Warning!')
-                                .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
-                                .addFields({
-                                    name: 'Flags',
-                                    value: `${response.labels.join(', ')}`
-                                })
+                        try{
+                            await member.user.send({embeds: [
+                                new EmbedBuilder()
+                                    .setColor(0xfb0409)
+                                    .setAuthor({
+                                        name: `${member.guild.name}`,
+                                        iconURL: member.guild.iconURL({extension: 'png'})
+                                    })
+                                    .setTitle('Warning!')
+                                    .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
+                                    .addFields({
+                                        name: 'Flags',
+                                        value: `${response.labels.join(', ')}`
+                                    })
 
-                        ]});
+                            ]});
+                        } catch(err) {};
                     }
                 }
         } catch(err) {

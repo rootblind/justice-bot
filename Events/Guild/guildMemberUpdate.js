@@ -137,11 +137,11 @@ module.exports = {
                 //logging
                 if(premiumLogChannel)
                     await premiumLogChannel.send({embeds: [embedPremiumLog]});
-                await newMember.user.send({embeds: [embedThanks]});
+                try{ await newMember.user.send({embeds: [embedThanks]}); } catch(err) {};
 
             }
-            else if(premiumMemberData.length > 0 && !newMember.roles.premiumSubscriberRole){
-                // when a member stops boosting means they no longer have nitro booster role and are still in the database
+            else if(premiumMemberData.length > 0 && !newMember.roles.premiumSince){
+                // when a member stops boosting premiumSince is null;
                 // with from_boosting parameter as true
 
                 // fetching custom role to remove from member
@@ -183,13 +183,15 @@ module.exports = {
                 }
 
                 // announcing the member
-                await newMember.user.send({embeds: [
-                    new EmbedBuilder()
-                        .setColor(0xff0004)
-                        .setTitle('You lost premium membership!')
-                        .setThumbnail(newMember.user.displayAvatarURL({extension: 'png'}))
-                        .setDescription(`Your membership was gained through nitro boosting. Since your boost ended, you lost premium membership on **${newMember.guild.name}**!\nYou can boost again or get a premium key code through other means.\n\n_If you think this message is a mistake, contact a staff member!_`)
-                ]});
+                try{
+                    await newMember.user.send({embeds: [
+                        new EmbedBuilder()
+                            .setColor(0xff0004)
+                            .setTitle('You lost premium membership!')
+                            .setThumbnail(newMember.user.displayAvatarURL({extension: 'png'}))
+                            .setDescription(`Your membership was gained through nitro boosting. Since your boost ended, you lost premium membership on **${newMember.guild.name}**!\nYou can boost again or get a premium key code through other means.\n\n_If you think this message is a mistake, contact a staff member!_`)
+                    ]});
+                } catch(err) {};
             }
         }
 
@@ -199,21 +201,23 @@ module.exports = {
                 const response = await text_classification(process.env.MOD_API_URL, `${newMember.displayName}`);
                 if(response && newMember.roles.highest.position < clientMember.roles.highest.position)
                     if(!response.labels.includes('OK')) {
-                            await newMember.user.send({embeds: [
-                                new EmbedBuilder()
-                                    .setColor(0xfb0409)
-                                    .setAuthor({
-                                        name: `${newMember.guild.name}`,
-                                        iconURL: newMember.guild.iconURL({extension: 'png'})
-                                    })
-                                    .setTitle('Warning!')
-                                    .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
-                                    .addFields({
-                                        name: 'Flags',
-                                        value: `${response.labels.join(', ')}`
-                                    })
-    
-                            ]});
+                            try{
+                                await newMember.user.send({embeds: [
+                                    new EmbedBuilder()
+                                        .setColor(0xfb0409)
+                                        .setAuthor({
+                                            name: `${newMember.guild.name}`,
+                                            iconURL: newMember.guild.iconURL({extension: 'png'})
+                                        })
+                                        .setTitle('Warning!')
+                                        .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
+                                        .addFields({
+                                            name: 'Flags',
+                                            value: `${response.labels.join(', ')}`
+                                        })
+        
+                                ]});
+                            } catch(err) {};
                             await newMember.setNickname(oldMember.displayName); // if the bot has perms, will revert the nickname change
                         }
                 const embed = new EmbedBuilder()
