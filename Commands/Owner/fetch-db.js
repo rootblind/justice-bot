@@ -19,6 +19,7 @@ module.exports = {
     ,
     botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client) {
+        await interaction.deferReply({ephemeral: true});
         let clientResponse;
         const query = interaction.options.getString('query');
         const queryPromise = new Promise((resolve, reject) => {
@@ -44,6 +45,6 @@ module.exports = {
             clientResponse = 'Invalid inputs! Check the console for more details.';
             console.error(error);
         }
-        return interaction.reply({content: clientResponse, ephemeral: true});
+        return interaction.editReply({content: `${clientResponse || "No response!"}`, ephemeral: true});
     }
 }

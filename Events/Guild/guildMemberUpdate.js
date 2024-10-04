@@ -74,7 +74,7 @@ module.exports = {
                 WHERE guild=$1 AND member=$2 AND from_boosting=$3`,
                 [newMember.guild.id, newMember.id, true]
             );
-            if(!oldMember.roles.premiumSubscriberRole && newMember.roles.premiumSubscriberRole) { // when a  member is boosting
+            if(!oldMember.premiumSince && newMember.premiumSince) { // when a  member is boosting
                 // assign user with premium role
                 await newMember.roles.add(premiumRole);
                 // if old member didn't have nitro booster and the new one has, it means the member just boosted the server
@@ -140,21 +140,19 @@ module.exports = {
                 try{ await newMember.user.send({embeds: [embedThanks]}); } catch(err) {};
 
             }
-            else if(premiumMemberData.length > 0 && !newMember.roles.premiumSince){
+            else if(premiumMemberData.length > 0 && !newMember.premiumSince){
                 // when a member stops boosting premiumSince is null;
                 // with from_boosting parameter as true
 
                 // fetching custom role to remove from member
                 let customRole = null;
                 if(premiumMemberData[0].customrole) {
-                    customRole = await newMember.guild.roles.fetch(premiumMemberData[0].roles);
-                    if(customRole.members)
+                    customRole = await newMember.guild.roles.fetch(premiumMemberData[0].customrole);
+                    if(customRole)
                         if(customRole.members.size - 1 > 0)
                             await newMember.roles.remove(customRole.id);
                         else
                             await customRole.delete();
-                    else
-                        await customRole.delete();
                 }
                 // removing premium role
                 await newMember.roles.remove(premiumRole);
@@ -163,6 +161,7 @@ module.exports = {
                 await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [newMember.guild.id, newMember.id]);
                 await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [newMember.guild.id, premiumMemberData[0].code]);
                 
+
                 // logging
                 if(premiumLogChannel) {
                     await premiumLogChannel.send({embeds: [
@@ -192,6 +191,7 @@ module.exports = {
                             .setDescription(`Your membership was gained through nitro boosting. Since your boost ended, you lost premium membership on **${newMember.guild.name}**!\nYou can boost again or get a premium key code through other means.\n\n_If you think this message is a mistake, contact a staff member!_`)
                     ]});
                 } catch(err) {};
+                
             }
         }
 

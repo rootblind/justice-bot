@@ -51,7 +51,7 @@ module.exports = {
         try{
             const response = await botUtils.text_classification(process.env.MOD_API_URL, `${member.displayName} ${member.user.username}`);
             if(response)
-                if(!response.labels.includes('OK')) {
+                if(!response.labels.includes('OK') && !response.labels.includes("Spam")) {
                     const {rows: modLogsData} = await poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`,
                         [member.guild.id, 'moderation']
                     );

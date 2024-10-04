@@ -240,6 +240,7 @@ module.exports = {
                 }
             }
             
+            await interaction.deferReply(); 
             switch(subCmd){
                 case 'info':
                     const infoRole = interaction.options.getRole('info-role');
@@ -313,7 +314,7 @@ module.exports = {
                 
             }
 
-            return await interaction.reply({embeds: [embed]});
+            return await interaction.editReply({embeds: [embed]});
 
         }
 

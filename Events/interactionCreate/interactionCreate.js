@@ -2,12 +2,13 @@ const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder} = requ
 const {config} = require('dotenv');
 config();
 const fs = require('fs');
+const { poolConnection } = require('../../utility_modules/kayle-db.js');
 
 
 module.exports = {
     name: 'interactionCreate',
 
-    execute(interaction, client){
+    async execute(interaction, client){
         
 
         if(interaction.isChatInputCommand())
@@ -16,7 +17,7 @@ module.exports = {
             const command = client.commands.get(interaction.commandName);
             const me = interaction.guild.members.cache.get(process.env.CLIENT_ID);
             if(interaction.guild === null) {
-                return interaction.reply('Private commands are not available yet!');
+                return await interaction.reply('Private commands are not available yet!');
                 
             }
 
@@ -25,7 +26,7 @@ module.exports = {
                         .setColor('Red')
                         .setTitle('Error')
                         .setDescription('This command requires Master privileges.');
-                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
                     return;
             }
 
@@ -38,7 +39,7 @@ module.exports = {
                         .setColor(`Red`)
                         .setTitle('Error')
                         .setDescription(`You have insufficient permissions! ${PermissionFlagsBits[permission]}`);
-                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
                     return;
                 }
             }
@@ -52,20 +53,19 @@ module.exports = {
                         .setColor(`Red`)
                         .setTitle('Error')
                         .setDescription(`I lack the permission(s) to do that! ${PermissionFlagsBits[permission]}`);
-                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
                     return;
                 }
             }
 
-            const botAppData = fs.readFileSync('./objects/botapplication.json', 'utf-8');
-            const botApplicationConfig = JSON.parse(botAppData);
+            const {rows: botAppData} = await poolConnection.query(`SELECT * FROM botconfig`);
 
-            if(botApplicationConfig.applicationscope === 'test' && interaction.guild.id !== process.env.HOME_SERVER_ID) {
+            if(botAppData.application_scope === 'test' && interaction.guild.id !== process.env.HOME_SERVER_ID) {
                 const rEmbed = new EmbedBuilder()
                     .setColor('Red')
                     .setTitle('Error')
                     .setDescription('Application scope is set to testing!\nMaintenance might be undergoing.')
-                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
                     return;
             }
             
@@ -74,7 +74,7 @@ module.exports = {
                     .setColor('Red')
                     .setTitle('Error')
                     .setDescription('This command cannot be ran outside the Test Server!')
-                    interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
                     return;
             }
 
@@ -97,7 +97,7 @@ module.exports = {
                 // checking if the cooldown expired and gives a reply if not
                 if(now < expirationTime) {
                     const expiredTimestamp = Math.round(expirationTime / 1000);
-		            return interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
+		            return await interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
 	
                 }
                 
@@ -109,7 +109,7 @@ module.exports = {
             
             if(!command)
             {
-                interaction.reply({content: "This is not an operable command!"});
+                await interaction.reply({content: "This is not an operable command!"});
             }
             command.execute(interaction, client);
         }
@@ -118,25 +118,25 @@ module.exports = {
                 for(let i = 0; i < interaction.values.length; i++)
                 {
                     const roleId = interaction.values[i];
-                    if(!interaction.guild.roles.cache.has(roleId)) {
-                        return interaction.reply({embeds: [new EmbedBuilder()
+                    if(!(await interaction.guild.roles.cache.has(roleId))) {
+                        return await interaction.reply({embeds: [new EmbedBuilder()
                             .setTitle('Option not available')
                             .setDescription('The role selected no longer exists, Select Menu must be resent')
                         ]});
                     }
-                    const has_role = interaction.member.roles.cache.has(roleId);
+                    const has_role = await interaction.member.roles.cache.has(roleId);
                     switch(has_role)
                     {
                         case true:
-                            interaction.member.roles.remove(roleId);
+                            await interaction.member.roles.remove(roleId);
                         break;
                         case false:
-                            interaction.member.roles.add(roleId);
+                            await interaction.member.roles.add(roleId);
                         break;
                     }
                 }
 
-                interaction.reply({content: "Role updated", ephemeral: true});
+                await interaction.reply({content: "Role updated", ephemeral: true});
             }
             else if(interaction.customId === 'custom-color-menu') {
                 return;

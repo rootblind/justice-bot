@@ -293,6 +293,28 @@ module.exports = {
         });
         await premiumMembersReg;
 
+        const botConfigTable = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS botconfig (
+                id BIGINT PRIMARY KEY,
+                application_scope TEXT NOT NULL DEFAULT 'global',
+                backup_db_schedule TEXT
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('botconfig')
+                resolve(result);
+            });
+        });
+        await botConfigTable;
+        const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
+        if(botConfigDefaultRow.length == 0) {
+            const insertBotConfig = new Promise((resolve, reject) => {
+                poolConnection.query(`INSERT INTO botconfig(id) VALUES($1)`, [process.env.CLIENT_ID], (err, result) => {
+                    if(err) reject(err);
+                    resolve(result);
+                });
+            });
+            await insertBotConfig;
+        }
         
         let index = 1;
         for (x of table_nameListed){

@@ -2,7 +2,7 @@
     Manual database backup and scheduling backups
 */
 const {SlashCommandBuilder, EmbedBuilder} = require('discord.js')
-const poolConnection = require('../../utility_modules/kayle-db');
+const {poolConnection} = require('../../utility_modules/kayle-db');
 const {config} = require('dotenv');
 const {exec} = require('child_process');
 const fs = require('graceful-fs');
@@ -16,19 +16,18 @@ const username = process.env.DBUSER;
 const database = process.env.DBNAME;
 process.env.PGPASSWORD = process.env.DBPASS;
 
-const cronRegex = /^((((\d+,)+\d+|(\d+(\/|-|#)\d+)|\d+L?|\*(\/\d+)?|L(-\d+)?|\?|[A-Z]{3}(-[A-Z]{3})?) ?){5,7})$/;
-
 function generateName() {
-    const date = new Date();
+    const date = new Date(); // generate a name that contains the time of creation
     return `kayle-db-bk-${date.toISOString().replace(/:/g, '-').slice(0,-5)}.sql`
 }
 
 async function createBackup() {
     const fileName = generateName();
+    // dump the backup inside the designated folder
     const command = `pg_dump -U ${username} -d ${database} -f ${path.join(dumpDir, fileName)}`
     
     const promise = new Promise((resolve, reject) => {
-        exec(command, (err, stdout, stderr) => {
+        exec(command, (err, stdout, stderr) => { // execute the bash command
             if(err) reject(err);
             resolve(stdout.trim());
         });
@@ -37,8 +36,10 @@ async function createBackup() {
     return fileName;
 }
 
+// access outside the methods for session persistence
 let schedule = null;
 
+// the method used for scheduling
 async function schedule_backup(expression) {
     schedule = cron.schedule(expression, async () => {
         try{
@@ -112,17 +113,29 @@ module.exports = {
                             .setColor('Red')
                             .setDescription('The cron expression provided is invalid, a cron expression must look something like: `* * * * *`')
                    ]});
+
+                const{rows: botAppConfig} = await poolConnection.query(`SELECT backup_db_schedule FROM botconfig`);
+
+                if(botAppConfig.length > 0 && botAppConfig[0].backup_db_schedule) {
+                    // if a schedule already exists, restart the cron scheduler
+                    //restarting the cron scheduler using the new expression
+                    if(schedule) schedule.stop();
+                    
+                }
                 await schedule_backup(cronExpression);
+                await poolConnection.query(`UPDATE botconfig SET backup_db_schedule=$1`, [cronExpression]);
+
                 await interaction.reply({ephemeral: true, embeds: [
                     new EmbedBuilder()
                         .setColor('Green')
                         .setTitle('Database backup schedule set up')
                         .setDescription(`Expression: \`${cronExpression}\``)
-                ]})
+                ]});
 
             break;
             case 'stop':
                 schedule.stop();
+                await poolConnection.query(`UPDATE botconfig SET backup_db_schedule=$1`, [null]);
                 await interaction.reply({ephemeral: true, embeds: [
                     new EmbedBuilder()
                         .setColor('Green')

@@ -17,7 +17,6 @@ const {
     TextInputBuilder,
     TextInputStyle,
     StringSelectMenuBuilder,
-    StringSelectMenuOptionBuilder,
 } = require("discord.js");
 const {
     text_classification,
@@ -224,9 +223,9 @@ module.exports = {
                     .setCustomId(`redeem-modal-${interaction.user.id}`)
                     .setTitle("Redeem premium key");
 
-                let filterRedeemModal = (interaction) =>
-                    interaction.customId ===
-                    `redeem-modal-${interaction.user.id}`;
+                let filterRedeemModal = (i) =>
+                    i.user.id ===
+                    interaction.user.id;
 
                 const redeemCodeRow = new ActionRowBuilder().addComponents(
                     redeemKeyInput
@@ -237,7 +236,7 @@ module.exports = {
                 let collectorMenu =
                     mainMenuMessage.createMessageComponentCollector({
                         ComponentType: ComponentType.Button,
-                        filterRedeemModal,
+                        filter: filterRedeemModal,
                         time: 120_000,
                     });
 
@@ -427,6 +426,7 @@ module.exports = {
                 break;
             case "dashboard": // premium users can access their features from the dashboard
                 // fetching information from database about the current member premium status
+                const initMessage = await interaction.deferReply({ephemeral: true});
                 let code = null;
                 let createdAt = null;
                 let expiresAt = null;
@@ -673,7 +673,7 @@ module.exports = {
                     .addComponents(backButton, refreshRoleMenu, closeButton);
 
                 // building the main menu embed message
-                const menuMessage = await interaction.reply({
+                const menuMessage = await interaction.editReply({
                     embeds: [embedMainMenu],
                     components: [mainMenuRow],
                     ephemeral: true,
@@ -1263,12 +1263,17 @@ module.exports = {
                                     embeds: [deleteRoleLog],
                                 });
                             }
-                            if (customRole.members.size - 1 <= 0)
-                                await customRole.delete();
-                            else
-                                await interaction.member.roles.remove(
-                                    customRole
-                                );
+                            
+                            try{
+                                    if (customRole.members.size - 1 <= 0)
+                                        await customRole.delete();
+                                    else
+                                        await interaction.member.roles.remove(
+                                            customRole
+                                        );
+                                } catch(err) {
+                                    return await interaction.followUp({ephemeral: true, content: "Looks like the role no longer exists or an error occured, please contact an admin!"});
+                                }
 
                             roleMenuEmbed.setThumbnail(null);
 
@@ -1282,7 +1287,9 @@ module.exports = {
                 });
 
                 collector.on("end", async () => {
-                    await menuMessage.delete();
+                    try{
+                        await initMessage.delete();
+                    } catch(err) {};
                 });
                 break;
         }

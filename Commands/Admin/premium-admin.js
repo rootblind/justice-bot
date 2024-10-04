@@ -1594,7 +1594,7 @@ module.exports = {
                         new EmbedBuilder()
                             .setColor(0xd214c7)
                             .setAuthor({
-                                name: `${interaction.user.id} set a custom role for a member`,
+                                name: `${interaction.user.username} set a custom role for a member`,
                                 iconURL: interaction.user.displayAvatarURL({extension: 'png'})
                             })
                             .addFields(

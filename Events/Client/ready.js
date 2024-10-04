@@ -9,10 +9,17 @@ const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 const axios = require('axios');
 const cron = require('node-cron');
+const {exec} = require('child_process');
 
 
 config();
 require('colors');
+
+const dumpDir = path.join(__dirname, '../../backup-db');
+
+const username = process.env.DBUSER;
+const database = process.env.DBNAME;
+process.env.PGPASSWORD = process.env.DBPASS;
 
 function randNum(maxNumber) {
     // a basic random function depending on a max number
@@ -356,6 +363,30 @@ module.exports = {
                 });
             });
             await premiumMembersReg;
+        
+        const botConfigTable = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS botconfig (
+                id BIGINT PRIMARY KEY,
+                application_scope TEXT NOT NULL DEFAULT 'global',
+                backup_db_schedule TEXT
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('botconfig')
+                resolve(result);
+            });
+        });
+        await botConfigTable;
+        
+        const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
+        if(botConfigDefaultRow.length == 0) {
+            const insertBotConfig = new Promise((resolve, reject) => {
+                poolConnection.query(`INSERT INTO botconfig(id) VALUES($1)`, [process.env.CLIENT_ID], (err, result) => {
+                    if(err) reject(err);
+                    resolve(result);
+                });
+            });
+            await insertBotConfig;
+        }
 
         for(tableName of table_nameListed){
                 table.addRow(tableName, 'Ready');
@@ -399,7 +430,6 @@ module.exports = {
 
         // this section will be about on ready checks on db.
         const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
-
         // checking if invalid boosters have premium membership (due to them losing membership during downtime)
         const {rows: premiumBoostersData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE from_boosting=$1`, [true]);
         for(let booster of premiumBoostersData) {
@@ -409,7 +439,7 @@ module.exports = {
                 const boosterMember = await fetchGuild.members.fetch(booster.member);
                 if(!boosterMember.premiumSince) { // meaning the member is in the server and is no longer boosting
                     const premiumGuildRole = premiumRolesData.find(r => r.guild === fetchGuild.id);
-                    const premiumRole = await fetchGuild.roles.fetch(premiumGuildRole);
+                    const premiumRole = await fetchGuild.roles.fetch(premiumGuildRole.role);
                     await boosterMember.roles.remove(premiumRole);
                 }
                 else continue; // skip boosters that are still boosting
@@ -425,6 +455,7 @@ module.exports = {
             await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [fetchGuild.id, booster.code])
 
         }
+
         
         // checking every 5 minutes therefore there can be a delay between 0 and 5 minutes
         const expirationPremium_schedule = cron.schedule('*/5 * * * *', async () => { 
@@ -456,7 +487,10 @@ module.exports = {
                 if(user.customrole)
                 {
                     let customRole = await fetchGuild.roles.fetch(user.customrole);
-                    await customRole.delete();
+                    if(customRole.members.size - 1 <= 0)
+                        await customRole.delete();
+                    else
+                        await guildMember.roles.remove(customRole);
                 }
             }
 
@@ -467,7 +501,30 @@ module.exports = {
             
         }, { scheduled: true});
 
-
+        const{rows: botAppConfig} = await poolConnection.query(`SELECT * FROM botconfig`);
+        // if a schedule was set, keep its persistency
+        // this will NOT continue the previous cron task scheduler, but rather will start a new scheduler with the same expression once the bot restarts
+        if(botAppConfig[0].backup_db_schedule){
+            const backupSchedulerPersistence = cron.schedule(botAppConfig[0].backup_db_schedule, async () => {
+                const {rows: checkUpdatedSchedule} = await poolConnection.query(`SELECT backup_db_schedule FROM botconfig`);
+                if(checkUpdatedSchedule[0].backup_db_schedule != botAppConfig[0].backup_db_schedule){
+                    // this means that /backup-db set was used, therefore there is no need to keep the old schedule
+                    backupSchedulerPersistence.stop();
+                    return;
+                }
+                const date = new Date(); // generate a name that contains the time of creation
+                const fileName = `kayle-db-bk-${date.toISOString().replace(/:/g, '-').slice(0,-5)}.sql`
+                const command = `pg_dump -U ${username} -d ${database} -f ${path.join(dumpDir, fileName)}`
+                const promise = new Promise((resolve, reject) => {
+                    exec(command, (err, stdout, stderr) => { // execute the bash command
+                        if(err) { console.error(err); reject(err); }
+                        resolve(stdout.trim());
+                    });
+                });
+                await promise;
+                
+            });
+        }
        
     }
 };

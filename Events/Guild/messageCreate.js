@@ -84,7 +84,7 @@ module.exports = {
         if(!(await checkModApi(mod_api))) return; // at the moment, the event of sending a message has no other goal other than
         // evaluating the messages through the mod_api
 
-        const response = await text_classification(mod_api, message.content);
+        const response = await text_classification(mod_api, message.content).catch(err => {console.error(err);});
         
         if(response)
         {
