@@ -1,5 +1,8 @@
 const {EmbedBuilder, AuditLogEvent} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
+const {config} = require('dotenv');
+
+config()
 
 module.exports = {
     name: 'guildBanAdd',
@@ -31,6 +34,9 @@ module.exports = {
         });
 
         const fetchEntry = fetchAudit.entries.first();
+        
+        if(fetchEntry.executor.id == process.env.CLIENT_ID) return; // ignore this bot's bans since they are handled by other code blocks
+
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: `[BAN] ${ban.user.username}`,
@@ -58,7 +64,9 @@ module.exports = {
             )
         await logChannel.send({embeds: [embed]});
 
-        // checking if the member has active premium membership
+        await poolConnection.query(`INSERT INTO punishlogs(guild, target, moderator, punishment_type, reason, timestamp)
+                    VALUES($1, $2, $3, $4, $5, $6)`,
+                [ban.guild.id, ban.user.id, 4, `${fetchEntry.reason || "no_reason"}`, parseInt(Date.now() / 1000)])
        
     }
 

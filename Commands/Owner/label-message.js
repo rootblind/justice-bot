@@ -24,13 +24,10 @@ module.exports = {
 
         const flagTags = {
             OK: 0,
-            Insult: 0,
+            Aggro: 0,
             Violence: 0,
             Sexual: 0,
             Hateful: 0,
-            Flirt: 0,
-            Spam: 0,
-            Aggro: 0
         }
         const tags = Object.keys(flagTags);
         const selectMenuOptions = [];
@@ -68,7 +65,7 @@ module.exports = {
                     flagTags[value] = 1;
                 });
             await interaction.reply({ephemeral: true, content: `Flags selected: ${interaction.values.join(', ')}`});
-            csvAppend(filteredText, flagTags, 'train.csv');
+            csvAppend(filteredText, flagTags, 'flag_data.csv');
             collector.stop();
         });
 

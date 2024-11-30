@@ -61,12 +61,11 @@ module.exports = {
         } else if(auditLogEntry.action == AuditLogEvent.MemberUpdate){
 
             const targetMember = await guild.members.fetch(auditLogEntry.targetId);
-
+            
             if(auditLogEntry.changes[0]['key'] == 'communication_disabled_until' &&
                 auditLogEntry.changes[0]['new']
-
             ){
-
+                const reason = auditLogEntry.reason || "no_reason";
                 const targetMember = await guild.members.fetch(auditLogEntry.targetId);
                 const embed = new EmbedBuilder()
                     .setTitle('Member timed out')
@@ -88,6 +87,10 @@ module.exports = {
                         {
                             name: 'Expiration',
                             value:`${botUtils.formatDate(targetMember.communicationDisabledUntil)} - ${botUtils.formatTime(targetMember.communicationDisabledUntil)}`
+                        },
+                        {
+                            name: 'Reason',
+                            value: `${auditLogEntry.reason || 'No reason specified.'}`
                         }
                     )
                     .setTimestamp()
@@ -96,6 +99,9 @@ module.exports = {
 
                 await logChannel.send({embeds: [embed]});
 
+                // 0- warn; 1- timeout; 2- tempban; 3- indefinite ban; 4- permanent ban
+                await poolConnection.query(`INSERT INTO punishlogs(guild, target, moderator, punishment_type, reason, timestamp)
+                    VALUES($1, $2, $3, $4, $5, $6)`, [guild.id, targetMember.id, auditLogEntry.executor.id, 1, reason, parseInt(Date.now() / 1000)]);
             } else if(auditLogEntry.changes[0]['key'] == 'communication_disabled_until' &&
                 !auditLogEntry.changes[0]['new']) {
                         const embed = new EmbedBuilder()

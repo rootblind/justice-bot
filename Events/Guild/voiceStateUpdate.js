@@ -8,7 +8,7 @@ module.exports = {
         if(!oldState.member) return;
         if(!oldState.member.user) return;
         if(oldState.member.user.bot) return; // ignore bots
-
+        const user = oldState.member.user;
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
 
         const fetchLogChannel = new Promise((resolve, reject) => {
@@ -34,7 +34,7 @@ module.exports = {
                 .setDescription('Member just joined voice.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
+                        name: `${user.username}`,
                         iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
                     }
                 )
@@ -52,7 +52,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
 
@@ -61,8 +61,8 @@ module.exports = {
                 .setDescription('Member just left voice.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -79,7 +79,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
         } else if(oldState.channelId !== newState.channelId) {
@@ -87,8 +87,8 @@ module.exports = {
                 .setDescription('Member changed channels.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -110,7 +110,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
         } else if(!oldState.serverMute && newState.serverMute) {
@@ -118,8 +118,8 @@ module.exports = {
                 .setDescription('Member was muted.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -141,7 +141,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
         } else if(oldState.serverMute && !newState.serverMute) {
@@ -149,8 +149,8 @@ module.exports = {
                 .setDescription('Member was unmuted.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -172,7 +172,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
         } else if(!oldState.serverDeaf && newState.serverDeaf) {
@@ -180,8 +180,8 @@ module.exports = {
                 .setDescription('Member was deafened.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -203,7 +203,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             
             await logChannel.send({embeds:[embed]});
         } else if(oldState.serverDeaf && !newState.serverDeaf) {
@@ -211,8 +211,8 @@ module.exports = {
                 .setDescription('Member was undeafened.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -234,7 +234,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             await logChannel.send({embeds:[embed]});
 
         } else if(!oldState.selfVideo && newState.selfVideo) {
@@ -242,8 +242,8 @@ module.exports = {
                 .setDescription('Member has their camera open.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -265,15 +265,15 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             await logChannel.send({embeds:[embed]});
         } else if(oldState.selfVideo && !newState.selfVideo) {
             const embed = new EmbedBuilder()
                 .setDescription('Member closed their camera.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -295,7 +295,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             await logChannel.send({embeds:[embed]});
 
         } else if(!oldState.streaming && newState.streaming) {
@@ -303,8 +303,8 @@ module.exports = {
                 .setDescription('Member is now streaming.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -326,7 +326,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             await logChannel.send({embeds:[embed]});
             
         } else if(oldState.streaming && !newState.streaming) {
@@ -334,8 +334,8 @@ module.exports = {
                 .setDescription('Member closed their stream.\n')
                 .setAuthor(
                     {
-                        name: `${oldState.member.user.username}`,
-                        iconURL: oldState.member.displayAvatarURL({extension: 'jpg'})
+                        name: `${user.username}`,
+                        iconURL: user.displayAvatarURL({extension: 'jpg'})
                     }
                 )
                 .setColor(color)
@@ -357,7 +357,7 @@ module.exports = {
                     }
                 )
                 .setTimestamp()
-                .setFooter({text: `ID: ${oldState.member.user.id}`})
+                .setFooter({text: `ID: ${user.id}`})
             await logChannel.send({embeds:[embed]});
         }
         

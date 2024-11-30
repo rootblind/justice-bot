@@ -100,25 +100,27 @@ const axios = require('axios');
 async function text_classification(api, text) {
     // preparing the text for the classification
     const alphabetPattern = /^[a-zA-Z]/;
-    const urlPattern = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/;
-    const emojiPattern = /<[^>]*>/g;
-    function filter(text) {
-        if(text.length < 3) return text;
-        text = text.replace('+rep', '')
-                    .replace('-rep', '')
-                    .replace('\n', ' ')
-                    .replace('\r', ' ')
-                    .replace(/^\s+/, '')
-                    .replace(emojiPattern, '');
-        if(text.endsWith(','))
-            text = text.slice(0,-1);
-        return text;
+    const allowedPattern = /[^a-zA-Z0-9 !.-?]/g;
+    const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
+    function filter(message) {
+        if (message.length < 3) {
+            return message;
+        }
+
+        message = message.replace('+rep', '');
+        message = message.replace('-rep', '');
+        message = message.replace(/\n/g, ' ').replace(/\r/g, ' ');
+        message = message.replace(urlPattern, '');
+        message = message.replace(allowedPattern, '');
+        message = message.trim();
+
+        return message;
     }
 
     const filteredText = filter(text);
 
-    if (filteredText.length > 2 && alphabetPattern.test(filteredText) && !urlPattern.test(filteredText))
+    if (filteredText.length > 2 && alphabetPattern.test(filteredText))
     {
         let classifier = null;
         const url = api + 'classify';
@@ -126,12 +128,15 @@ async function text_classification(api, text) {
             'text' : filteredText
         };
 
-        await axios.post(url, data)
-            .then(response => {
-                classifier = response.data['labels'];
-            }) 
-            .catch(err => { console.error(err); })
-        
+        try{
+            await axios.post(url, data)
+                .then(response => {
+                    classifier = response.data['labels'];
+                }) 
+                .catch(err => { console.error(err); })
+        } catch(err) {
+            console.error(err);
+        }
         return {labels: classifier, text: filteredText}; // returning the model's labels and the filtered text that was analyzed by the model
     }
     else return false;
@@ -191,13 +196,10 @@ function csvAppend(data, flags, path) {
     writer.write({
        Message: data,
        OK: flags['OK'],
-       Insult: flags['Insult'],
+       Aggro: flags['Aggro'],
        Violence: flags['Violence'],
        Sexual: flags['Sexual'],
-       Hateful: flags['Hateful'],
-       Flirt: flags['Flirt'],
-       Spam: flags['Spam'],
-       Aggro: flags['Aggro']
+       Hateful: flags['Hateful']
     });
     writer.end();
 }
@@ -219,32 +221,73 @@ async function isFileOk(path) {
 function curated_text(text) {
     // preparing the text for the classification
     const alphabetPattern = /^[a-zA-Z]/;
-    const urlPattern = /https?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/;
-    const emojiPattern = /<[^>]*>/g;
-    function filter(text) {
-        if(text.length < 3) return text;
-        text = text.replace('+rep', '')
-                    .replace('-rep', '')
-                    .replace('\n', ' ')
-                    .replace('\r', ' ')
-                    .replace(/^\s+/, '')
-                    .replace(emojiPattern, '');
-        if(text.endsWith(','))
-            text = text.slice(0,-1);
-        return text;
+    const allowedPattern = /[^a-zA-Z0-9 -!?.]/g;
+    const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
+    function filter(message) {
+        if (message.length < 3) {
+            return message;
+        }
+
+        message = message.replace('+rep', '');
+        message = message.replace('-rep', '');
+        message = message.replace(/\n/g, ' ').replace(/\r/g, ' ');
+        message = message.replace(urlPattern, '');
+        message = message.replace(allowedPattern, '');
+        message = message.trim();
+
+        return message;
     }
 
     const filteredText = filter(text);
 
-    if (filteredText.length > 2 && alphabetPattern.test(filteredText) && !urlPattern.test(filteredText))
+    if (filteredText.length > 2 && alphabetPattern.test(filteredText))
     {
         return filteredText;
     }
     else return false;
 }
 
+function random_code_generation() { // generates a random key code, meaning a string with a random length between 5 and 10 that has random characters
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?';
+    const length = Math.floor(Math.random() * 6) + 5; // Random length between 5 and 10
+
+    let randomString = '';
+
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        randomString += characters[randomIndex];
+    }
+    return randomString;
+}
+
+
+// takes durationString as input something like 3d, matches the value and the time unit, converts the time unit to seconds and then returns
+// the timestamp of when the key will expire.
+// Example: 3d will be converted to the current timestamp + 3 * 864000.
+const durationRegex = /^(\d+)([m,h,d,w,y])$/;
+function duration_timestamp(durationString) {
+    const match = durationString.match(durationRegex);
+    if(match) {
+        const value = parseInt(match[1]);
+        const unit = match[2].toLowerCase();
+        const Unit = {
+            "m": 60,
+            "h": 3600,
+            "d": 86400,
+            "w": 604800,
+            "y": 31556926
+        }
+        return parseInt(Date.now() / 1000) + value * Unit[unit]; // for some reason, timestamps are in milliseconds, but discord interprets as seconds
+        // hence why Date.now() is divided by 1000
+    } else {
+        return null;
+    }
+}
+
 module.exports = {
+    duration_timestamp,
+    random_code_generation,
     curated_text,
     isFileOk,
     csvRead,

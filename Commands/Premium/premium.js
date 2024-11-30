@@ -426,7 +426,12 @@ module.exports = {
                 break;
             case "dashboard": // premium users can access their features from the dashboard
                 // fetching information from database about the current member premium status
-                const initMessage = await interaction.deferReply({ephemeral: true});
+                let initMessage;
+                try{
+                    initMessage = await interaction.deferReply({ephemeral: true});
+                } catch(err) {
+                    return console.error(err);
+                }
                 let code = null;
                 let createdAt = null;
                 let expiresAt = null;
@@ -456,7 +461,7 @@ module.exports = {
                 const premiumKeyPromise = new Promise((resolve, reject) => {
                     poolConnection.query(
                         `SELECT * FROM premiumkey WHERE code=$1`,
-                        [encryptor(code)],
+                        [encryptor(code).toString()],
                         (err, res) => {
                             if (err) reject(err);
                             if (res.rows.length > 0) {
@@ -1219,7 +1224,9 @@ module.exports = {
                                 roleMenuEmbed.setThumbnail(
                                     customRole.iconURL()
                                 );
-                                await message.delete(); // deleting the input message
+                                try{
+                                    await message.delete(); // deleting the input message
+                                } catch {};
                                 await interaction.followUp({
                                     content: "Role icon set successfully!",
                                     ephemeral: true,

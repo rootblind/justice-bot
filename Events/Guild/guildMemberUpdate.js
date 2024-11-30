@@ -70,11 +70,17 @@ module.exports = {
             // premium membership must be removed from boosters that are no longer boosting
             // checking if 1- member has premium membership and from boosting 2- checking if member still has nitro booster role
             // fetching the membership from db
-            const {rows : premiumMemberData} = await poolConnection.query(`SELECT * FROM premiummembers 
+            let {rows : premiumMemberData} = await poolConnection.query(`SELECT * FROM premiummembers 
                 WHERE guild=$1 AND member=$2 AND from_boosting=$3`,
                 [newMember.guild.id, newMember.id, true]
             );
-            if(!oldMember.premiumSince && newMember.premiumSince) { // when a  member is boosting
+
+            // if someone is already a premium user, the current code will take priority
+            let {rows: checkPremiumMemberStatus} = await poolConnection
+                .query(`SELECT member FROM premiummembers WHERE guild=$1 AND member=$2`,
+                    [newMember.guild.id, newMember.id]
+            );
+            if(!oldMember.premiumSince && newMember.premiumSince && checkPremiumMemberStatus.length == 0) { // when a  member is boosting
                 // assign user with premium role
                 await newMember.roles.add(premiumRole);
                 // if old member didn't have nitro booster and the new one has, it means the member just boosted the server
@@ -94,6 +100,15 @@ module.exports = {
                 );
                 await poolConnection.query(`INSERT INTO premiummembers(member, guild, code, customrole, from_boosting)
                     VALUES($1, $2, $3, $4, $5)`, [newMember.id, newMember.guild.id, code, null, true]);
+                
+                const updateMemberData = async () => {
+                    const { rows } = await poolConnection
+                    .query(`SELECT member FROM premiummembers WHERE guild=$1 AND member=$2`,
+                        [newMember.guild.id, newMember.id]
+                    );
+                    checkPremiumMemberStatus = rows;
+                }
+                await updateMemberData();
                 
                 const embedPremiumLog = new EmbedBuilder()
                     .setTitle('Server boost')
@@ -152,7 +167,9 @@ module.exports = {
                         if(customRole.members.size - 1 > 0)
                             await newMember.roles.remove(customRole.id);
                         else
-                            await customRole.delete();
+                            try{
+                                await customRole.delete();
+                            } catch(e) { console.error(e)}
                 }
                 // removing premium role
                 await newMember.roles.remove(premiumRole);
@@ -161,7 +178,7 @@ module.exports = {
                 await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [newMember.guild.id, newMember.id]);
                 await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [newMember.guild.id, premiumMemberData[0].code]);
                 
-
+                
                 // logging
                 if(premiumLogChannel) {
                     await premiumLogChannel.send({embeds: [
@@ -191,64 +208,17 @@ module.exports = {
                             .setDescription(`Your membership was gained through nitro boosting. Since your boost ended, you lost premium membership on **${newMember.guild.name}**!\nYou can boost again or get a premium key code through other means.\n\n_If you think this message is a mistake, contact a staff member!_`)
                     ]});
                 } catch(err) {};
+
+                const refreshPremiumMemberData = async () => {
+                    const { rows } = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2 AND from_boosting=$3`,
+                        [newMember.guild.id, newMember.id, true]
+                    );
+
+                    premiumMemberData = rows;
+                }
+                await refreshPremiumMemberData();
                 
             }
-        }
-
-        const clientMember = await newMember.guild.members.fetch(process.env.CLIENT_ID)
-        if(oldMember.displayName !== newMember.displayName) {
-            try{
-                const response = await text_classification(process.env.MOD_API_URL, `${newMember.displayName}`);
-                if(response && newMember.roles.highest.position < clientMember.roles.highest.position)
-                    if(!response.labels.includes('OK')) {
-                            try{
-                                await newMember.user.send({embeds: [
-                                    new EmbedBuilder()
-                                        .setColor(0xfb0409)
-                                        .setAuthor({
-                                            name: `${newMember.guild.name}`,
-                                            iconURL: newMember.guild.iconURL({extension: 'png'})
-                                        })
-                                        .setTitle('Warning!')
-                                        .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
-                                        .addFields({
-                                            name: 'Flags',
-                                            value: `${response.labels.join(', ')}`
-                                        })
-        
-                                ]});
-                            } catch(err) {};
-                            await newMember.setNickname(oldMember.displayName); // if the bot has perms, will revert the nickname change
-                        }
-                const embed = new EmbedBuilder()
-                    .setAuthor({
-                        name: `${oldMember.user.username} changed their nickname`,
-                        iconURL: oldMember.displayAvatarURL({format: 'jpg'})
-                    })
-                    .addFields(
-                        {
-                            name: 'Old name',
-                            value: `${oldMember.displayName}`,
-                            inline: true
-                        },
-                        {
-                            name: 'New name',
-                            value: `${newMember.displayName}`,
-                            inline: true
-                        },
-                        {
-                            name: 'Flags',
-                            value: response ? `${response.labels.join(', ')}` : 'None'
-                        }
-                    )
-                    .setColor(0x2596be)
-                    .setTimestamp()
-                    .setFooter({text:`ID: ${oldMember.id}`});        
-                await logChannel.send({embeds: [embed]});
-            } catch(err) {
-                console.error(err);
-            }
-            
         }
 
         return; // unhandled events will be ignored

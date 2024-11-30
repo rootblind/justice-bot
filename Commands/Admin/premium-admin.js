@@ -15,13 +15,10 @@ const {config} = require('dotenv');
 config();
 
 
-
-const durationRegex = /^(\d+)([m,h,d,w,y])$/;
-
-
 // takes durationString as input something like 3d, matches the value and the time unit, converts the time unit to seconds and then returns
 // the timestamp of when the key will expire.
 // Example: 3d will be converted to the current timestamp + 3 * 864000.
+const durationRegex = /^(\d+)([m,h,d,w,y])$/;
 function duration_timestamp(durationString) {
     const match = durationString.match(durationRegex);
     if(match) {
@@ -328,6 +325,12 @@ module.exports = {
 
                 // for each member, the following lines must be executed
                 arrayMembers.forEach(async (member) => {
+                    const {rows : membershipData} = await poolConnection.query(`SELECT member FROM premiummembers WHERE
+                        guild=$1 AND member=$2`,
+                    [interaction.guild.id, member.id]);
+
+                    if(membershipData.length > 0) return;
+                    
                     // generate a dedicated unique key
                     let code;
                     const generateCode = new Promise((resolve, reject) => {
@@ -1363,10 +1366,8 @@ module.exports = {
                                     // once all affected users got their premium role removed, their custom roles must be deleted
                                     if(row.customrole) {
                                         const customRole = await interaction.guild.roles.fetch(row.customrole);
-                                        if(customRole.members.size - 1 <= 0) // deleting the role if no other member has it or just remove it from the member
-                                            await customRole.delete();
-                                        else
-                                            await guildMember.roles.remove(customRole);
+                                        await customRole.delete();
+
                                     }
                                 
 

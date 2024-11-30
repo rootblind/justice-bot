@@ -12,6 +12,63 @@ module.exports = {
     async execute(member)
     {
         if(member.user.bot || !member || !member.user) return;
+
+        // removing perma bans must be done through the bot
+        const {rows: banData} = await poolConnection.query(`SELECT * FROM banlist WHERE guild=$1 AND target=$2 AND expires=$3`,
+            [member.guild.id, member.id, 0]
+        );
+
+        if(banData.length > 0) {
+            try{
+                await member.guild.bans.create(member.id, {reason: 'The member is permanently banned and the ban was revoked through an illegal way.'})
+            } catch (error) {
+                console.error(error);
+            }
+            
+            let logChannel = null;
+
+            const serverLogsResult = await poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`,
+                [member.guild.id, 'moderation']);
+
+            if(serverLogsResult.rows.length > 0)
+            {
+                logChannel = await member.guild.channels.fetch(serverLogsResult.rows[0].channel);
+            }
+
+            if(logChannel != null) {
+                await logChannel.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setAuthor({
+                                name: `[BAN] ${member.user.username}`,
+                                iconURL: member.user.displayAvatarURL({ format: 'jpg' })
+                            })
+                            .setColor(0xff0000)
+                            .setTimestamp()
+                            .setFooter({text:`ID: ${member.id}`})
+                            .addFields(
+                                {
+                                    name: 'User',
+                                    value: `${member.user}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Moderator',
+                                    value: `<@${process.env.CLIENT_ID}>`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Reason',
+                                    value: `Illegal removal of the ban.`,
+                                    inline: false
+                                }
+                            )
+                    ]
+                })
+            }
+            return;
+        }
+
         // if there is a logging channel for user-activity, the new member will be logged here
         const userLogs = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [member.guild.id, 'user-activity'],
@@ -46,49 +103,6 @@ module.exports = {
             )
         });
         await userLogs;
-
-        // using mod api to filter for bad words in names
-        try{
-            const response = await botUtils.text_classification(process.env.MOD_API_URL, `${member.displayName} ${member.user.username}`);
-            if(response)
-                if(!response.labels.includes('OK') && !response.labels.includes("Spam")) {
-                    const {rows: modLogsData} = await poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`,
-                        [member.guild.id, 'moderation']
-                    );
-                    if(modLogsData.length > 0) {
-                        const modLogsChannel = await member.guild.channels.fetch(modLogsData[0].channel);
-                        await modLogsChannel.send({embeds: [
-                            new EmbedBuilder()
-                                .setAuthor({name: `${member.displayName} / ${member.user.username}`,
-                                    iconURL: member.displayAvatarURL({extension: 'png'})
-                                })
-                                .setDescription(`Member name(s) flagged as [${response.labels.join(', ')}]`)
-                                .setColor(0xfb0409)
-                                .setTimestamp()
-                                .setFooter({text:`ID: ${member.id}`})
-                        ]});
-                        try{
-                            await member.user.send({embeds: [
-                                new EmbedBuilder()
-                                    .setColor(0xfb0409)
-                                    .setAuthor({
-                                        name: `${member.guild.name}`,
-                                        iconURL: member.guild.iconURL({extension: 'png'})
-                                    })
-                                    .setTitle('Warning!')
-                                    .setDescription('Your name was flagged and it might violate the server\'s ToS!\nThe moderators may take actions if you don\'t change it!\n\n_This filter is experimental, if you think this was a mistake, contact a staff member!_')
-                                    .addFields({
-                                        name: 'Flags',
-                                        value: `${response.labels.join(', ')}`
-                                    })
-
-                            ]});
-                        } catch(err) {};
-                    }
-                }
-        } catch(err) {
-            console.error(err.name);
-        }
 
         // if a welcome message was set, when a new member joins, it will be sent on the specified channel
         const welcomeMessagePromise = new Promise((resolve, reject) => {

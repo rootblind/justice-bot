@@ -175,13 +175,10 @@ module.exports = {
                     // creating a labels object for the flags in order to write the confirmed flags to the csv
                     const flagTags = {
                         OK: 0,
-                        Insult: 0,
+                        Aggro: 0,
                         Violence: 0,
                         Sexual: 0,
                         Hateful: 0,
-                        Flirt: 0,
-                        Spam: 0,
-                        Aggro: 0
                     }
                     if(interaction.customId === 'confirm') {
                         for(let label of response['labels']) {
@@ -217,12 +214,12 @@ module.exports = {
                             ]});
                         await interaction.reply({ephemeral: true, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
                         // appending the message
-                        csvAppend(response['text'], flagTags, 'train.csv');
+                        csvAppend(response['text'], flagTags, 'flag_data.csv');
                         collector.stop();
                     
                     }
                     else if(interaction.customId === 'correct') {
-                        const tags = ["Insult","Violence","Sexual","Hateful","Flirt","Spam","Aggro"]
+                        const tags = ["Insult","Aggro","Violence", "Sexual","Hateful"]
                         const  selectMenuOptions = [];
                         for(let x of tags) {
                             selectMenuOptions.push({
@@ -245,8 +242,8 @@ module.exports = {
                                 .setDescription('Please select all the appropiate flags for the message.')
                                 .addFields(
                                     {
-                                        name: 'Insult',
-                                        value: 'Usage of insults against another person.'
+                                        name: 'Aggro',
+                                        value: 'Provoking someone else into an argument.'
                                     },
                                     {
                                         name: 'Violence',
@@ -259,18 +256,6 @@ module.exports = {
                                     {
                                         name: 'Hateful',
                                         value: 'Hateful messages and slurs against minorities and other people.'
-                                    },
-                                    {
-                                        name: 'Flirt',
-                                        value: 'Flirting with another person or engaging in romantical situations.'
-                                    },
-                                    {
-                                        name: 'Spam',
-                                        value: 'Copypastas and spam messages.'
-                                    },
-                                    {
-                                        name: 'Aggro',
-                                        value: 'Provoking someone else into an argument.'
                                     }
                                 )
                         ]});
@@ -314,7 +299,7 @@ module.exports = {
                         selectCollector.on('end', async () => {
                             await selectFlagsMessage.delete();
                             // appending the message
-                            csvAppend(response['text'], flagTags, 'train.csv');
+                            csvAppend(response['text'], flagTags, 'flag_data.csv');
                             collector.stop();
                         });
                     } else if(interaction.customId === 'ok-button') {
@@ -344,7 +329,7 @@ module.exports = {
                                     .setFooter({text: `ID: ${interaction.user.id}`})
                             ]});
                         // appending the message
-                        csvAppend(response['text'], flagTags, 'train.csv');
+                        csvAppend(response['text'], flagTags, 'flag_data.csv');
                         collector.stop();
                     }
                     

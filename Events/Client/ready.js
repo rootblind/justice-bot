@@ -1,7 +1,7 @@
 // The first signs of "it works!" are provided by the ready event.
 // It is also used to initialize some features from the first moments, like auto-updating the presence
 
-const { Client, ActivityType } = require("discord.js");
+const { Client, ActivityType, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 const { config } = require('dotenv');
@@ -376,6 +376,44 @@ module.exports = {
             });
         });
         await botConfigTable;
+
+        const banList = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS banlist (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                target BIGINT NOT NULL,
+                moderator BIGINT NOT NULL,
+                expires BIGINT NOT NULL,
+                reason TEXT,
+                CONSTRAINT unique_guild_target UNIQUE (guild, target)
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('banlist')
+                resolve(result);
+            });
+        });
+        await banList;
+
+        const punishlogs = new Promise((resolve, reject) => {
+            // punishment_type is an integer representing the type of the punishment
+            // for ease of reference in code, integers will be used to represent punishment types instead of strings
+            // types are graded from least severe to most severe
+            // 0- warn; 1- timeout; 2- tempban; 3- indefinite ban; 4- permanent ban
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS punishlogs (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                target BIGINT NOT NULL,
+                moderator BIGINT NOT NULL,
+                punishment_type INT NOT NULL,
+                reason TEXT NOT NULL,
+                timestamp BIGINT NOT NULL
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('punishlogs')
+                resolve(result);
+            });
+        });
+        await punishlogs;
         
         const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
         if(botConfigDefaultRow.length == 0) {
@@ -401,9 +439,9 @@ module.exports = {
 
     
         
-        // making sure that the train.csv exists
-        if(!(await botUtils.isFileOk('train.csv'))) {
-            await fs.promises.writeFile('train.csv', 'Message,OK,Insult,Violence,Sexual,Hateful,Flirt,Spam,Aggro\n', 'utf8');
+        // making sure that the flag_data.csv exists
+        if(!(await botUtils.isFileOk('flag_data.csv'))) {
+            await fs.promises.writeFile('flag_data.csv', 'Message,OK,Aggro,Violence,Sexual,Hateful\n', 'utf8');
         }
         // creating a temporary files directory
         const tempDir = path.join(__dirname, '../../temp'); // temp directory will be used for storing txt files and such that will be
@@ -428,78 +466,197 @@ module.exports = {
             }
         });
 
+        const banListChecks =  cron.schedule("0 * * * *", async () => {
+            // temporary bans that expired must be removed
+            const {rows : banListData} = await poolConnection.query(`SELECT * FROM banlist WHERE expires > 0 AND expires <=$1`,
+                [Math.floor(Date.now() / 1000)]);
+
+            for(let banData of banListData) {
+                const fetchGuild = await client.guilds.fetch(banData.guild);
+                try{
+                    await fetchGuild.bans.remove(banData.target, {reason: 'Temporary ban expired!'})
+                } catch(error) {}
+                
+
+                let logChannel = null;
+                const fetchLogChannel = new Promise((resolve, reject) => {
+                    poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [fetchGuild.id, 'moderation'],
+                        (err, result) => {
+                            if(err) {
+                                console.error(err);
+                                reject(err);
+                            }
+                            else if(result.rows.length > 0) {
+                                logChannel = fetchGuild.channels.cache.get(result.rows[0].channel);
+                            }
+                            resolve(result);
+                        }
+                    )
+                });
+                await fetchLogChannel;
+                
+                if(logChannel != null) {
+                    await logChannel.send({embeds: [
+                        new EmbedBuilder()
+                            .setAuthor({
+                                name: `[UNBAN] <@${banData.target}>`
+                            })
+                            .setColor(0x00ff01)
+                            .setTimestamp()
+                            .setFooter({text:`ID: ${banData.target}`})
+                            .addFields(
+                                {
+                                    name: 'User',
+                                    value: `<@${banData.target}>`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Moderator',
+                                    value: `${client.user.username}`,
+                                    inline: true
+                                },
+                                {
+                                    name: 'Reason',
+                                    value: `Temporary ban expired`,
+                                    inline: false
+                                }
+                            )
+                    ]});
+                }
+
+                await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [fetchGuild.id, banData.target]);
+            }
+        }, { scheduled: true });
+
         // this section will be about on ready checks on db.
         const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
         // checking if invalid boosters have premium membership (due to them losing membership during downtime)
         const {rows: premiumBoostersData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE from_boosting=$1`, [true]);
         for(let booster of premiumBoostersData) {
             const fetchGuild = await client.guilds.fetch(booster.guild);
-            if(await fetchGuild.members.cache.has(booster.member))
-            {
+            try{
                 const boosterMember = await fetchGuild.members.fetch(booster.member);
                 if(!boosterMember.premiumSince) { // meaning the member is in the server and is no longer boosting
                     const premiumGuildRole = premiumRolesData.find(r => r.guild === fetchGuild.id);
                     const premiumRole = await fetchGuild.roles.fetch(premiumGuildRole.role);
                     await boosterMember.roles.remove(premiumRole);
+                    if(booster.customrole) {
+                        const customRole = await fetchGuild.roles.fetch(booster.customrole);
+                        await customRole.delete();
+                    }
                 }
                 else continue; // skip boosters that are still boosting
+            } catch(err) {
+                // error will be raised by fetching a member if it doesn't exist
             }
-            if(booster.customrole) {
-                const customRole = await fetchGuild.roles.fetch(booster.customrole);
-                if(customRole.members)
-                    if(customRole.members.size == 0)
-                        await customRole.delete();
-            }
-
+            
             await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [fetchGuild.id, booster.member]);
-            await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [fetchGuild.id, booster.code])
+            await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [fetchGuild.id, booster.code.toString()])
 
         }
 
         
         // checking every 5 minutes therefore there can be a delay between 0 and 5 minutes
         const expirationPremium_schedule = cron.schedule('*/5 * * * *', async () => { 
-            // managing expiration of premium key codes
-
-            // fetching premium roles from db
-            const {rows : premiumRolesData} = await poolConnection.query(`SELECT guild, role FROM serverroles WHERE roletype=$1`, ["premium"]);
-            
-            // firstly, checking the database and making the neccesary changes on the discord server before
-            // updating the db
-            let currentTimestamp = parseInt(Date.now() / 1000); // fetching current timestamp in seconds
-            const {rows : expiredMembers} = await poolConnection.query(`SELECT pm.guild, pm.member, customrole FROM premiummembers pm
-                JOIN premiumkey pc ON pm.code = pc.code AND pm.guild = pc. guild
-                WHERE pc.expiresat <=$1 AND pc.expiresat > 0`, [currentTimestamp]);
-            // removing premium and custom roles from expired memberships
-            for(let user of expiredMembers) {
-                const fetchGuild = await client.guilds.fetch(user.guild); // fetching the guild
-                let guildMember;
-                try{
-                    guildMember = await fetchGuild.members.fetch(user.member); // fetching the member
-                }catch(e) { continue; }
+            try {
                 
-                if(!guildMember) continue; // if the user is no longer a member of the guild, skip the rest of the steps
-                // fetch the premium role of the guild
-                const premiumRoleObj = premiumRolesData.find(role => role.guild === user.guild) // the db object
-                const premiumRole = await fetchGuild.roles.fetch(premiumRoleObj.role); // the discord api object
-                await guildMember.roles.remove(premiumRole); // removing the premium role from the user.
-                // removing the custom role if it exists
-                if(user.customrole)
-                {
-                    let customRole = await fetchGuild.roles.fetch(user.customrole);
-                    if(customRole.members.size - 1 <= 0)
-                        await customRole.delete();
-                    else
-                        await guildMember.roles.remove(customRole);
+                const { rows: premiumRolesData } = await poolConnection.query(
+                    `SELECT guild, role FROM serverroles WHERE roletype=$1`, 
+                    ["premium"]
+                );
+        
+                let currentTimestamp = Math.floor(Date.now() / 1000);
+                
+                const { rows: expiredMembers } = await poolConnection.query(
+                    `SELECT pm.guild, pm.member, customrole 
+                    FROM premiummembers pm
+                    JOIN premiumkey pc ON pm.code = pc.code AND pm.guild = pc.guild
+                    WHERE pc.expiresat <= $1 AND pc.expiresat > 0`, 
+                    [currentTimestamp]
+                );
+                
+        
+                for (let user of expiredMembers) {
+                    let fetchGuild;
+                    try {
+                        fetchGuild = await client.guilds.fetch(user.guild);
+                    } catch (e) {
+                        console.error(`Error fetching guild ${user.guild}:`, e);
+                        continue;
+                    }
+        
+                    let guildMember;
+                    try {
+                        guildMember = await fetchGuild.members.fetch(user.member);
+                    } catch (e) {
+                        continue;
+                    }
+        
+                    if (!guildMember) continue;
+        
+                    if (guildMember.premiumSince) {
+                        let code = botUtils.encryptor(botUtils.random_code_generation());
+                        
+                        let { rows: keyData } = await poolConnection.query(
+                            `SELECT code FROM premiumkey WHERE guild=$1`, 
+                            [guildMember.guild.id]
+                        );
+        
+                        const existingCodes = keyData.map(row => row.code);
+                        while (existingCodes.includes(code)) {
+                            code = botUtils.encryptor(botUtils.random_code_generation());
+                        }
+        
+                        await poolConnection.query(
+                            `INSERT INTO premiumkey(code, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
+                            VALUES($1, $2, $3, $4, $5, $6, $7)`, 
+                            [code, guildMember.guild.id, client.user.id, Math.floor(Date.now() / 1000), 0, 0, guildMember.id]
+                        );
+        
+                        await poolConnection.query(
+                            `UPDATE premiummembers SET code=$1, from_boosting=$2
+                            WHERE member=$3 AND guild=$4`, 
+                            [code, true, guildMember.id, guildMember.guild.id]
+                        );
+
+                        keyData = await poolConnection.query(
+                            `SELECT code FROM premiumkey WHERE guild=$1`, 
+                            [guildMember.guild.id]
+                        );
+        
+                        continue;
+                    }
+        
+                    const premiumRoleObj = premiumRolesData.find(role => role.guild === user.guild);
+                    if (!premiumRoleObj) {
+                        continue;
+                    }
+        
+                    const premiumRole = await fetchGuild.roles.fetch(premiumRoleObj.role);
+                    await guildMember.roles.remove(premiumRole);
+        
+                    if (user.customrole) {
+                        const customRole = await fetchGuild.roles.fetch(user.customrole);
+                        await customRole.delete()
+                    }
                 }
+                await poolConnection.query(
+                    `DELETE FROM premiummembers
+                    WHERE code IN (SELECT code FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0)`, 
+                    [currentTimestamp]
+                );
+        
+                await poolConnection.query(
+                    `DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`, 
+                    [currentTimestamp]
+                );
+        
+            } catch (e) {
+                console.error('Error in expirationPremium_schedule:', e);
             }
 
-            // clearing the rows
-            await poolConnection.query(`DELETE FROM premiummembers
-                WHERE code IN (SELECT code FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0)`, [currentTimestamp]);
-            await poolConnection.query(`DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`, [currentTimestamp]);
-            
-        }, { scheduled: true});
+        }, { scheduled: true });
+        
 
         const{rows: botAppConfig} = await poolConnection.query(`SELECT * FROM botconfig`);
         // if a schedule was set, keep its persistency
@@ -525,6 +682,5 @@ module.exports = {
                 
             });
         }
-       
     }
 };

@@ -315,6 +315,40 @@ module.exports = {
             });
             await insertBotConfig;
         }
+
+        const banList = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS banlist (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                target BIGINT NOT NULL,
+                moderator BIGINT NOT NULL,
+                expires BIGINT NOT NULL,
+                reason TEXT,
+                CONSTRAINT unique_guild_target UNIQUE (guild, target)
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('banlist')
+                resolve(result);
+            });
+        });
+        await banList;
+
+        const punishlogs = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS punishlogs (
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                target BIGINT NOT NULL,
+                moderator BIGINT NOT NULL,
+                punishment_type INT NOT NULL,
+                reason TEXT NOT NULL,
+                timestamp BIGINT NOT NULL
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('punishlogs')
+                resolve(result);
+            });
+        });
+        await punishlogs;
         
         let index = 1;
         for (x of table_nameListed){

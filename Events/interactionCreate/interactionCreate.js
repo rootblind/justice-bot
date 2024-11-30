@@ -15,7 +15,6 @@ module.exports = {
         {
 
             const command = client.commands.get(interaction.commandName);
-            const me = interaction.guild.members.cache.get(process.env.CLIENT_ID);
             if(interaction.guild === null) {
                 return await interaction.reply('Private commands are not available yet!');
                 
