@@ -8,7 +8,7 @@
 */
 
 const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder,
-    ComponentType
+    ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {duration_timestamp, formatDate, formatTime} = require('../../utility_modules/utility_methods.js');
@@ -100,6 +100,7 @@ module.exports = {
                 .addUserOption(option =>
                     option.setName('target')
                         .setDescription('Check the ban of the target.')
+                        .setRequired(true)
                 )
         )
 
@@ -177,6 +178,22 @@ module.exports = {
         });
         await fetchLogChannel;
 
+        const unbanModal = new ModalBuilder()
+            .setCustomId(`unban-modal-${interaction.user.id}`)
+            .setTitle('Unban')
+
+        const reasonInput = new TextInputBuilder()
+            .setCustomId('unban-reason-input')
+            .setLabel('Reason')
+            .setStyle(TextInputStyle.Paragraph)
+            .setMinLength(4)
+            .setMaxLength(512)
+            .setPlaceholder('Enter the reason....')
+            .setRequired(true)
+        
+        const reasonActionRow = new ActionRowBuilder().addComponents( reasonInput );
+        unbanModal.addComponents(reasonActionRow);
+
         const cmd = interaction.options.getSubcommand();
 
         let banlistData = null;
@@ -251,42 +268,58 @@ module.exports = {
                 });
 
                 indefiniteResponseCollector.on('collect', async (buttonInteraction) => {
-                    try {
-                        await buttonInteraction.guild.bans.remove(target.id);
-                    } catch(err) {}
-                    unbanButton.setDisabled(true);
-                    await indefiniteBanResponse.edit({components: [unbanActionRow]});
-                    const embed = new EmbedBuilder()
-                            .setAuthor({
-                                name: `[UNBAN] ${target.username}`,
-                                iconURL: target.displayAvatarURL({ format: 'jpg' })
-                            })
-                            .setColor(0x00ff01)
-                            .setTimestamp()
-                            .setFooter({text:`ID: ${target.id}`})
-                            .addFields(
-                                {
-                                    name: 'User',
-                                    value: `${target}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Moderator',
-                                    value: `${buttonInteraction.member}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Reason',
-                                    value: `Through button interaction`,
-                                    inline: false
-                                }
-                            )
-                    if(logChannel) {
-                        await logChannel.send({embeds: [embed]});
-                    }
-                    
+                    buttonInteraction.showModal(unbanModal);
+                    try{
+                        const submitReason = await buttonInteraction.awaitModalSubmit({
+                            filter: (i) => i.customId === `unban-modal-${interaction.user.id}`,
+                            time: 300_000
+                        });
 
-                    await buttonInteraction.reply({embeds: [embed]})
+                        await submitReason.deferReply();
+
+                        const reason = submitReason.fields.getTextInputValue('unban-reason-input');
+
+                        try {
+                            await buttonInteraction.guild.bans.remove(target.id, reason);
+                        } catch(err) {}
+                        unbanButton.setDisabled(true);
+                        await indefiniteBanResponse.edit({components: [unbanActionRow]});
+                        const embed = new EmbedBuilder()
+                                .setAuthor({
+                                    name: `[UNBAN] ${target.username}`,
+                                    iconURL: target.displayAvatarURL({ format: 'jpg' })
+                                })
+                                .setColor(0x00ff01)
+                                .setTimestamp()
+                                .setFooter({text:`ID: ${target.id}`})
+                                .addFields(
+                                    {
+                                        name: 'User',
+                                        value: `${target}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Moderator',
+                                        value: `${buttonInteraction.member}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason,
+                                        inline: false
+                                    }
+                                )
+                        if(logChannel) {
+                            await logChannel.send({embeds: [embed]});
+                        }
+                        
+
+                        await submitReason.editReply({embeds: [embed]});
+                    } catch(err) {
+                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given in time, try again.'});
+                    }
+
+                    
                 });
 
                 indefiniteResponseCollector.on('end', async () => {
@@ -372,42 +405,56 @@ module.exports = {
                 });
 
                 tempBanMessageCollector.on('collect', async (buttonInteraction) => {
-                    try {
-                        await buttonInteraction.guild.bans.remove(target.id);
-                    } catch(err) {}
-                    await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
-                    unbanTempButton.setDisabled(true);
-                    await tempBanResponse.edit({components: [unbanTempActionRow]});
-                    const embed = new EmbedBuilder()
-                            .setAuthor({
-                                name: `[UNBAN] ${target.username}`,
-                                iconURL: target.displayAvatarURL({ format: 'jpg' })
-                            })
-                            .setColor(0x00ff01)
-                            .setTimestamp()
-                            .setFooter({text:`ID: ${target.id}`})
-                            .addFields(
-                                {
-                                    name: 'User',
-                                    value: `${target}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Moderator',
-                                    value: `${buttonInteraction.member}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Reason',
-                                    value: `Through button interaction`,
-                                    inline: false
-                                }
-                            )
-                    if(logChannel) {
-                        await logChannel.send({embeds: [embed]});
-                    }
+                    buttonInteraction.showModal(unbanModal);
+                    try{
+                        const submitReason = await buttonInteraction.awaitModalSubmit({
+                            filter: (i) => i.customId === `unban-modal-${interaction.user.id}`,
+                            time: 300_000
+                        });
 
-                    await buttonInteraction.reply({embeds: [embed]});
+                        await submitReason.deferReply();
+
+                        const reason = submitReason.fields.getTextInputValue('unban-reason-input');
+
+                        try {
+                            await buttonInteraction.guild.bans.remove(target.id, reason);
+                        } catch(err) {}
+                        await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
+                        unbanTempButton.setDisabled(true);
+                        await tempBanResponse.edit({components: [unbanTempActionRow]});
+                        const embed = new EmbedBuilder()
+                                .setAuthor({
+                                    name: `[UNBAN] ${target.username}`,
+                                    iconURL: target.displayAvatarURL({ format: 'jpg' })
+                                })
+                                .setColor(0x00ff01)
+                                .setTimestamp()
+                                .setFooter({text:`ID: ${target.id}`})
+                                .addFields(
+                                    {
+                                        name: 'User',
+                                        value: `${target}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Moderator',
+                                        value: `${buttonInteraction.member}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason,
+                                        inline: false
+                                    }
+                                )
+                        if(logChannel) {
+                            await logChannel.send({embeds: [embed]});
+                        }
+    
+                        await submitReason.editReply({embeds: [embed]});
+                    } catch(err) {
+                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
+                    }
                 });
 
                 tempBanMessageCollector.on('end', async () => {
@@ -502,42 +549,56 @@ module.exports = {
                 });
 
                 permaBanResponseCollector.on('collect', async (buttonInteraction) => {
-                    try {
-                        await buttonInteraction.guild.bans.remove(target.id);
-                    } catch(err) {}
-                    unbanPermaButton.setDisabled(true);
-                    await permaBanResponseCollector.edit({components: [unbanPermaActionRow]});
-                    const embed = new EmbedBuilder()
-                            .setAuthor({
-                                name: `[UNBAN] ${target.username}`,
-                                iconURL: target.displayAvatarURL({ format: 'jpg' })
-                            })
-                            .setColor(0x00ff01)
-                            .setTimestamp()
-                            .setFooter({text:`ID: ${target.id}`})
-                            .addFields(
-                                {
-                                    name: 'User',
-                                    value: `${target}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Moderator',
-                                    value: `${buttonInteraction.member}`,
-                                    inline: true
-                                },
-                                {
-                                    name: 'Reason',
-                                    value: `Through button interaction`,
-                                    inline: false
-                                }
-                            )
-                    if(logChannel) {
-                        await logChannel.send({embeds: [embed]});
+                    buttonInteraction.showModal(unbanModal);
+                    try{
+                        const submitReason = await buttonInteraction.awaitModalSubmit({
+                            filter: (i) => i.customId === `unban-modal-${interaction.user.id}`,
+                            time: 300_000
+                        });
+
+                        await submitReason.deferReply();
+
+                        const reason = submitReason.fields.getTextInputValue('unban-reason-input');
+                        try {
+                            await buttonInteraction.guild.bans.remove(target.id, reason);
+                        } catch(err) {}
+                        unbanPermaButton.setDisabled(true);
+                        await permaBanResponse.edit({components: [unbanPermaActionRow]});
+                        const embed = new EmbedBuilder()
+                                .setAuthor({
+                                    name: `[UNBAN] ${target.username}`,
+                                    iconURL: target.displayAvatarURL({ format: 'jpg' })
+                                })
+                                .setColor(0x00ff01)
+                                .setTimestamp()
+                                .setFooter({text:`ID: ${target.id}`})
+                                .addFields(
+                                    {
+                                        name: 'User',
+                                        value: `${target}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Moderator',
+                                        value: `${buttonInteraction.member}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason,
+                                        inline: false
+                                    }
+                                )
+                        if(logChannel) {
+                            await logChannel.send({embeds: [embed]});
+                        }
+                        
+                        await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
+                        await submitReason.editReply({embeds: [embed]})
+                    } catch(err) {
+                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
                     }
                     
-                    await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
-                    await buttonInteraction.reply({embeds: [embed]})
                 });
 
                 permaBanResponseCollector.on('end', async () => {
@@ -595,11 +656,166 @@ module.exports = {
                 });
             break;
             case "check":
-                const {rows: banlist} = await poolConnection.query(`SELECT * FROM banlist WHERE guild=$1 AND target=$2`,
-                    [interaction.guild.id, target]
-                );
+                const checkBanMessage = await interaction.deferReply();
+                let fetchBan = null;
+                const checkEmbed = new EmbedBuilder();
+                try{
+                    fetchBan = await interaction.guild.bans.fetch(target.id);
+                } catch(err) {
+                    fetchBan = null;
+                }
 
+                if(!fetchBan) {
+                    return await interaction.editReply({
+                        embeds: [
+                            checkEmbed.setColor('Red')
+                                .setTitle('Invalid ban')
+                                .setDescription(`${target} is not currently banned!`)
+                        ]
+                    });
+                }
+
+                checkEmbed.setColor('Aqua')
+                    .setAuthor({name: `${target.username}'s ban details`, iconURL: target.displayAvatarURL({extension: 'png'})})
+                    .addFields(
+                        {
+                            name: 'User',
+                            value: `${target}`
+                        }
+                    );
                 
+                const {rows: banlist} = await poolConnection.query(`SELECT * FROM banlist WHERE guild=$1 AND target=$2`,
+                    [interaction.guild.id, target.id]
+                );
+                const {rows: punishlogs} = await poolConnection.query(`SELECT * FROM punishlogs WHERE guild=$1 AND target=$2 AND punishment_type >= 2
+                    ORDER BY timestamp DESC LIMIT 1`, [interaction.guild.id, target.id]);
+
+                if(banlist.length > 0) {
+                    checkEmbed.addFields(
+                        {
+                            name: 'Expires',
+                            value: banlist[0].expires > 0 ? `<t:${banlist[0].expires}:R>` : "Restricted"
+                        }
+                    );
+                }
+                else {
+                    checkEmbed.addFields(
+                        {
+                            name: 'Expires',
+                            value: 'Indefinite'
+                        }
+                    );
+                }
+
+                if(punishlogs.length > 0) {
+                    banType = {
+                        2: "Temporary",
+                        3: "Indefinite",
+                        4: "Permanent"
+                    }
+                    checkEmbed.addFields(
+                        {
+                            name: 'Reason',
+                            value: punishlogs[0].reason
+                        },
+                        {
+                            name: 'Moderator',
+                            value: `<@${punishlogs[0].moderator}>`
+                        },
+                        {
+                            name: 'Ban Type',
+                            value: banType[punishlogs[0].punishment_type]
+                        },
+                        {
+                            name: "Date",
+                            value: `<t:${punishlogs[0].timestamp}:R>`
+                        }
+                    )
+                }
+                else {
+                    checkEmbed.addFields(
+                        {
+                            name: 'Reason',
+                            value: fetchBan.reason
+                        }
+                    )
+                }
+
+                if(banlist[0]?.expires == 0) {
+                    return await interaction.editReply({embeds: [checkEmbed]});
+                }
+                const checkUnban = new ButtonBuilder()
+                    .setStyle(ButtonStyle.Danger)
+                    .setLabel('Unban')
+                    .setCustomId('unban-button')
+                
+                const checkUnbanActionRow = new ActionRowBuilder()
+                    .addComponents( checkUnban );
+                
+                const checkBanCollector = checkBanMessage.createMessageComponentCollector({
+                    ComponentType: ComponentType.Button,
+                    filter: (i) => i.member.permissions.has(PermissionFlagsBits.BanMembers)
+                });
+
+                await checkBanMessage.edit({
+                    embeds: [checkEmbed],
+                    components: [checkUnbanActionRow]
+                });
+
+                checkBanCollector.on('collect', async (buttonInteraction) => {
+                    buttonInteraction.showModal(unbanModal);
+                    try{
+                        const submitReason = await buttonInteraction.awaitModalSubmit({
+                            filter: (i) => i.customId === `unban-modal-${interaction.user.id}`,
+                            time: 300_000
+                        });
+
+                        await submitReason.deferReply();
+
+                        const reason = submitReason.fields.getTextInputValue('unban-reason-input');
+
+                        try {
+                            await buttonInteraction.guild.bans.remove(target.id, reason);
+                        } catch(err) {}
+                        checkUnban.setDisabled(true);
+                        await checkBanMessage.edit({components: [checkUnbanActionRow]});
+                        const embed = new EmbedBuilder()
+                                .setAuthor({
+                                    name: `[UNBAN] ${target.username}`,
+                                    iconURL: target.displayAvatarURL({ format: 'jpg' })
+                                })
+                                .setColor(0x00ff01)
+                                .setTimestamp()
+                                .setFooter({text:`ID: ${target.id}`})
+                                .addFields(
+                                    {
+                                        name: 'User',
+                                        value: `${target}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Moderator',
+                                        value: `${buttonInteraction.member}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason,
+                                        inline: false
+                                    }
+                                )
+                        if(logChannel) {
+                            await logChannel.send({embeds: [embed]});
+                        }
+                        
+                        await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
+                        await submitReason.editReply({embeds: [embed]})
+                    } catch(err) {
+                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
+                    }
+                    
+                });
+
             break;
         }
 
