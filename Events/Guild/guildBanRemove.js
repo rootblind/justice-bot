@@ -7,6 +7,14 @@ module.exports = {
     async execute(ban) {
         if(!ban) return;
 
+        const fetchAudit = await ban.guild.fetchAuditLogs({
+            type: AuditLogEvent.MemberBanRemove,
+            limit: 1,
+        });
+
+        const fetchEntry = fetchAudit.entries.first();
+        if(fetchEntry.executor.id == process.env.CLIENT_ID) return;
+
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
 
         const fetchLogChannel = new Promise((resolve, reject) => {
@@ -74,13 +82,7 @@ module.exports = {
 
         if(logChannel == null) return; // if no server activity log channel is set up, then do nothing
 
-        const fetchAudit = await ban.guild.fetchAuditLogs({
-            type: AuditLogEvent.MemberBanRemove,
-            limit: 1,
-        });
-
-        const fetchEntry = fetchAudit.entries.first();
-        if(fetchEntry.executor.id == process.env.CLIENT_ID) return;
+        
         const embed = new EmbedBuilder()
             .setAuthor({
                 name: `[UNBAN] ${ban.user.username}`,

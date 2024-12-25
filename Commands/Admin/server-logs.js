@@ -396,7 +396,7 @@ module.exports = {
             // logging channels need to be ignored
             const ignoreLogs = new Promise((resolve, reject) => {
                 poolConnection.query(`INSERT INTO serverlogsignore (guild, channel)
-                    VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6), ($1, $7), ($1, $8)`,
+                    VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6), ($1, $7), ($1, $8), ($1, $9)`,
                     [interaction.guildId, modLogs.id, voiceLogs.id, messagesLogs.id, userLogs.id, serverActivity.id,
                     flaggedMessages.id, premiumActivity.id, justiceLogs.id],
                     (err, result) => {

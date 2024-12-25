@@ -66,7 +66,7 @@ module.exports = {
 
         await poolConnection.query(`INSERT INTO punishlogs(guild, target, moderator, punishment_type, reason, timestamp)
                     VALUES($1, $2, $3, $4, $5, $6)`,
-                [ban.guild.id, ban.user.id, 4, `${fetchEntry.reason || "no_reason"}`, parseInt(Date.now() / 1000)])
+                [ban.guild.id, ban.user.id, fetchEntry.executor.id, 3, `${fetchEntry.reason || "no_reason"}`, parseInt(Date.now() / 1000)])
        
     }
 

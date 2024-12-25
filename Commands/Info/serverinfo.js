@@ -11,8 +11,6 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('serverinfo')
         .setDescription('Details about the server.'),
-    botPermissions: [PermissionFlagsBits.ManageGuild, PermissionFlagsBits.ManageRoles, PermissionFlagsBits.ManageEmojisAndStickers,
-                    PermissionFlagsBits.EmbedLinks],
     async execute(interaction) {
         const {guild} = interaction;
         const {members, channels, emojis, roles, stickers} = guild;

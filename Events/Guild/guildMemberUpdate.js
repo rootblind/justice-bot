@@ -25,10 +25,10 @@ module.exports = {
 
     async execute(oldMember, newMember) {
 
+        if(!oldMember) return;
         if(oldMember.user.bot) return; // ignore bots
-        
-        let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
 
+        let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
         const fetchLogChannel = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [oldMember.guild.id, 'user-activity'],
                 (err, result) => {
@@ -44,13 +44,78 @@ module.exports = {
             )
         });
         await fetchLogChannel;
+        
+        /*  In case there is ever a need to log moderation activities since timeouts are logged using guildauditlogentrycreate event
+        const modLogChannel = null
+        const fetchModLog = new Promise((resolve, reject) => {
+            poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [oldMember.guild.id, 'moderation'],
+                (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    else if(result.rows.length > 0) {
+                        modLogChannel = oldMember.guild.channels.fetch(result.rows[0].channel);
+                    }
+                    resolve(result);
+                }
+            )
+        });
+        await fetchModLog;
+        */
 
-        if(logChannel == null) return; // if no server activity log channel is set up, then do nothing
+        if(logChannel) {
+            if(oldMember.displayName != newMember.displayName) {
+                await logChannel.send({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setAuthor({name: `${oldMember.user.username}`, iconURL: oldMember.displayAvatarURL({extension: 'png'})})
+                            .setColor(0x2596be)
+                            .addFields(
+                                {
+                                    name: 'Old display name',
+                                    value: `${oldMember.displayName}`
+                                },
+                                {
+                                    name: 'New display name',
+                                    value: `${newMember.displayName}`
+                                }
+                            )
+                            .setTimestamp()
+                            .setFooter({text: `ID: ${oldMember.id}`})
+                    ]
+                });
+            } else if(oldMember.user.username != newMember.user.username) {
+                await logChannel.send({
+                    embeds: [
+                        new EmbedBuilder()
+                        .setAuthor({name: `${newMember.user.username}`, iconURL: newMember.displayAvatarURL({extension: 'png'})})
+                        .setColor(0x2596be)
+                        .addFields(
+                            {
+                                name: 'Old username',
+                                value: `${oldMember.user.username}`
+                            },
+                            {
+                                name: 'New username',
+                                value: `${newMember.user.username}`
+                            }
+                        )
+                        .setTimestamp()
+                        .setFooter({text: `ID: ${newMember.id}`})
+                            
+                    ]
+                })
+            }
+        }
+        
+
 
         //fetching the premium role, if it doesn't exist, no premium membership is assigned
         const {rows : premiumRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`, [newMember.guild.id, 'premium']);
-        const premiumRole = await newMember.guild.roles.fetch(premiumRoleData[0].role);
+        
         if(premiumRoleData.length > 0){
+            const premiumRole = await newMember.guild.roles.fetch(premiumRoleData[0].role);
             let premiumLogChannel = null // if defined, logging the premium activity
             const fetchLogChannel = new Promise((resolve, reject) => {
                 poolConnection.query(`SELECT channel FROM serverlogs WHERE eventtype=$1 AND guild=$2`, ['premium-activity', newMember.guild.id],

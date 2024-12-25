@@ -36,18 +36,18 @@ module.exports = {
 
         const fetchEntry = fetchAudit.entries.first();
 
-        if(fetchEntry.executor.bot) return; // ignore bot actions
+        if(fetchEntry?.executor.bot) return; // ignore bot actions
 
         let description = "";
         const embed = new EmbedBuilder()
-        .setTitle('Channel Updated')
-        .setAuthor({
-            name: fetchEntry.executor.username,
-            iconURL: fetchEntry.executor.displayAvatarURL({ format: 'jpg' })
-        })
-        .setColor(0x05f5fb)
-        .setTimestamp()
-        .setFooter({text:`ID: ${fetchEntry.executorId}`});
+            .setTitle('Channel Updated')
+            .setAuthor({
+                name: fetchEntry.executor.username,
+                iconURL: fetchEntry.executor.displayAvatarURL({ format: 'jpg' })
+            })
+            .setColor(0x05f5fb)
+            .setTimestamp()
+            .setFooter({text:`ID: ${fetchEntry.executorId}`});
 
         if(oldChannel.name != newChannel.name)
             description += `**Name change**: ${oldChannel.name} -> ${newChannel.name}`;

@@ -75,7 +75,7 @@ module.exports = {
         let channel = interaction.options.getChannel('channel') || null;
         let profile = interaction.options.getString('send-as') || "admin";
         let message = interaction.options.getString('message') || null;
-        let contentMessage = "Announcement: ";
+        let contentMessage = "";
         let mentionRolesString = "";
         let mentionEveryone = false;
 
@@ -175,7 +175,6 @@ module.exports = {
                     .setCustomId('send-button')
                     .setStyle(ButtonStyle.Success)
                     .setLabel('Send')
-
                 // action rows for buttons
                 const setEmbedFeaturesActionRow = new ActionRowBuilder()
                     .addComponents(setColorButton, setAuthorButton, setContentButton, setImagesButton, addFieldButton)
@@ -184,7 +183,9 @@ module.exports = {
                 const import_exportActionRow = new ActionRowBuilder()
                     .addComponents(importJSON, exportJSON)
                 const announcementSetupActionRow = new ActionRowBuilder()
-                    .addComponents(setProfileButton, setRoleMentionButton, mentionEveryoneButton, sendButton)
+                    .addComponents(setProfileButton, setRoleMentionButton, mentionEveryoneButton)
+                const sendAnnouncementButtonActionRow = new ActionRowBuilder()
+                    .addComponents(sendButton)
                 
                 // text inputs
 
@@ -349,7 +350,7 @@ module.exports = {
                     .addComponents(importJSONActionRow)
                 
                 await initMessage.edit({embeds: [announcementBuilderEmbed], 
-                    components: [setEmbedFeaturesActionRow, removeEmbedFeaturesActionRow, import_exportActionRow, announcementSetupActionRow]});
+                    components: [setEmbedFeaturesActionRow, removeEmbedFeaturesActionRow, import_exportActionRow, announcementSetupActionRow, sendAnnouncementButtonActionRow]});
                 
                 const filter = (i) => interaction.user.id === i.user.id; 
 
@@ -670,7 +671,6 @@ module.exports = {
                             await collectorInteraction.reply({ephemeral: true, content: `Mention everyone set to **${mentionEveryone}**.`});
                         break;
                         case "send-button":
-                            contentMessage = "Announcement: ";
                             if(mentionEveryone) contentMessage += `${collectorInteraction.guild.roles.everyone} `;
                             if(mentionRolesString) contentMessage += mentionRolesString;
 
@@ -694,7 +694,8 @@ module.exports = {
                                 .setMaxValues(maxValues)
                                 .setCustomId("channel-select-menu")
                                 .setPlaceholder("Select the channels to send the announcement to.")
-                                .setChannelTypes(ChannelType.GuildText);
+                                .setChannelTypes(ChannelType.GuildText)
+                                
 
                             const channelMenuActionRow = new ActionRowBuilder()
                                 .addComponents(channelMenu);

@@ -219,7 +219,7 @@ module.exports = {
                     
                     }
                     else if(interaction.customId === 'correct') {
-                        const tags = ["Insult","Aggro","Violence", "Sexual","Hateful"]
+                        const tags = ["Aggro","Violence", "Sexual","Hateful"]
                         const  selectMenuOptions = [];
                         for(let x of tags) {
                             selectMenuOptions.push({

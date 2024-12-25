@@ -111,6 +111,7 @@ module.exports = {
         const duration = interaction.options.getString('duration') || null;
         const deleteMessages = interaction.options.getBoolean('delete-messages') || false; // if deleteMessages is set to true, the messages of the last 7 days will be deleted
         const deletionTime = deleteMessages ? 604800 : 0;
+        const cmd = interaction.options.getSubcommand();
         // validating input
         let targetMember = null; 
         try{
@@ -120,7 +121,7 @@ module.exports = {
             targetMember = null;
         }
         
-        if(targetMember)
+        if(targetMember && cmd != 'check')
         {
             if(targetMember?.roles.highest.position >= interaction.member.roles.highest.position) {
                 return await interaction.reply({
@@ -144,6 +145,21 @@ module.exports = {
                     ephemeral: true
                 });
             }
+            const {rows: staffRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`,
+                [interaction.guild.id, "staff"]
+            );
+
+            const staffRole = await interaction.guild.roles.fetch(staffRoleData[0].role);
+            if(targetMember.permissions.has(PermissionFlagsBits.BanMembers) || targetMember.roles.cache.has(staffRole.id)) [
+                await interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid target')
+                            .setDescription('You are not allowed to ban another moderator.')
+                    ]
+                })
+            ]
         }
         if(duration != null && !durationRegex.test(duration))
         {
@@ -194,7 +210,7 @@ module.exports = {
         const reasonActionRow = new ActionRowBuilder().addComponents( reasonInput );
         unbanModal.addComponents(reasonActionRow);
 
-        const cmd = interaction.options.getSubcommand();
+        
 
         let banlistData = null;
         if(target) {
@@ -202,8 +218,36 @@ module.exports = {
                 [interaction.guild.id, target.id]);
             banlistData = result.rows;
         }
+
+        const message = await interaction.deferReply();
+
         switch(cmd) {
             case "indefinite":
+                try{
+                    await target.send({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor('Red')
+                                .setAuthor({name: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({extension: 'png'})})
+                                .setTitle('You have been banned!')
+                                .setTimestamp()
+                                .addFields(
+                                    {
+                                        name: 'Moderator',
+                                        value: `${interaction.user.username}`
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason
+                                    },
+                                    {
+                                        name: 'Expires',
+                                        value: 'Indefinite'
+                                    }
+                                )
+                        ]
+                    });
+                }catch(err) {}
                 try{
                     await interaction.guild.bans.create(target.id, {reason: `${interaction.member.displayName} | ${reason}`, deleteMessageSeconds: deletionTime});
                 } catch(error) {
@@ -256,7 +300,7 @@ module.exports = {
 
                 const unbanActionRow = new ActionRowBuilder().addComponents( unbanButton );
 
-                const indefiniteBanResponse = await interaction.reply({
+                const indefiniteBanResponse = await message.edit({
                     embeds: [embed],
                     components: [unbanActionRow]
                 });
@@ -323,13 +367,40 @@ module.exports = {
                 });
 
                 indefiniteResponseCollector.on('end', async () => {
-                    await indefiniteBanResponse.delete();
+                    try {
+                        await indefiniteBanResponse.delete();
+                    } catch(err) {}
                 })
                 
             break;
             case "temporary":
                 // basically the same as indefinite, but with cron task added for automatic unban upon expiration
                 const expirationTimestamp = duration_timestamp(duration);
+                try{
+                    await target.send({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor('Red')
+                                .setAuthor({name: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({extension: 'png'})})
+                                .setTitle('You have been banned!')
+                                .setTimestamp()
+                                .addFields(
+                                    {
+                                        name: 'Moderator',
+                                        value: `${interaction.user.username}`
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason
+                                    },
+                                    {
+                                        name: 'Expires',
+                                        value: `<t:${expirationTimestamp}:R>`
+                                    }
+                                )
+                        ]
+                    });
+                }catch(err) {}
                 try{
                     await interaction.guild.bans.create(target.id, {reason: `${interaction.member.displayName} | ${reason}`, deleteMessageSeconds: deletionTime});
                 } catch(error) {
@@ -393,7 +464,7 @@ module.exports = {
 
                 const unbanTempActionRow = new ActionRowBuilder().addComponents( unbanTempButton );
 
-                const tempBanResponse = await interaction.reply({
+                const tempBanResponse = await message.edit({
                     embeds: [responseEmbed],
                     components: [unbanTempActionRow]
                 });
@@ -475,6 +546,31 @@ module.exports = {
                     });
                 }
                 try{
+                    await target.send({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor('Red')
+                                .setAuthor({name: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({extension: 'png'})})
+                                .setTitle('You have been banned!')
+                                .setTimestamp()
+                                .addFields(
+                                    {
+                                        name: 'Moderator',
+                                        value: `${interaction.user.username}`
+                                    },
+                                    {
+                                        name: 'Reason',
+                                        value: reason
+                                    },
+                                    {
+                                        name: 'Expires',
+                                        value: 'Permanent'
+                                    }
+                                )
+                        ]
+                    });
+                }catch(err) {}
+                try{
                     await interaction.guild.bans.create(target.id, {reason: `${interaction.member.displayName} | ${reason}`, deleteMessageSeconds: deletionTime});
                 } catch(error) {
                     console.error(error);
@@ -537,7 +633,7 @@ module.exports = {
                 const unbanPermaActionRow = new ActionRowBuilder()
                     .addComponents( unbanPermaButton );
 
-                const permaBanResponse = await interaction.reply({
+                const permaBanResponse = await message.edit({
                     embeds: [permaEmbed],
                     components: [unbanPermaActionRow]
                 });
@@ -607,7 +703,6 @@ module.exports = {
 
             break;
             case "counter":
-                await interaction.deferReply({ephemeral: false});
                 const fetchAllBans = async (guild) => {
                     let allBans = new Map();
                     let lastBanId = null;
@@ -641,22 +736,24 @@ module.exports = {
                             .addFields(
                                 {
                                     name: 'Total',
-                                    value: `${await fetchAllBans(interaction.guild)}`
+                                    value: `${await fetchAllBans(interaction.guild)}`,
+                                    inline: true
                                 },
                                 {
                                     name: 'Temporary',
-                                    value: `${tempBanCount}`
+                                    value: `${tempBanCount}`,
+                                    inline: true
                                 },
                                 {
                                     name: 'Permanent',
-                                    value: `${permaBanCount}`
+                                    value: `${permaBanCount}`,
+                                    inline: true
                                 }
                             )
                     ]
                 });
             break;
             case "check":
-                const checkBanMessage = await interaction.deferReply();
                 let fetchBan = null;
                 const checkEmbed = new EmbedBuilder();
                 try{
@@ -752,12 +849,12 @@ module.exports = {
                 const checkUnbanActionRow = new ActionRowBuilder()
                     .addComponents( checkUnban );
                 
-                const checkBanCollector = checkBanMessage.createMessageComponentCollector({
+                const checkBanCollector = message.createMessageComponentCollector({
                     ComponentType: ComponentType.Button,
                     filter: (i) => i.member.permissions.has(PermissionFlagsBits.BanMembers)
                 });
 
-                await checkBanMessage.edit({
+                await message.edit({
                     embeds: [checkEmbed],
                     components: [checkUnbanActionRow]
                 });
@@ -778,7 +875,7 @@ module.exports = {
                             await buttonInteraction.guild.bans.remove(target.id, reason);
                         } catch(err) {}
                         checkUnban.setDisabled(true);
-                        await checkBanMessage.edit({components: [checkUnbanActionRow]});
+                        await message.edit({components: [checkUnbanActionRow]});
                         const embed = new EmbedBuilder()
                                 .setAuthor({
                                     name: `[UNBAN] ${target.username}`,
