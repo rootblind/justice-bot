@@ -431,6 +431,117 @@ module.exports = {
                     });
                 break;
                 case 'clear-list':
+                    const emptyEmbedList = new EmbedBuilder()
+                        .setColor('Aqua')
+                        .setAuthor({name: `${user.username}'s ${listType} list is empty`, iconURL: user.displayAvatarURL({extension: 'png'})})
+                        .setDescription('There is nothing to be removed.');
+                    const embedCountList = new EmbedBuilder()
+                        .setColor('Aqua')
+                        .setAuthor({name: `${user.username}'s ${listType} list`, iconURL: user.displayAvatarURL({extension: 'png'})})
+                        
+                    const stringToType = {
+                        "warn": 0,
+                        "timeout": 1,
+                        "ban": 2
+                    }
+                    let clearedRows = 0;
+                    // because i am unable to generalize full, warn + timeout and bans, i will divide the approach into three ifs
+                    // since full needs to select all types [ listType == "full"]
+                    // warn and timeout are single types [stringToType[listType] < 2]
+                    // and ban represents all 3 types of bans [stringToType[listType] >= 2]
+
+                    deleteQuery = `DELETE FROM punishlogs WHERE guild=${interaction.guild.id} AND target=${user.id}`;
+                    if(listType == 'full') {
+                        const {rows: [{countfull}]} = await poolConnection.query(`SELECT COUNT(*) AS countfull FROM punishlogs
+                            WHERE guild=$1 AND target=$2`, [interaction.guild.id, user.id]);
+                        
+                        if(countfull == 0)
+                            return await interaction.editReply({embeds: [emptyEmbedList]});
+                        clearedRows = countfull;
+                        embedCountList.setDescription(`Are you sure that you want to remove **${countfull}** from the ${listType} list?`);
+                    } else if(stringToType[listType] < 2) {
+                        const {rows: [{counttype1}]} = await poolConnection.query(`SELECT COUNT(*) AS counttype1
+                            FROM punishlogs
+                            WHERE guild=$1
+                                AND target=$2
+                                AND punishment_type=$3`,
+                                [interaction.guild.id, user.id, stringToType[listType]]
+                            );
+                        if(counttype1 == 0)
+                            return await interaction.editReply({embeds: [emptyEmbedList]});
+                        clearedRows = counttype1;
+                        deleteQuery += ` AND punishment_type=${stringToType[listType]}`;
+
+                        embedCountList.setDescription(`Are you sure that you want to remove **${counttype1}** from the ${listType} list?`);
+                    } else if(stringToType[listType] >= 2) {
+                        const {rows: [{counttype2}]} = await poolConnection.query(`SELECT COUNT(*) AS counttype2
+                            FROM punishlogs
+                            WHERE guild=$1
+                                AND target=$2
+                                AND punishment_type >= $3`)
+
+                        if(counttype2 == 0)
+                            return await interaction.editReply({embeds: [emptyEmbedList]});
+                        clearedRows = counttype2;
+                        embedCountList.setDescription(`Are you sure that you want to remove **${counttype2}** from the ${listType} list?`);
+                        deleteQuery += ` AND punishment_type >= ${stringToType[listType]}`;
+                    }
+
+                    const clearListMessage = await interaction.editReply({embeds: [embedCountList], components: [buttonsActionRow]});
+
+                    const clearListCollector = await clearListMessage.createMessageComponentCollector({
+                        ComponentType: ComponentType.Button,
+                        filter: (i) => i.member.permissions.has(PermissionFlagsBits.Administrator),
+                        time: 300_000 
+                    })
+
+                    clearListCollector.on('collect', async (buttonInteraction) => {
+                        if(buttonInteraction.customId == 'confirm-button') {
+                            await poolConnection.query(deleteQuery);
+                            clearListMessage.edit(
+                                {
+                                    embeds:[embedCountList.setDescription(`**${user.username}**'s ${listType} list was cleared and is empty now.`)],
+                                    components: []
+                                }
+                            )
+                            await buttonInteraction.reply({ephemeral: true, content: 'List cleared.'});
+
+                            if(logChannel)
+                                await logChannel.send({
+                                    embeds: [
+                                        new EmbedBuilder()
+                                            .setColor('Red')
+                                            .setAuthor({name: `${user.username}'s ${listType} list got cleared`, iconURL: user.displayAvatarURL({extension: 'png'})})
+                                            .addFields(
+                                                {
+                                                    name: 'Target',
+                                                    value: `${user}`,
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: 'Cleared by',
+                                                    value: `${buttonInteraction.member}`,
+                                                    inline: true
+                                                },
+                                                {
+                                                    name: 'Cleared',
+                                                    value: `${clearedRows} infractions`,
+                                                }
+                                            )
+                                            .setTimestamp()
+                                            .setFooter({text: `Target ID: ${user.id}`})
+                                    ]
+                                });
+                        } else if(buttonInteraction.customId == 'cancel-button') {
+                            await clearListCollector.stop()
+                        }
+                    });
+
+                    clearListCollector.on('end', async () => {
+                        try{
+                            await clearListMessage.delete();
+                        } catch(e) {};
+                    })
 
                 break;
         }

@@ -80,7 +80,7 @@ module.exports = {
                             option.setName('code')
                                 .setDescription('Set a custom key code.')
                                 .setMinLength(5)
-                                .setMaxLength(10)
+                                .setMaxLength(100)
                         )
                         .addUserOption(option =>
                             option.setName('dedicated-user')
@@ -1366,7 +1366,10 @@ module.exports = {
                                     // once all affected users got their premium role removed, their custom roles must be deleted
                                     if(row.customrole) {
                                         const customRole = await interaction.guild.roles.fetch(row.customrole);
-                                        await customRole.delete();
+                                        if(customRole.members.size - 1 <= 0)
+                                            await customRole.delete();
+                                        else if(guildMember.roles.cache.has(customRole.id))
+                                            await guildMember.roles.remove(customRole);
 
                                     }
                                 

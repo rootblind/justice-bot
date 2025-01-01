@@ -104,6 +104,7 @@ async function text_classification(api, text) {
     const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
     function filter(message) {
+        message = message.toLowerCase();
         if (message.length < 3) {
             return message;
         }
@@ -111,6 +112,10 @@ async function text_classification(api, text) {
         message = message.replace('+rep', '');
         message = message.replace('-rep', '');
         message = message.replace(/\n/g, ' ').replace(/\r/g, ' ');
+
+        const replacements = { 'ă': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'â': 'a' };
+        message = message.replace(/[ăîșțâ]/g, match => replacements[match]);
+
         message = message.replace(urlPattern, '');
         message = message.replace(allowedPattern, '');
         message = message.trim();
@@ -225,6 +230,7 @@ function curated_text(text) {
     const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
     function filter(message) {
+        message = message.toLowerCase();
         if (message.length < 3) {
             return message;
         }
@@ -232,6 +238,10 @@ function curated_text(text) {
         message = message.replace('+rep', '');
         message = message.replace('-rep', '');
         message = message.replace(/\n/g, ' ').replace(/\r/g, ' ');
+        
+        const replacements = { 'ă': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'â': 'a' };
+        message = message.replace(/[ăîșțâ]/g, match => replacements[match]);
+
         message = message.replace(urlPattern, '');
         message = message.replace(allowedPattern, '');
         message = message.trim();

@@ -542,7 +542,10 @@ module.exports = {
                     await boosterMember.roles.remove(premiumRole);
                     if(booster.customrole) {
                         const customRole = await fetchGuild.roles.fetch(booster.customrole);
-                        await customRole.delete();
+                        if(customRole.members.size - 1 <= 0)
+                            await customRole.delete();
+                        else if(boosterMember.roles.cache.has(customRole.id))
+                            await boosterMember.roles.remove(customRole);
                     }
                 }
                 else continue; // skip boosters that are still boosting
@@ -637,7 +640,10 @@ module.exports = {
         
                     if (user.customrole) {
                         const customRole = await fetchGuild.roles.fetch(user.customrole);
-                        await customRole.delete()
+                        if(customRole.members.size - 1 <= 0)
+                            await customRole.delete();
+                        else if(guildMember.roles.cache.has(customRole.id))
+                            await guildMember.roles.remove(customRole);
                     }
                 }
                 await poolConnection.query(

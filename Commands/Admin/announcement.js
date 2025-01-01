@@ -367,7 +367,7 @@ module.exports = {
                             try{
                                 const submitColorModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'set-color-modal',
-                                    time: 120_000
+                                    time: 600_000
                                 });
                                 await submitColorModal.deferReply({ephemeral: true})
                                 const hexColor = "#" + submitColorModal.fields.getTextInputValue('hexcolor');
@@ -394,7 +394,7 @@ module.exports = {
                             try{
                                 const submitAuthorModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'set-author-modal',
-                                    time: 120_000
+                                    time: 600_000
                                 });
                                 await submitAuthorModal.deferReply({ephemeral: true});
 
@@ -438,7 +438,7 @@ module.exports = {
                             try {
                                 const submitContentModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'set-content-modal',
-                                    time: 540_000
+                                    time: 600_000
                                 });
 
                                 await submitContentModal.deferReply({ephemeral: true});
@@ -463,7 +463,7 @@ module.exports = {
                             try{
                                 const submitImagesModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'set-images-modal',
-                                    time: 120_000
+                                    time: 600_000
                                 });
 
                                 await submitImagesModal.deferReply({ephemeral: true});
@@ -504,7 +504,7 @@ module.exports = {
                             try{
                                 const submitFieldModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'add-field-modal',
-                                    time: 180_000
+                                    time: 600_000
                                 });
 
                                 await submitFieldModal.deferReply({ephemeral: true});
@@ -546,7 +546,7 @@ module.exports = {
                             try{
                                 submitImportJSONModal = await collectorInteraction.awaitModalSubmit({
                                     filter: (interaction) => interaction.customId === 'import-json-modal',
-                                    time: 300_000
+                                    time: 600_000
                                 });
                             } catch(err) {
                                 await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
@@ -616,7 +616,7 @@ module.exports = {
 
                             const collectorProfile = profileMenuReply.createMessageComponentCollector({
                                 ComponentType: ComponentType.StringSelect,
-                                time: 120_000
+                                time: 600_000
                             });
 
                             collectorProfile.on('collect', async (menuInteraction) => {
@@ -648,7 +648,7 @@ module.exports = {
 
                             const collectorRole = roleMenuReply.createMessageComponentCollector({
                                 ComponentType: ComponentType.RoleSelect,
-                                time: 120_000
+                                time: 600_000
                             })
 
                             collectorRole.on("collect", async (roleMenuInteraction) => {

@@ -217,7 +217,7 @@ module.exports = {
                     .setLabel("The code of the key")
                     .setStyle(TextInputStyle.Short)
                     .setMinLength(5)
-                    .setMaxLength(10);
+                    .setMaxLength(100);
 
                 const redeemModal = new ModalBuilder()
                     .setCustomId(`redeem-modal-${interaction.user.id}`)
