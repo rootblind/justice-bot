@@ -1,0 +1,12 @@
+error_dumps/
+.env
+node_modules/
+toDoList.txt
+objects/custom-presence-presets.json
+assets/avatar/
+flag_data.csv
+Commands/Owner/test.js
+backup-db/
+temp/
+nodemon.json
+*.bat

@@ -459,6 +459,9 @@ module.exports = {
         const backupDir = path.join(__dirname, '../../backup-db');
         directoryCheck(backupDir);
 
+        const errorDumpDir = path.join(__dirname, '../../error_dumps');
+        directoryCheck(errorDumpDir);
+
         // This section will manage cron schedulers
         const reportAPIDowntime = cron.schedule('0 * * * *', async () => {
             if(!(await checkAPI(process.env.MOD_API_URL))) {

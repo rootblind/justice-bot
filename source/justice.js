@@ -3,6 +3,7 @@ const {config} = require('dotenv');
 const {Client, GatewayIntentBits, Routes, Partials, Collection} = require('discord.js');
 const {REST} = require('@discordjs/rest');
 
+
 config();
 
 //loads
@@ -26,7 +27,23 @@ const GUILD_ID=process.env.HOME_SERVER_ID;
 const rest = new REST({ version: '10'}).setToken(TOKEN);
 client.commands = new Collection();
 
+process.on('uncaughtException', (error) => {
+    const {error_logger} = require('../utility_modules/error_logger.js');
+    error_logger.error(`Uncaught Exception: ${error.message}`, {stack: error.stack});
+    process.exit(1);
+});
 
+process.on('unhandledRejection', (reason) => {
+    const {error_logger} = require('../utility_modules/error_logger.js');
+    if(reason instanceof Error) {
+        error_logger.error(`Unhandled Reject: ${reason.message}`, {stack: reason.stack});
+        setTimeout(() => {
+            process.exit(1);
+        }, 5000);
+    } else {
+        error_logger.error(`Unhandled Reject: ${reason}`);
+    }
+});
 
 async function main()
 {
