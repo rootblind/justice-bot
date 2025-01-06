@@ -1,11 +1,13 @@
 /*
     Manual database backup and scheduling backups
 */
-const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits} = require('discord.js')
+const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, ActionRowBuilder,
+    ComponentType} = require('discord.js')
 const {poolConnection} = require('../../utility_modules/kayle-db');
 const {config} = require('dotenv');
 const {exec} = require('child_process');
 const fs = require('graceful-fs');
+const archiver = require('archiver');
 const path = require('path');
 const cron = require('node-cron');
 config();
@@ -24,6 +26,8 @@ function generateName() {
 async function createBackup() {
     const fileName = generateName();
     // dump the backup inside the designated folder
+
+    // !!!! REMOVE PGPASSWORD=${process.env.DBPASS} FOR WINDOWS
     const command = `PGPASSWORD=${process.env.DBPASS} pg_dump -U ${username} -d ${database} -f ${path.join(dumpDir, fileName)}`
     
     const promise = new Promise((resolve, reject) => {
@@ -79,11 +83,33 @@ module.exports = {
                         .setDescription('Stops the cron task scheduler if it is running.')
                 )
                 
-        ),
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName('clear')
+                .setDescription('Clears all backups!!')
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName('dump')
+                .setDescription('Dumps all backups in the current channel.')
+        )
+        
+    ,
 
     async execute(interaction, client) {
         const cmd = interaction.options.getSubcommand();
-
+        const dirPath = './backup-db';
+        const bkFiles = fs.readdirSync(dirPath).map(file => file);
+        if((cmd == 'clear' || cmd == 'dump') && bkFiles.length == 0) {
+            return await interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor('Aqua')
+                        .setTitle('No backup dumps were found.')
+                        .setDescription('The backup directory is empty.')
+                ],
+                ephemeral: true
+            });
+        }
         switch(cmd) {
             case 'now':
                 try{
@@ -143,6 +169,104 @@ module.exports = {
                         .setTitle('Database backup schedule stopped...')
                         .setDescription('You\'ve stopped the cron task scheduler for the database backups.')
                 ]});
+            break;
+            case 'clear':
+                const clearButton = new ButtonBuilder()
+                    .setCustomId('clear-button')
+                    .setLabel('Clear')
+                    .setStyle(ButtonStyle.Danger)
+                const clearRow = new ActionRowBuilder().addComponents( clearButton );
+
+                const clearMessage = await interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Attention!')
+                            .setDescription(`You are trying to clear \`${bkFiles.length}\` database backup files!\nPress the button to proceed.`)
+                    ],
+                    components: [clearRow]
+                });
+
+                const clearMessageCollector = clearMessage.createMessageComponentCollector({
+                    ComponentType: ComponentType.Button,
+                    filter: (i) => i.user.id === interaction.user.id,
+                    time: 600_000
+                });
+
+                clearMessageCollector.on('collect', async (buttonInteraction) => {
+                    fs.readdir(dirPath, (err, files) => {
+                        for(const file of files) {
+                            fs.unlink(path.join(dirPath, file), (err) => {
+                                if(err) console.error(err);
+                            });
+                        }
+                    });
+                    await buttonInteraction.reply({content: 'All backup files have been deleted permanently!', ephemeral: true});
+                    clearMessageCollector.stop();
+                });
+
+                clearMessageCollector.on('end', async () => {
+                    try{
+                        await clearMessage.delete();
+                    } catch(err) {}
+                });
+            break;
+            case 'dump':
+                const dumpButton = new ButtonBuilder()
+                    .setCustomId('dump-button')
+                    .setLabel('Dump')
+                    .setStyle(ButtonStyle.Danger)
+                const dumpRow = new ActionRowBuilder().addComponents( dumpButton )
+                const dumpMessage = await interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Attention!')
+                            .setDescription(`You are trying to create a dump zip of the database backup files on this channel!\nMake sure to run this command in a private channel.\nProceed by pressing the button.`)
+                    ],
+                    components: [dumpRow]
+                });
+
+                const dumpMessageCollector = dumpMessage.createMessageComponentCollector({
+                    ComponentType: ComponentType.Button,
+                    filter: (i) => i.user.id === interaction.user.id,
+                    time: 600_000
+                });
+
+                dumpMessageCollector.on('collect', async (buttonInteraction) => {
+
+                    await buttonInteraction.deferReply();
+                    const output = fs.createWriteStream('./temp/backup-db.zip');
+                    const archive = archiver('zip');
+                    const embedDump = new EmbedBuilder()
+                        .setColor('Aqua')
+                        .setTitle('⚙ Dumping database backups...')
+                        
+                    
+
+                    archive.on('error', (err) => {
+                        console.error(err);
+                    });
+
+                    archive.pipe(output);
+
+                    archive.directory(dirPath, false);
+
+                    await archive.finalize();
+                    embedDump.setDescription(`Database backups were zipped for a total of ${archive.pointer()} bytes.`)
+                    await buttonInteraction.editReply({embeds: [embedDump], files: ['./temp/backup-db.zip']});
+
+                    fs.unlink(path.join('./temp', 'backup-db.zip'), (err) => {
+                        if(err) console.error(err);
+                    });
+                    dumpMessageCollector.stop();
+                });
+
+                dumpMessageCollector.on('end', async () => {
+                    try{
+                        await dumpMessage.delete();
+                    } catch(err) {console.error(err)}
+                });
             break;
         }
     }
