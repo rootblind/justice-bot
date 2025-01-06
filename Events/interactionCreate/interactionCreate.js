@@ -59,7 +59,7 @@ module.exports = {
 
             const {rows: botAppData} = await poolConnection.query(`SELECT * FROM botconfig`);
 
-            if(botAppData.application_scope === 'test' && interaction.guild.id !== process.env.HOME_SERVER_ID) {
+            if(botAppData.application_scope === 'test' && interaction.user.id !== process.env.OWNER) {
                 const rEmbed = new EmbedBuilder()
                     .setColor('Red')
                     .setTitle('Error')

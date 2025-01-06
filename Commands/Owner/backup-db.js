@@ -1,7 +1,7 @@
 /*
     Manual database backup and scheduling backups
 */
-const {SlashCommandBuilder, EmbedBuilder} = require('discord.js')
+const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits} = require('discord.js')
 const {poolConnection} = require('../../utility_modules/kayle-db');
 const {config} = require('dotenv');
 const {exec} = require('child_process');
@@ -56,6 +56,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('backup-db')
         .setDescription('Backup database or schedule a cron task to do so.')
+        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(subcommand =>
             subcommand.setName('now')
                 .setDescription('Backup the current database right away.')
