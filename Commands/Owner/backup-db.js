@@ -24,7 +24,7 @@ function generateName() {
 async function createBackup() {
     const fileName = generateName();
     // dump the backup inside the designated folder
-    const command = `pg_dump -U ${username} -d ${database} -f ${path.join(dumpDir, fileName)}`
+    const command = `PGPASSWORD=${process.env.DBPASS} pg_dump -U ${username} -d ${database} -f ${path.join(dumpDir, fileName)}`
     
     const promise = new Promise((resolve, reject) => {
         exec(command, (err, stdout, stderr) => { // execute the bash command
