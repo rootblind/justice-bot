@@ -99,8 +99,8 @@ function formatTime(date) {
 const axios = require('axios');
 async function text_classification(api, text) {
     // preparing the text for the classification
-    const alphabetPattern = /^[a-zA-Z]/;
-    const allowedPattern = /[^a-zA-Z0-9 !.-?]/g;
+    const allowedPattern = /[^a-zA-Z -]/g;
+    const emojiPattern = /<:(\d+):>/g;
     const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
     function filter(message) {
@@ -117,6 +117,7 @@ async function text_classification(api, text) {
         message = message.replace(/[ăîșțâ]/g, match => replacements[match]);
 
         message = message.replace(urlPattern, '');
+        message = message.replace(emojiPattern, '');
         message = message.replace(allowedPattern, '');
         message = message.trim();
 
@@ -125,7 +126,7 @@ async function text_classification(api, text) {
 
     const filteredText = filter(text);
 
-    if (filteredText.length > 2 && alphabetPattern.test(filteredText))
+    if (filteredText.length > 2)
     {
         let classifier = null;
         const url = api + 'classify';

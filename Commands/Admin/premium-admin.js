@@ -134,7 +134,7 @@ module.exports = {
                             option.setName('code')
                                 .setDescription('Show details about the specific code key.')
                                 .setMinLength(5)
-                                .setMaxLength(10)
+                                .setMaxLength(100)
                         )
                 )
         )

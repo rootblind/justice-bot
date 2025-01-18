@@ -234,7 +234,7 @@ module.exports = {
                         else
                             try{
                                 await customRole.delete();
-                            } catch(e) { console.error(e)}
+                            } catch(e) { console.error(e); console.log(customRole)}
                 }
                 // removing premium role
                 await newMember.roles.remove(premiumRole);
