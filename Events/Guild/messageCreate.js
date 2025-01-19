@@ -117,7 +117,7 @@ module.exports = {
                     .setFooter({text:`ID: ${message.author.id}`})
                 
                 if(message.content.length <= 3000)
-                    embed.setDescription(`**Content**: ${message.content}`)
+                    embed.setDescription(`**Content**: ${response['text']}`)
                 else { // handling large messages through temp files and posting the file instead of overflowing the embed description
                     const filePath = path.join(__dirname, `../../temp/${message.id}.txt`);
                     fs.writeFile(filePath, message.content, (err) => {
