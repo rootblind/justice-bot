@@ -1,14 +1,15 @@
 const {EmbedBuilder, AuditLogEvent, Events} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
-
+const {config} = require('dotenv');
+config();
 module.exports = {
     name: Events.GuildAuditLogEntryCreate,
 
     async execute(auditLogEntry, guild) {
         if(!auditLogEntry) return;
         if(!auditLogEntry.target) return;
-
+        if(auditLogEntry.executor.id == process.env.CLIENT_ID) return; // actions done by the bot are logged by that specific part that handles the action
         let logChannel = null;
         const fetchLogChannel = new Promise((resolve, reject) => {
             poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [guild.id, 'moderation'],
@@ -26,7 +27,7 @@ module.exports = {
         });
         await fetchLogChannel;
 
-        if(logChannel == null) return; // if no server activity log channel is set up, then do nothing
+        if(logChannel == null) return; // if no moderation log channel is set up, then do nothing
 
         if(auditLogEntry.action == AuditLogEvent.MessageDelete) {
             if(auditLogEntry.target.bot) return;
@@ -120,6 +121,10 @@ module.exports = {
                                 name: 'Target',
                                 value: `${targetMember}`,
                                 inline: true
+                            },
+                            {
+                                name: 'Reason',
+                                value: `${auditLogEntry.reason || 'No reason specified.'}`
                             }
                         )
                         .setTimestamp()
