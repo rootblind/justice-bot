@@ -213,6 +213,10 @@ module.exports = {
                                 name: "Expires",
                                 value: `<t:${parseInt((Date.now() + duration) / 1000)}:R>`,
                                 inline: true
+                            },
+                            {
+                                name: "Reason",
+                                value: reason
                             }
                         )
                     ]
