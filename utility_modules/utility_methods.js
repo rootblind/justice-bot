@@ -226,8 +226,8 @@ async function isFileOk(path) {
 
 function curated_text(text) {
     // preparing the text for the classification
-    const alphabetPattern = /^[a-zA-Z]/;
-    const allowedPattern = /[^a-zA-Z0-9 -!?.]/g;
+    const emojiPattern = /<:(\d+):>/g;
+    const allowedPattern = /[^a-zA-Z -]/g;
     const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
     function filter(message) {
@@ -244,6 +244,7 @@ function curated_text(text) {
         message = message.replace(/[ăîșțâ]/g, match => replacements[match]);
 
         message = message.replace(urlPattern, '');
+        message = message.replace(emojiPattern, '');
         message = message.replace(allowedPattern, '');
         message = message.trim();
 
@@ -252,7 +253,7 @@ function curated_text(text) {
 
     const filteredText = filter(text);
 
-    if (filteredText.length > 2 && alphabetPattern.test(filteredText))
+    if (filteredText.length > 2)
     {
         return filteredText;
     }
