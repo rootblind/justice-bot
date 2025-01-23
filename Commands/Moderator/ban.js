@@ -11,6 +11,7 @@ const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ButtonBuilder, Bu
     ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
+const {warn_handler} = require('../../utility_modules/warn_handler.js')
 const {duration_timestamp, formatDate, formatTime} = require('../../utility_modules/utility_methods.js');
 const {config} = require('dotenv');
 config();
@@ -41,6 +42,10 @@ module.exports = {
                     option.setName('delete-messages')
                         .setDescription('True to delete messages. False is the default.')
                 )
+                .addBooleanOption(option =>
+                    option.setName('apply-warn')
+                        .setDescription("Apply a warn on top of the timeout.")
+                )
         )
         .addSubcommand(subcommand => 
             subcommand.setName('temporary')
@@ -68,6 +73,10 @@ module.exports = {
                     option.setName('delete-messages')
                         .setDescription('True to delete messages. False is the default.')
                 )
+                .addBooleanOption(option =>
+                    option.setName('apply-warn')
+                        .setDescription("Apply a warn on top of the timeout.")
+                )
 
         )
         .addSubcommand(subcommand =>
@@ -88,6 +97,10 @@ module.exports = {
                 .addBooleanOption(option =>
                     option.setName('delete-messages')
                         .setDescription('True to delete messages. False is the default.')
+                )
+                .addBooleanOption(option =>
+                    option.setName('apply-warn')
+                        .setDescription("Apply a warn on top of the timeout.")
                 )
         )
         .addSubcommand(subcommand =>
@@ -112,6 +125,9 @@ module.exports = {
         const deleteMessages = interaction.options.getBoolean('delete-messages') || false; // if deleteMessages is set to true, the messages of the last 7 days will be deleted
         const deletionTime = deleteMessages ? 604800 : 0;
         const cmd = interaction.options.getSubcommand();
+        
+        let applyWarn = interaction.options.getBoolean('apply-warn');
+        if(applyWarn == null) applyWarn = true; // enabled by default
         // validating input
         let targetMember = null; 
         try{
@@ -163,16 +179,16 @@ module.exports = {
         }
         if(duration != null && !durationRegex.test(duration))
         {
-            const editEmbedError = EmbedBuilder().setTitle('Invalid input!')
+            const editEmbedError = new EmbedBuilder().setTitle('Invalid input!')
                 .setDescription('The duration format is invalid.\n Provide a duration that respects the format: <number: 1-99>< d | w | y >')
             return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
         }
-        else if(durationRegex.test(duration) && duration_timestamp(duration) < parseInt(Date.now() / 1000) + 86400)
+        else if(durationRegex.test(duration) && duration_timestamp(duration) < parseInt(Date.now() / 1000) + 259_200)
         {
             // temp ban duration must be at least one day long
             return await interaction.reply({embeds: [
                 new EmbedBuilder().setTitle('The duration is too short!')
-                    .setDescription('The duration of a temporary ban must be at least one day (1d) long!')
+                    .setDescription('The duration of a temporary ban must be at least three days (3d) long!')
                     .setColor("Red")
             ], ephemeral: true});
         }
@@ -214,11 +230,19 @@ module.exports = {
 
         let banlistData = null;
         if(target) {
-            const result = await poolConnection.query(`SELECT target FROM banlist WHERE guild=$1 AND target=$2`, 
+            const result = await poolConnection.query(`SELECT target, expires FROM banlist WHERE guild=$1 AND target=$2`, 
                 [interaction.guild.id, target.id]);
             banlistData = result.rows;
+            if(banlistData[0]?.expires == 0)
+                return await interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor('Red')
+                            .setTitle('Invalid target.')
+                            .setDescription('You can not ban someone that is already permanently banned.')
+                    ]
+                });
         }
-
         const message = await interaction.deferReply();
 
         switch(cmd) {
@@ -381,7 +405,7 @@ module.exports = {
                         embeds: [
                             new EmbedBuilder()
                                 .setColor('Red')
-                                .setAuthor({name: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({extension: 'png'})})
+                                .setAuthor({name: `You got banned on ${interaction.guild.name}`, iconURL: interaction.guild.iconURL({extension: 'png'})})
                                 .setTitle('You have been banned!')
                                 .setTimestamp()
                                 .addFields(
@@ -915,6 +939,11 @@ module.exports = {
 
             break;
         }
+
+        // if the command was used to ban a member, warn that member
+        const bantypes = ["indefinite", "temporary", "permanent"]
+        if(bantypes.includes(cmd) && applyWarn)
+            await warn_handler(interaction.guild, targetMember, interaction.member, reason, logChannel);
 
     }
 }

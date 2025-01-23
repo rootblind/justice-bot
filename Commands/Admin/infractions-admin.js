@@ -9,7 +9,6 @@
 
 const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, ActionRowBuilder,
     ComponentType,
-    ButtonInteraction,
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 

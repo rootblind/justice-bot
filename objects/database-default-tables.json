@@ -1,4 +1,5 @@
 {
     "table_names": ["welcomescheme", "panelscheme", "panelheaders", "reactionroles", "panelmessages", "serverroles",
-                    "serverlogs", "serverlogsignore", "premiummembers", "premiumkey", "botconfig", "banlist", "punishlogs"]
+                    "serverlogs", "serverlogsignore", "premiummembers", "premiumkey", "botconfig", "banlist", "punishlogs",
+                    "autopunishrule"]
 }

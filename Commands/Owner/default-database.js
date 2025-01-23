@@ -350,6 +350,23 @@ module.exports = {
         });
         await punishlogs;
         
+        const autopunishrule = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS autopunishrule(
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                warncount INT NOT NULL,
+                duration BIGINT NOT NULL,
+                punishment_type INT NOT NULL,
+                punishment_duration BIGINT NOT NULL,
+                CONSTRAINT unique_warncount_duration_guild UNIQUE (guild, warncount, duration)
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push('autopunishrule')
+                resolve(result);
+            });
+        });
+        await autopunishrule;
+
         let index = 1;
         for (x of table_nameListed){
             embed.addFields({name: `[${index}] - ${x}`, value: 'exists'});

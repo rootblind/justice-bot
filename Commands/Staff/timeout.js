@@ -1,6 +1,8 @@
 const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
 
 const {poolConnection} = require('../../utility_modules/kayle-db.js')
+const {warn_handler} = require('../../utility_modules/warn_handler.js');
+const warn = require('./warn.js');
 
 const duration_conversion = {
     "5m": 300_000,
@@ -55,6 +57,10 @@ module.exports = {
                         .setMaxLength(512)
                         .setRequired(true)
                 )
+                .addBooleanOption(option =>
+                    option.setName('apply-warn')
+                        .setDescription("Apply a warn on top of the timeout.")
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('remove')
@@ -76,7 +82,6 @@ module.exports = {
     async execute(interaction, client) {
         const user = interaction.options.getUser('user');
         const reason = interaction.options.getString('reason');
-
         const {rows: staffRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`,
             [interaction.guild.id, "staff"]
         );
@@ -161,8 +166,13 @@ module.exports = {
                     });
                 }
                 await interaction.deferReply();
+
                 const duration = duration_conversion[interaction.options.getString('duration')];
                 await member.timeout(duration, reason);
+
+                let applyWarn = interaction.options.getBoolean('apply-warn');
+                if(applyWarn == null) applyWarn = true; // enabled by default
+
                 embed.setColor('Red')
                     .setAuthor({
                         name: `${user.username} got timed out for ${interaction.options.getString('duration')}`,
@@ -172,28 +182,37 @@ module.exports = {
                     .setFooter({text: `Target ID: ${user.id}`})
                 
                 if(logChannel) {
+                    embed.setFields(
+                        {
+                            name: "Target",
+                            value: `${member}`,
+                            inline: true
+                        },
+                        {
+                            name: "Moderator",
+                            value: `${interaction.member}`,
+                            inline: true
+                        },
+                        {
+                            name: "Expires",
+                            value: `<t:${parseInt((Date.now() + duration) / 1000)}:R>`,
+                        },
+                        {
+                            name: "Reason",
+                            value: reason
+                        }
+                    )
+
+                    if(applyWarn)
+                        embed.addFields(
+                            {
+                                name: "Warned",
+                                value: "True"
+                            }
+                        );
                     await logChannel.send({
                         embeds: [
-                            embed.setFields(
-                                {
-                                    name: "Target",
-                                    value: `${member}`,
-                                    inline: true
-                                },
-                                {
-                                    name: "Moderator",
-                                    value: `${interaction.member}`,
-                                    inline: true
-                                },
-                                {
-                                    name: "Expires",
-                                    value: `<t:${parseInt((Date.now() + duration) / 1000)}:R>`,
-                                },
-                                {
-                                    name: "Reason",
-                                    value: reason
-                                }
-                            )
+                            embed
                         ]
                     });
                 }
@@ -201,26 +220,39 @@ module.exports = {
                         VALUES($1, $2, $3, $4, $5, $6)`,
                         [interaction.guild.id, user.id, interaction.user.id, 1, reason, parseInt(Date.now() / 1000)]
                 );
+
+                embed.setFields(
+                    {
+                        name: "Moderator",
+                        value: `${interaction.member}`,
+                        inline: true
+                    },
+                    {
+                        name: "Expires",
+                        value: `<t:${parseInt((Date.now() + duration) / 1000)}:R>`,
+                        inline: true
+                    },
+                    {
+                        name: "Reason",
+                        value: reason
+                    }
+                )
+                
+                if(applyWarn)
+                    embed.addFields(
+                        {
+                            name: "Warned",
+                            value: "True"
+                        }
+                    )
                 await interaction.editReply({
                     embeds: [
-                        embed.setFields(
-                            {
-                                name: "Moderator",
-                                value: `${interaction.member}`,
-                                inline: true
-                            },
-                            {
-                                name: "Expires",
-                                value: `<t:${parseInt((Date.now() + duration) / 1000)}:R>`,
-                                inline: true
-                            },
-                            {
-                                name: "Reason",
-                                value: reason
-                            }
-                        )
+                        embed
                     ]
                 });
+
+                if(applyWarn) await warn_handler(interaction.guild, member, interaction.member, reason, logChannel);
+            
             break;
             case 'remove':
                 if(member.communicationDisabledUntil == null) {

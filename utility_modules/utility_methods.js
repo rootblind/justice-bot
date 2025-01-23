@@ -96,58 +96,7 @@ function formatTime(date) {
     console.log(result.rows.map(row => row.table_name));
 });*/
 
-const axios = require('axios');
-async function text_classification(api, text) {
-    // preparing the text for the classification
-    const allowedPattern = /[^a-zA-Z -]/g;
-    const emojiPattern = /<:(\d+):>/g;
-    const urlPattern = /http[s]?:\/\/(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+/g;
 
-    function filter(message) {
-        message = message.toLowerCase();
-        if (message.length < 3) {
-            return message;
-        }
-
-        message = message.replace('+rep', '');
-        message = message.replace('-rep', '');
-        message = message.replace(/\n/g, ' ').replace(/\r/g, ' ');
-
-        const replacements = { 'ă': 'a', 'î': 'i', 'ș': 's', 'ț': 't', 'â': 'a' };
-        message = message.replace(/[ăîșțâ]/g, match => replacements[match]);
-
-        message = message.replace(urlPattern, '');
-        message = message.replace(emojiPattern, '');
-        message = message.replace(allowedPattern, '');
-        message = message.trim();
-
-        return message;
-    }
-
-    const filteredText = filter(text);
-
-    if (filteredText.length > 2)
-    {
-        let classifier = null;
-        const url = api + 'classify';
-        const data = {
-            'text' : filteredText
-        };
-
-        try{
-            await axios.post(url, data)
-                .then(response => {
-                    classifier = response.data['labels'];
-                }) 
-                .catch(err => { console.error(err); })
-        } catch(err) {
-            console.error(err);
-        }
-        return {labels: classifier, text: filteredText}; // returning the model's labels and the filtered text that was analyzed by the model
-    }
-    else return false;
-
-}
 
 // for the encryption methods, there is a need to load environment variables.
 const crypto = require('crypto');
@@ -260,6 +209,33 @@ function curated_text(text) {
     else return false;
 }
 
+const axios = require('axios');
+async function text_classification(api, text) {
+    // preparing the text for the classification
+    const filteredText = curated_text(text);
+    if (filteredText)
+    {
+        let classifier = null;
+        const url = api + 'classify';
+        const data = {
+            'text' : filteredText
+        };
+
+        try{
+            await axios.post(url, data)
+                .then(response => {
+                    classifier = response.data['labels'];
+                }) 
+                .catch(err => { console.error(err); })
+        } catch(err) {
+            console.error(err);
+        }
+        return {labels: classifier, text: filteredText}; // returning the model's labels and the filtered text that was analyzed by the model
+    }
+    else return false;
+
+}
+
 function random_code_generation() { // generates a random key code, meaning a string with a random length between 5 and 10 that has random characters
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?';
     const length = Math.floor(Math.random() * 6) + 5; // Random length between 5 and 10
@@ -297,7 +273,28 @@ function duration_timestamp(durationString) {
     }
 }
 
+function convert_seconds_to_units(seconds) {
+    const units = [
+        { unit: 'year', value: 60 * 60 * 24 * 365 }, // 1 year in seconds
+        { unit: 'week', value: 60 * 60 * 24 * 7 },   // 1 week in seconds
+        { unit: 'day', value: 60 * 60 * 24 },        // 1 day in seconds
+        { unit: 'hour', value: 60 * 60 },            // 1 hour in seconds
+        { unit: 'minute', value: 60 },               // 1 minute in seconds
+        { unit: 'second', value: 1 },                // 1 second
+    ];
+
+    for(const {unit, value} of units) {
+        if(seconds >= value) {
+            const result = seconds / value;
+            return `${result.toFixed(1)} ${unit}${result !== 1 ? 's' : ''}`;
+        }
+    }
+
+    return '0 seconds';
+}
+
 module.exports = {
+    convert_seconds_to_units,
     duration_timestamp,
     random_code_generation,
     curated_text,

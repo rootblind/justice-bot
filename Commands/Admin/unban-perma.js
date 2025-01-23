@@ -46,7 +46,7 @@ module.exports = {
             [interaction.guild.id, target.id]
         );
         const {rows: punishlogs} = await poolConnection.query(`SELECT * FROM punishlogs WHERE guild=$1 AND target=$2
-            ORDER BY timestamp DESC LIMIT 10`,
+            ORDER BY timestamp DESC LIMIT 8`,
             [interaction.guild.id, target.id]
         );
 
@@ -93,8 +93,6 @@ module.exports = {
                     name: 'Reason',
                     value: `${row.reason}`,
                 },
-                
-
             )
         }
 
