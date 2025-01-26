@@ -1177,7 +1177,7 @@ module.exports = {
                         case "set-icon":
                             await interaction.reply({
                                 content:
-                                    "Send the image you want to set as the roles icon.\nFile size must be less than `256KB`!",
+                                    "Send the desired image icon in the current channel.\nFile size must be less than `256KB`!",
                                 ephemeral: true,
                             });
                             const filterMessage = (message) => message.author.id === interaction.user.id; // accept only the interaction user's inputs
