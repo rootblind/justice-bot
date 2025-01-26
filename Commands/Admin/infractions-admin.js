@@ -477,7 +477,7 @@ module.exports = {
                             FROM punishlogs
                             WHERE guild=$1
                                 AND target=$2
-                                AND punishment_type >= $3`)
+                                AND punishment_type >= $3`,[interaction.guild.id, user.id, stringToType[listType]]);
 
                         if(counttype2 == 0)
                             return await interaction.editReply({embeds: [emptyEmbedList]});
