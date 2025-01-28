@@ -22,7 +22,7 @@ async function warn_handler(guild, target, moderator, reason, logChannel) {
         WHERE ar.guild = $2
         GROUP BY ar.id
         ORDER BY ar.warncount DESC, ar.duration ASC
-    `, [Math.floor(Date.now() / 1000), guild.id], target.id);
+    `, [Math.floor(Date.now() / 1000), guild.id, target.id]);
 
     if(rulesData.length == 0)
         return null;
