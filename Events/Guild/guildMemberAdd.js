@@ -178,8 +178,13 @@ module.exports = {
                             // if the member also has a custom role, assign it
                             if(result.rows[0].customrole)
                             {
-                                const customRole = await member.guild.roles.fetch(result.rows[0].customrole)
-                                await member.roles.add(customRole);
+                                const customRole = await member.guild.roles.fetch(result.rows[0].customrole);
+                                try{
+                                    await member.roles.add(customRole);
+                                } catch(err) {
+                                    console.error(err);
+                                    console.log(customRole);
+                                }
                             } 
                         }
                         resolve(result);
