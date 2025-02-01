@@ -233,7 +233,7 @@ module.exports = {
             const result = await poolConnection.query(`SELECT target, expires FROM banlist WHERE guild=$1 AND target=$2`, 
                 [interaction.guild.id, target.id]);
             banlistData = result.rows;
-            if(banlistData[0]?.expires == 0)
+            if(banlistData[0]?.expires == 0 && cmd != "check")
                 return await interaction.reply({
                     embeds: [
                         new EmbedBuilder()

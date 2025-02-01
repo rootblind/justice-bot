@@ -30,32 +30,21 @@ module.exports = {
         
         try{
             member = await interaction.guild.members.fetch(user);
-        } catch(err) {
-            // only members of the server allowed
-            return await interaction.reply({
-                embeds: [
-                    new EmbedBuilder()
-                        .setTitle('Invalid user')
-                        .setDescription('You must provide a member of this server.')
-                        .setColor('Red')
-                ],
-                ephemeral: true
-            });
-        }
+        } catch(err) {};
 
         await interaction.deferReply();
 
         // fetching the member data from punishlogs
         const {rows : memberData} = await poolConnection.query(`SELECT * FROM punishlogs WHERE guild=$1 AND target=$2
             ORDER BY timestamp DESC LIMIT 5`,
-            [interaction.guild.id, member.id]
+            [interaction.guild.id, user.id]
         );
 
         const {rows: [{count}]} = await poolConnection.query(`SELECT COUNT(*) AS count
             FROM punishlogs
             WHERE guild=$1
                 AND target=$2`,
-            [interaction.guild.id, member.id]
+            [interaction.guild.id, user.id]
         )
 
         
@@ -65,7 +54,7 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setColor('Aqua')
-                        .setAuthor({name: `${member.user.username}'s infractions`, iconURL: member.displayAvatarURL({extension: 'png'})})
+                        .setAuthor({name: `${user.username}'s infractions`, iconURL: user.displayAvatarURL({extension: 'png'})})
                         .setDescription('No infractions registered.')
                 ]
             })
@@ -75,7 +64,7 @@ module.exports = {
             FROM punishlogs
             WHERE guild=$1
                 AND target=$2
-                AND timestamp >= $3`, [interaction.guild.id, member.id, parseInt(Date.now() / 1000) - 2_592_000])
+                AND timestamp >= $3`, [interaction.guild.id, user.id, parseInt(Date.now() / 1000) - 2_592_000])
 
         
         let overviewString = ""
@@ -88,7 +77,7 @@ module.exports = {
 
         const embedOverview = new EmbedBuilder()
             .setColor('Aqua')
-            .setAuthor({name: `${member.user.username}'s infractions overview`, iconURL: member.displayAvatarURL({extension: 'png'})})
+            .setAuthor({name: `${user.username}'s infractions overview`, iconURL: user.displayAvatarURL({extension: 'png'})})
             .addFields(
                 {
                     name: 'Total',
@@ -112,21 +101,21 @@ module.exports = {
                 AND punishment_type=0
             ORDER BY timestamp DESC
             LIMIT 20`,
-            [interaction.guild.id, member.id]
+            [interaction.guild.id, user.id]
         
         );
 
         const {rows: [{count_totalwarn}]} = await poolConnection.query(`SELECT COUNT(*) AS count_totalwarn
             FROM punishlogs
             WHERE guild=$1
-                AND target=$2`, [interaction.guild.id, member.id]);
+                AND target=$2`, [interaction.guild.id, user.id]);
 
         const {rows: [{countwarn_month}]} = await poolConnection.query(`SELECT COUNT(*) AS countwarn_month
             FROM punishlogs
             WHERE guild=$1
                 AND target=$2
                 AND punishment_type=0
-                AND timestamp >= $3`, [interaction.guild.id, member.id, parseInt(Date.now() / 1000) - 2_592_000]);
+                AND timestamp >= $3`, [interaction.guild.id, user.id, parseInt(Date.now() / 1000) - 2_592_000]);
 
         let warnString = "";
         memberWarns.forEach((row) => {
@@ -138,7 +127,7 @@ module.exports = {
 
         const embedWarns = new EmbedBuilder()
             .setColor('Aqua')
-            .setAuthor({name: `${member.user.username}'s warns`, iconURL: member.displayAvatarURL({extension: 'png'})})
+            .setAuthor({name: `${user.username}'s warns`, iconURL: user.displayAvatarURL({extension: 'png'})})
             .addFields(
                 {
                     name: 'Total',
@@ -161,20 +150,20 @@ module.exports = {
             WHERE guild=$1
                 AND target=$2
                 AND punishment_type=1
-                ORDER BY timestamp DESC LIMIT 20`, [interaction.guild.id, member.id]);
+                ORDER BY timestamp DESC LIMIT 20`, [interaction.guild.id, user.id]);
 
         const {rows: [{count_totaltimes}]} = await poolConnection.query(`SELECT COUNT(*) AS count_totaltimes
             FROM punishlogs
             WHERE guild=$1
                 AND target=$2
-                AND punishment_type=1`, [interaction.guild.id, member.id]);
+                AND punishment_type=1`, [interaction.guild.id, user.id]);
 
         const {rows: [{count_monthtimes}]} = await poolConnection.query(`SELECT COUNT(*) AS count_monthtimes
             FROM punishlogs
             WHERE guild=$1
                 AND target=$2
                 AND punishment_type=1
-                AND timestamp >= $3`, [interaction.guild.id, member.id, parseInt(Date.now() / 1000) - 2_592_000]);
+                AND timestamp >= $3`, [interaction.guild.id, user.id, parseInt(Date.now() / 1000) - 2_592_000]);
 
         
         let timeoutString = ""
@@ -186,7 +175,7 @@ module.exports = {
 
         const embedTimes = new EmbedBuilder()
             .setColor('Aqua')
-            .setAuthor({name: `${member.user.username}'s times out`, iconURL: member.displayAvatarURL({extension: 'png'})})
+            .setAuthor({name: `${user.username}'s times out`, iconURL: user.displayAvatarURL({extension: 'png'})})
             .addFields(
                 {
                     name: 'Total',
@@ -208,12 +197,12 @@ module.exports = {
             WHERE guild=$1 
                 AND target=$2
                 AND punishment_type>=2
-                ORDER BY timestamp DESC LIMIT 20`, [interaction.guild.id, member.id]);
+                ORDER BY timestamp DESC LIMIT 20`, [interaction.guild.id, user.id]);
 
         const {rows: [{countbans}]} = await poolConnection.query(`SELECT COUNT(*) AS countbans FROM punishlogs
             WHERE guild=$1
                 AND target=$2
-                AND punishment_type>=2`, [interaction.guild.id, member.id]);
+                AND punishment_type>=2`, [interaction.guild.id, user.id]);
 
         let bansString = "";
         memberBans.forEach((row) => {
@@ -224,7 +213,7 @@ module.exports = {
             bansString = "No results!";
         const embedBans = new EmbedBuilder()
             .setColor('Aqua')
-            .setAuthor({name: `${member.user.username}'s bans`, iconURL: member.displayAvatarURL({extension: 'png'})})
+            .setAuthor({name: `${user.username}'s bans`, iconURL: user.displayAvatarURL({extension: 'png'})})
             .addFields(
                 {
                     name: "Total bans",
