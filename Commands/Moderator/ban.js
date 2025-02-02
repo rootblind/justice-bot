@@ -943,7 +943,7 @@ module.exports = {
         // if the command was used to ban a member, warn that member
         const bantypes = ["indefinite", "temporary", "permanent"]
         if(bantypes.includes(cmd) && applyWarn)
-            await warn_handler(interaction.guild, targetMember, interaction.member, reason, logChannel);
+            await warn_handler(interaction.guild, target, interaction.member, reason, logChannel);
 
     }
 }
