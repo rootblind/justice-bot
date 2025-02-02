@@ -218,7 +218,9 @@ module.exports = {
 
         collector.on('end', async () => {
             removeButton.setDisabled(true);
-            await warnMessage.edit({components: [removeActionRow]});
+            try{
+                await warnMessage.edit({components: [removeActionRow]});
+            } catch(err) {};
         });
     }
 }
