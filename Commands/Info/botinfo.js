@@ -39,7 +39,7 @@ module.exports = {
                         { name: "Username:", value: `${client.user.username}`, inline: true },
                         { name: "Version:", value: `${process.env.VERSION}`, inline: true},
                         { name: "Release date", value: "12/25/2023"},
-                        { name: "Help command", value: "/help"},
+                        { name: "Help command", value: "/man"},
                         { name: "Ping", value: `${client.ws.ping}ms`},
                         { name: "Uptime", value: `\`${days}\` days, \`${hours}\` hours, \`${minutes}\` minutes and \`${seconds}\` seconds.`},
                         { name: "Node version", value: `${node}`},

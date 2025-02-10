@@ -316,9 +316,10 @@ module.exports = {
         switch(subcmd) {
             case 'migrate':
                 // every member that has the premium role and is not registered in the premiummebers table
-                // will have a dedicated key generated and automatically redeemed for them that lasts 30 days.
+                // will have a dedicated key generated and automatically redeemed for them
                 // also if a member has a role positioned between the premium and nitro booster role, it means that role is a custom role
                 // and must be assigned to the customrole column from premiummembers
+                // if the member is boosting the server, then its membership is marked as from_boosting=true
                 await interaction.deferReply({ephemeral: true});
                 // array of all members that have the defined premium role
                 const arrayMembers = await interaction.guild.members.cache.filter(member => member.roles.cache.has(premiumRoleId));
