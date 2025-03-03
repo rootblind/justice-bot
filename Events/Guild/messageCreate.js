@@ -116,7 +116,7 @@ module.exports = {
                         },
                         {
                             name: "Matching keywords",
-                            value: `${response.matches.join(", ")}`
+                            value: `First 5: ${response.matches.slice(0,5).join(", ")}`
                         },
                         {
                             name: 'Link',
