@@ -1,0 +1,33 @@
+{
+    "Aggro": [
+        "javr[aoe]", "prostule", "proasto", "idio(tule|ato)", "retardat(ule|o)", "jego(sule|aso)", "gunoiule", "esti (un )?gunoi",
+        "copile", "scarbo", "ratat(ule|o)", "esti (un |o )?ratat(a)?", "lingaule", "fraier(e|o|ilor)",
+        "esti pro(st|asta)", "sunteti prosti", "sunteti ratati", "esti retard(at)?", "cine te(-| )?a intrebat",
+        "du(-| )?te dracu", "esti un caine", "pisatule", "zdreanto", "esti (o )?zdreanta", "curvo", "esti curva",
+        "e(-| )?girl", "e(-| )?grill", "(esti|iei) cuck", "e(sti)? (un )?incel", "esti (un )?simp",
+        "esti (un )?soyboy", "nu meriti sa traiesti", "nu meriti sa existi", "o sug(i|eti|e)?", "(^|[^a-zA-Z])mars([^a-zA-Z]|$)",
+        "ma-ta"
+    ],
+    "Violence": [
+        "(te|va) sparg", "sinucid", "(te|va|ma) omor", "injunghi", "arunca(-| )?te", "(te|va) bat",
+        "dau bataie", "ia glont", "viol(ez|at)", "hang it", "kys", "kill yourself", "kys yourself", "hang yourself",
+        "taie(-| )?(ma|te)", "spanzur", "impusca(-| )?(te|ma)", "ma impusc", "decapit", "strangu",
+        "ineaca", "sugruma", "mutila", "iti rup (gatul|mainile)", "iti sparg fata", "te bag in pamant", "te dau cu capul", "iti scot matele",
+        "ia(-| )?ti viata", "exterminarea rasei", "rasa [a-z]+ trebuie sa moara", "nu meriti sa (traiesti|existi|respiri)",
+        "meriti sa mori", "doar mori", "omoara(-| )?te", "dau rape", "t(e|i)(-| )?as rupe", "sa te vad mort", "sa te calce (un|o )?(masina|tren|autobuz|tramvai)",
+        "(mars|sa te vad|merg) in mormant"
+    ],
+    "Sexual": [
+        "pula", "pizda", "gaoaza", "penis", "vagin", "sex", "futu(-| )?(te|ti|le)", "orgasm", "ejacul", "erecti", "clitoris", "dildo",
+        "viol(ez|at)", "masturb", "muie", "puli", "pizdi", "muist", "blowjob", "dick", "pussy", "pzda", "porno",
+        "futai", "futere", "futu(-| )?ti", "excita", "dezbrac", "handjob", "deepthroat", "dau rape", "boobjob",
+        "labar", "labagiu", "child( )?porn", "cum( )?shot", "o sug(i|eti|e)?"
+    ],
+    "Hateful": [
+        "handicapat", "retard", "tigan", "bozgor", "n(i)+?(g)+(e)+?(r)+?", "negrotei", "poponar", "fa(g)+(ot)?", "nigro",
+        "tigan", "ungur(.)+? imputit", "kike", "rusnac", "chink", "e(-| )?girl", "e(-| )?grill",
+        "cuck", "whore", "slut", "thot", "bitch", "homalau", "d(i|y)ke", "autist", "pajeet", "exterminarea rasei [a-z]+",
+        "rasa [a-z]+ trebuie sa moara", "gas chamber", "nigg", "sperm", "trann(ie|y)", "esti masina de spalat",
+        "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich)", "white power", "sieg heil", "gas jews", "gazez evrei"
+    ]
+}

@@ -1,6 +1,6 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {EmbedBuilder} = require('discord.js');
-const {encryptor, decryptor, text_classification} = require('../../utility_modules/utility_methods.js');
+const {encryptor, decryptor} = require('../../utility_modules/utility_methods.js');
 const {config} = require('dotenv');
 config();
 
@@ -200,7 +200,7 @@ module.exports = {
                     .setImage(oldMember.guild.bannerURL({size: 1024}))
                     .setDescription(`Thank you, ${oldMember.user.username} for boosting the server!
                         You recieved a premium membership on the server that lasts for as long as you're boosting!
-                        Please go on the server and access your premium perkz through \`/premium dashboard\` and other premium commands!`)
+                        Please go on the server and access your premium perks through \`/premium dashboard\` and other premium commands!`)
                     .addFields(
                         {
                             name: 'Code',
@@ -242,6 +242,15 @@ module.exports = {
                 // removing the membership row of the member and the special code
                 await poolConnection.query(`DELETE FROM premiummembers WHERE guild=$1 AND member=$2`, [newMember.guild.id, newMember.id]);
                 await poolConnection.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [newMember.guild.id, premiumMemberData[0].code]);
+
+                await poolConnection.query(`DELETE FROM partydraft WHERE guild=$1 AND owner=$2 AND slot > 2`,
+                    [newMember.guild.id, newMember.id]
+                ); // removing the premium perks of lfg party draft
+
+                await poolConnection.query(`UPDATE partydraft SET hexcolor=0
+                    WHERE guild=$1 AND owner=$2 AND slot <= 2`,
+                    [newMember.guild.id, newMember.id]
+                ); // removing color from non premium slots
                 
                 
                 // logging

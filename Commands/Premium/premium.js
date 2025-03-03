@@ -19,11 +19,11 @@ const {
     StringSelectMenuBuilder,
 } = require("discord.js");
 const {
-    text_classification,
     encryptor,
     decryptor,
 } = require("../../utility_modules/utility_methods.js");
 const { poolConnection } = require("../../utility_modules/kayle-db.js");
+const {classifier} = require("../../utility_modules/filter.js");
 const { config } = require("dotenv");
 config();
 
@@ -839,9 +839,9 @@ module.exports = {
                                 // using the moderation API to check if the role name violates the rules
                                 if (checkModApi(mod_api)) {
                                     // checks connection
-                                    const response = await text_classification(
-                                        mod_api,
-                                        roleName
+                                    const response = await classifier(
+                                        roleName,
+                                        mod_api
                                     );
                                     if (response)
                                         if (
@@ -960,9 +960,9 @@ module.exports = {
                                 // using the moderation API to check if the role name violates the rules
                                 if (checkModApi(mod_api)) {
                                     // checks connection
-                                    const response = await text_classification(
-                                        mod_api,
-                                        roleName
+                                    const response = await classifier(
+                                        roleName,
+                                        mod_api
                                     );
                                     if (response)
                                         if (
@@ -1017,7 +1017,7 @@ module.exports = {
                                     // meaning the input is invalid
                                     return await submitSetColor.reply({
                                         content:
-                                            "Invalid input, a hexcolor should look like `#9A00FF`.",
+                                            "Invalid input, a hexcolor should look like this `#9A00FF`.",
                                         ephemeral: true,
                                     });
                                 }

@@ -25,11 +25,11 @@ module.exports = {
         ),
 
     async execute(interaction, client) {
-        const user = interaction.options.getUser('member') || interaction.user.id;
+        const user = interaction.options.getUser('member') || interaction.user;
         let member = null;
         
         try{
-            member = await interaction.guild.members.fetch(user);
+            member = await interaction.guild.members.fetch(user.id);
         } catch(err) {};
 
         await interaction.deferReply();
@@ -67,7 +67,7 @@ module.exports = {
                 AND timestamp >= $3`, [interaction.guild.id, user.id, parseInt(Date.now() / 1000) - 2_592_000])
 
         
-        let overviewString = ""
+        let overviewString = "";
         memberData.forEach((row) => {
             overviewString += `**${punishType[row.punishment_type]}**: ${row.reason == "no_reason" ? "No reason" : row.reason}  -  <t:${row.timestamp}:R>\n`
         });
@@ -108,7 +108,8 @@ module.exports = {
         const {rows: [{count_totalwarn}]} = await poolConnection.query(`SELECT COUNT(*) AS count_totalwarn
             FROM punishlogs
             WHERE guild=$1
-                AND target=$2`, [interaction.guild.id, user.id]);
+                AND target=$2
+                AND punishment_type=0`, [interaction.guild.id, user.id]);
 
         const {rows: [{countwarn_month}]} = await poolConnection.query(`SELECT COUNT(*) AS countwarn_month
             FROM punishlogs

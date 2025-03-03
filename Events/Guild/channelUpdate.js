@@ -35,9 +35,11 @@ module.exports = {
         });
 
         const fetchEntry = fetchAudit.entries.first();
-
+        if(!fetchEntry) return;
+        if(!fetchEntry.executor) return;
         if(fetchEntry?.executor.bot) return; // ignore bot actions
-
+        if(!fetchEntry) return;
+        
         let description = "";
         const embed = new EmbedBuilder()
             .setTitle('Channel Updated')

@@ -9,6 +9,7 @@ module.exports = {
     async execute(auditLogEntry, guild) {
         if(!auditLogEntry) return;
         if(!auditLogEntry.target) return;
+        if(!auditLogEntry.executor) return;
         if(auditLogEntry.executor.id == process.env.CLIENT_ID) return; // actions done by the bot are logged by that specific part that handles the action
         let logChannel = null;
         const fetchLogChannel = new Promise((resolve, reject) => {

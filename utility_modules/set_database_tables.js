@@ -325,7 +325,172 @@ async function database_tables_setup() {
         });
   });
   await autopunishrule;
+
+  // ranks will be represented by integers from 0 to 9 iron -> challenger
+  // ranked queue solo/duo will be represented by 0 and flex queue will be represented by 1
+  const rankrole = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS rankrole(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            rankid INT NOT NULL,
+            rankq INT NOT NULL,
+            role BIGINT NOT NULL UNIQUE,
+            CONSTRAINT unique_guild_role_rankq UNIQUE(guild, role, rankq),
+            CONSTRAINT unique_guild_rankid_role UNIQUE(guild, role, rankid),
+            CONSTRAINT unique_guild_rankid_rankq UNIQUE(guild, rankq, rankid)
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push('rankrole');
+            resolve(result);
+        })//
+  });
+  await rankrole;
   
+  const serverlfgchannel = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlfgchannel(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        channel BIGINT NOT NULL,
+        channeltype TEXT,
+        CONSTRAINT unique_guild_channel UNIQUE(guild, channel),
+        CONSTRAINT unique_guild_channeltype UNIQUE(guild, channeltype)
+    )`, (err, result) => {
+        if(err) reject(err);
+        table_nameListed.push("serverlfgchannels");
+        resolve(result);
+    })
+  });
+  await serverlfgchannel;
+
+  const partymaker = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS partymaker(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            message BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push("partymaker");
+            resolve(result);
+        })
+  });
+  await partymaker;
+
+  const partydraft = new Promise((resolve, reject) => {
+    // a party draft is the state of a lfg when it was saved
+    // a member can create an lfg that they know they will use often and save it once and make the process faster next time
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS partydraft(
+            id SERIAL PRIMARY KEY,
+            slot INT NOT NULL,
+            draftname TEXT NOT NULL,
+            guild BIGINT NOT NULL,
+            owner BIGINT NOT NULL,
+            ign TEXT NOT NULL,
+            region TEXT NOT NULL,
+            gamemode INT NOT NULL,
+            size INT NOT NULL,
+            private BOOLEAN DEFAULT true NOT NULL,
+            minrank INT,
+            maxrank INT,
+            reqroles TEXT[],
+            description TEXT,
+            hexcolor INT,
+            CONSTRAINT unique_guild_owner_slot UNIQUE(guild, owner, slot)
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push("partydraft");
+            resolve(result);
+        });
+  });
+  await partydraft;
+
+  const partyroom = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS partyroom(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            owner BIGINT NOT NULL,
+            ign TEXT NOT NULL,
+            region TEXT NOT NULL,
+            gamemode INT NOT NULL,
+            size INT NOT NULL,
+            private BOOLEAN DEFAULT true NOT NULL,
+            minrank INT,
+            maxrank INT,
+            reqroles TEXT[],
+            description TEXT,
+            channel BIGINT NOT NULL UNIQUE,
+            message BIGINT NOT NULL,
+            hexcolor INT DEFAULT 0,
+            timestamp BIGINT NOT NULL,
+            CONSTRAINT unique_owner_guild UNIQUE(guild, owner)
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push("partyroom");
+            resolve(result);
+        });
+  });
+  await partyroom;
+
+  const partyhistory = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS partyhistory(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            owner BIGINT NOT NULL,
+            ign TEXT NOT NULL,
+            region TEXT NOT NULL,
+            gamemode INT NOT NULL,
+            size INT NOT NULL,
+            private BOOLEAN DEFAULT true NOT NULL,
+            minrank INT,
+            maxrank INT,
+            reqroles TEXT[],
+            description TEXT,
+            timestamp BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push("partyhistory");
+            resolve(result);
+        });
+  });
+  await partyhistory;
+
+  /* not sure if i need to keep track of all the members
+  const partymember = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS partymember(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            member BIGINT NOT NULL,
+            channel BIGINT NOT NULL REFERENCES partyroom(channel) ON DELETE CASCADE,
+            CONSTRAINT unique_guild_member_channel UNIQUE(guild, member, channel)
+        )`, (err, result) => {
+            if(err) reject(err);
+            table_nameListed.push("partymember");
+            resolve(result);
+        })
+  });
+  await partymember
+  */
+
+  const lfgblock = new Promise((resolve, reject) => {
+    // in guild G X blocks Y but if Y doesn't block back X, then when X unblocks Y there would be no row containing G, X, Y or G, Y, X
+    // if Y blocks back X in G, then both of them need to unblock in order to be able to join each other parties
+    // in G X cannot block Y twice, once is enough, but Y can block X in G while being block themself
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS lfgblock(
+            id SERIAL PRIMARY KEY,
+            guild BIGINT NOT NULL,
+            blocker BIGINT NOT NULL,
+            blocked BIGINT NOT NULL,
+            CONSTRAINT unique_guild_blocker_blocked UNIQUE(guild, blocker, blocked)
+        )`, (err, result) => {
+            if(err){
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("lfgblock");
+            resolve(result);
+        });
+  });
+  await lfgblock;
+
   const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
   if(botConfigDefaultRow.length == 0) {
       const insertBotConfig = new Promise((resolve, reject) => {

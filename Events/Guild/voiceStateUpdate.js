@@ -5,6 +5,9 @@ module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
         if(!oldState) return;
+
+        if(!oldState.channel) return;
+        if(!oldState.channel.name) return;
         if(!oldState.member) return;
         if(!oldState.member.user) return;
         if(oldState.member.user.bot) return; // ignore bots
@@ -43,12 +46,12 @@ module.exports = {
                     {
                         name: 'Member',
                         value: `${oldState.member}`,
-                        inline: true
+                        inline: false
                     },
                     {
                         name: 'Joined',
-                        value: `${newState.channel}`,
-                        inline: true
+                        value: `${newState.channel} - ${newState.channel.name}`,
+                        inline: false
                     }
                 )
                 .setTimestamp()
@@ -70,12 +73,12 @@ module.exports = {
                     {
                         name: 'Member',
                         value: `${oldState.member}`,
-                        inline: true
+                        inline: false
                     },
                     {
                         name: 'Left',
-                        value: `${oldState.channel}`,
-                        inline: true
+                        value: `${oldState.channel} - ${oldState.channel?.name}`,
+                        inline: false
                     }
                 )
                 .setTimestamp()
@@ -96,17 +99,17 @@ module.exports = {
                     {
                         name: 'Member',
                         value: `${oldState.member}`,
-                        inline: true
+                        inline: false
                     },
                     {
                         name: 'From',
-                        value: `${oldState.channel}`,
-                        inline: true
+                        value: `${oldState.channel} - ${oldState.channel.name}`,
+                        inline: false
                     },
                     {
                         name: 'To',
-                        value: `${newState.channel}`,
-                        inline: true
+                        value: `${newState.channel} - ${newState.channel.name}`,
+                        inline: false
                     }
                 )
                 .setTimestamp()
@@ -131,7 +134,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -162,7 +165,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -193,7 +196,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -224,7 +227,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -255,7 +258,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -285,7 +288,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -316,7 +319,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -347,7 +350,7 @@ module.exports = {
                     },
                     {
                         name: 'In channel',
-                        value: `${newState.channel}`,
+                        value: `${newState.channel} - ${newState.channel.name}`,
                         inline: true
                     },
                     {
@@ -361,7 +364,118 @@ module.exports = {
             await logChannel.send({embeds:[embed]});
         }
         
+        // if party rooms are empty, they should be cleared and deleted
+        const {rows: partyRoomData} = await poolConnection.query(`SELECT * FROM partyroom
+            WHERE guild=$1 AND channel=$2`,
+            [oldState.guild.id, oldState.channelId]
+        );
+
+        const id2gamemode = {
+            0: "Solo/Duo",
+            1: "Flex",
+            2: "Clash/Tournament",
+            3: "SwiftPlay",
+            4: "Normal Draft",
+            5: "ARAM",
+            6: "TFT",
+            7: "Rotation Gamemode",
+            8: "Custom"
+        }
         
+        if(partyRoomData.length > 0) {
+            if(!oldState.channel.members.size) {
+                // looking for thread to delete
+                // fetching the lfg channel
+                const {rows: lfgChannelData} = await poolConnection.query(`SELECT channel FROM serverlfgchannel
+                    WHERE guild=$1 AND channeltype='lfg-${partyRoomData[0].region}'`, [oldState.guild.id]);
+
+                const lfgChannel = await oldState.guild.channels.fetch(lfgChannelData[0].channel);
+
+                // fetching the party owner
+                let partyOwnerUsername = "";
+
+                try{
+                    const partyOwner = await oldState.guild.members.fetch(partyRoomData[0].owner);
+                    partyOwnerUsername = partyOwner.user.username;
+                } catch(err) {};
+
+                const thread = await lfgChannel.threads.cache.find(t => t.name === `${partyOwnerUsername}-party`);
+
+                try{
+                    await thread.delete();
+                } catch(err) {};
+
+                // fetching the lfg message to be deleted
+                let message = null;
+                try{
+                    message = await lfgChannel.messages.fetch(partyRoomData[0].message)
+                } catch(err) {};
+
+                if(message) {
+                    try{
+                        await message.delete();
+                    } catch(err) {};
+                }
+
+                // clearing the database table
+                await poolConnection.query(`DELETE FROM partyroom WHERE guild=$1 AND channel=$2`, [oldState.guild.id, oldState.channelId]);
+
+                // deleting the channel
+                try{
+                    await oldState.channel.delete();
+                } catch(err) {};
+
+                // logs
+                const {rows: logChannelData} = await poolConnection.query(`SELECT channel FROM serverlogs
+                    WHERE guild=$1 AND eventtype=$2`, [oldState.guild.id, "lfg-logs"]);
+
+                let logChannel = null;
+
+                try{
+                    logChannel = await oldState.guild.channels.fetch(logChannelData[0].channel);
+                } catch(err) {};
+
+                if(logChannel) {
+                    await logChannel.send({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Red")
+                                .setAuthor({
+                                    name: `[${partyRoomData[0].region.toUpperCase()}] ${partyOwnerUsername} party`,
+                                    iconURL: oldState.guild.iconURL({extension: "png"})
+                                })
+                                .setTimestamp()
+                                .setFooter({text: `Owner ID: ${partyRoomData[0].owner}`})
+                                .setTitle("Party Closed")
+                                .addFields(
+                                    {
+                                        name: "Created",
+                                        value: `<t:${partyRoomData[0].timestamp}:R>`
+                                    },
+                                    {
+                                        name: "Closed by",
+                                        value: `System - ${oldState.guild.client.user}`
+                                    },
+                                    {
+                                        name: "Gamemode",
+                                        value: id2gamemode[partyRoomData[0].gamemode]
+                                    },
+                                    {
+                                        name: "IGN",
+                                        value: partyRoomData[0].ign
+                                    },
+                                    {
+                                        name: "Description",
+                                        value: `${partyRoomData[0].description || "None"}`
+                                    }
+                                )
+                        ]
+                    });
+                }
+            }
+            
+        }
+
         return;
     }
 }

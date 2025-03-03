@@ -33,6 +33,14 @@ module.exports = {
                             {
                                 name: 'Bot',
                                 value: 'bot'
+                            },
+                            {
+                                name: "LFG EUNE",
+                                value: "lfg-eune"
+                            },
+                            {
+                                name: "LFG EUW",
+                                value: "lfg-euw"
                             }
                             // more to be added as this bot evolves
                         )
@@ -66,6 +74,14 @@ module.exports = {
                             {
                                 name: 'Bot',
                                 value: 'bot'
+                            },
+                            {
+                                name: "LFG EUNE",
+                                value: "lfg-eune"
+                            },
+                            {
+                                name: "LFG EUW",
+                                value: "lfg-euw"
                             }
                             // more to be added as this bot evolves
                         )

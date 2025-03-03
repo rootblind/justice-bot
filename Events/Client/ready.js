@@ -10,6 +10,8 @@ const botUtils = require('../../utility_modules/utility_methods.js');
 const axios = require('axios');
 const cron = require('node-cron');
 const {exec} = require('child_process');
+const { load_collector } = require("../../utility_modules/subcommands/party_maker.js");
+const { lfg_collector } = require("../../utility_modules/subcommands/lfg_handler.js");
 
 
 config();
@@ -113,14 +115,6 @@ module.exports = {
 
         const {database_tables_setup} = require('../../utility_modules/set_database_tables.js');
         await database_tables_setup();
-
-        console.log(
-                `${
-                    client.user.username
-                } is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
-            );
-
-    
         
         // making sure that the flag_data.csv exists
         if(!(await botUtils.isFileOk('flag_data.csv'))) {
@@ -233,6 +227,16 @@ module.exports = {
                         else if(boosterMember.roles.cache.has(customRole.id))
                             await boosterMember.roles.remove(customRole);
                     }
+
+                    await poolConnection.query(`DELETE FROM partydraft WHERE guild=$1 AND owner=$2 AND slot > 2`,
+                        [boosterMember.guild.id, boosterMember.id]
+                    ); // removing the premium perks of lfg party draft
+    
+                    await poolConnection.query(`UPDATE partydraft SET hexcolor=0
+                        WHERE guild=$1 AND owner=$2 AND slot <= 2`,
+                        [boosterMember.guild.id, boosterMember.id]
+                    ); // removing color from non premium slots
+
                 }
                 else continue; // skip boosters that are still boosting
             } catch(err) {
@@ -331,6 +335,15 @@ module.exports = {
                         else if(guildMember.roles.cache.has(customRole.id))
                             await guildMember.roles.remove(customRole);
                     }
+
+                    await poolConnection.query(`DELETE FROM partydraft WHERE guild=$1 AND owner=$2 AND slot > 2`,
+                        [guildMember.guild.id, guildMember.id]
+                    ); // removing the premium perks of lfg party draft
+    
+                    await poolConnection.query(`UPDATE partydraft SET hexcolor=0
+                        WHERE guild=$1 AND owner=$2 AND slot <= 2`,
+                        [guildMember.guild.id, guildMember.id]
+                    ); // removing color from non premium slots
                 }
                 await poolConnection.query(
                     `DELETE FROM premiummembers
@@ -342,6 +355,8 @@ module.exports = {
                     `DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`, 
                     [currentTimestamp]
                 );
+
+                
         
             } catch (e) {
                 console.error('Error in expirationPremium_schedule:', e);
@@ -374,5 +389,71 @@ module.exports = {
                 
             });
         }
+
+        // loading the collectors for the lfg system
+        const {rows: partyMakerChannelData} = await poolConnection.query(`SELECT pm.guild, pm.message, slc.channel
+            FROM partymaker pm
+            JOIN serverlfgchannel slc ON pm.guild = slc.guild
+            WHERE slc.channeltype='party-manager'`)
+
+        for(const row of partyMakerChannelData) {
+            try{
+                const guild = await client.guilds.fetch(row.guild);
+                const channel = await guild.channels.fetch(row.channel);
+                const message = await channel.messages.fetch(row.message);
+
+                await load_collector(message);
+            } catch(err) { continue; }; // just skip bad database rows
+        }
+
+        //on ready, check the database for parties, if the voice channel exists and has at least 1 member, do nothing
+        //if the channel has 0 members, delete the channel and the row
+
+        const {rows: partyRoomData} = await poolConnection.query(`SELECT * FROM partyroom`);
+        for(const row of partyRoomData) {
+            try{
+                const guild = await client.guilds.fetch(row.guild);
+                const voicechannel = await guild.channels.fetch(row.channel);
+                const owner = await guild.members.fetch(row.owner);
+
+                const {rows: lfgChannelData} = await poolConnection.query(`SELECT channel FROM serverlfgchannel
+                    WHERE guild=$1 AND channeltype='lfg-${row.region}'`,
+                    [guild.id]
+                );
+
+                const lfgChannel = await guild.channels.fetch(lfgChannelData[0].channel);
+
+                const thread = await lfgChannel.threads.cache.find(t => t.name === `${owner.user.username}-party`);
+
+                const message = await lfgChannel.messages.fetch(row.message);
+
+                if(!voicechannel || voicechannel?.members.size == 0) {
+                    // if there are voice channel left over
+                    await poolConnection.query(`DELETE FROM partyroom WHERE guild=$1 AND channel=$2`, [guild.id, voicechannel.id]);
+                    await voicechannel.delete();
+
+                    if(message)
+                        await message.delete();
+                    if(thread)
+                        await thread.delete();
+                    continue;
+                }
+
+                // if there are still people in the party, restart collector for the message
+                await lfg_collector(message);
+                
+            } catch(err) {
+                console.error("ready.js: " + err);
+                continue;
+            }
+        }
+
+        
+
+        // keep it on the last line as confirmation when ready event finishes execution
+        console.log(
+            `${client.user.username} is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
+        );
     }
+
 };

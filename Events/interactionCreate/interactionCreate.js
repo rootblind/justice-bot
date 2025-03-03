@@ -141,6 +141,18 @@ module.exports = {
                 return;
             }
         }
+        else if(interaction.isButton()) {
+            /*const {rows: lfgPartyMakerMessageData} = await poolConnection.query(`SELECT message FROM partymaker
+                WHERE guild=$1 AND message=$2`,
+                [interaction.guild.id, interaction.message.id]
+            )
+
+            let buttonCooldown = 0;
+            
+            switch(interaction.customId) {
+                case ""
+            }*/
+        }
     
         else return;
     }

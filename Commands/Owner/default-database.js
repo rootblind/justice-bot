@@ -367,6 +367,42 @@ module.exports = {
         });
         await autopunishrule;
 
+        // ranks will be represented by integers from 0 to 9 iron -> challenger
+        // ranked queue solo/duo will be represented by 0 and flex queue will be represented by 1
+        const rankrole = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS rankrole(
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    rankid INT NOT NULL,
+                    rankq INT NOT NULL,
+                    role BIGINT NOT NULL UNIQUE,
+                    CONSTRAINT unique_guild_role_rankq UNIQUE(guild, role, rankq),
+                    CONSTRAINT unique_guild_rankid_role UNIQUE(guild, role, rankid),
+                    CONSTRAINT unique_guild_rankid_rankq UNIQUE(guild, rankq, rankid)
+                )`, (err, result) => {
+                    if(err) reject(err);
+                    table_nameListed.push('rankrole');
+                    resolve(result);
+                })
+        });
+        await rankrole;
+        
+        const serverlfgchannel = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS serverlfgchannel(
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                channeltype TEXT,
+                CONSTRAINT unique_guild_channel UNIQUE(guild, channel),
+                CONSTRAINT unique_guild_channeltype UNIQUE(guild, channeltype)
+            )`, (err, result) => {
+                if(err) reject(err);
+                table_nameListed.push("serverlfgchannels");
+                resolve(result);
+            })
+        });
+        await serverlfgchannel;
+
         let index = 1;
         for (x of table_nameListed){
             embed.addFields({name: `[${index}] - ${x}`, value: 'exists'});

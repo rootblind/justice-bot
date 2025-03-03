@@ -773,6 +773,15 @@ module.exports = {
                             .setFooter({text: `ID: ${revokeUser.id}`})
                 ]});
 
+                await poolConnection.query(`DELETE FROM partydraft WHERE guild=$1 AND owner=$2 AND slot > 2`,
+                    [revokeMember.guild.id, revokeMember.id]
+                ); // removing the premium perks of lfg party draft
+
+                await poolConnection.query(`UPDATE partydraft SET hexcolor=0
+                    WHERE guild=$1 AND owner=$2 AND slot <= 2`,
+                    [revokeMember.guild.id, revokeMember.id]
+                ); // removing color from non premium slots
+
             break;
             case 'edit': // updates the selected key
                 let editKey = interaction.options.getString('code');
@@ -1373,6 +1382,15 @@ module.exports = {
                                             await guildMember.roles.remove(customRole);
 
                                     }
+
+                                    await poolConnection.query(`DELETE FROM partydraft WHERE guild=$1 AND owner=$2 AND slot > 2`,
+                                        [guildMember.guild.id, guildMember.id]
+                                    ); // removing the premium perks of lfg party draft
+                    
+                                    await poolConnection.query(`UPDATE partydraft SET hexcolor=0
+                                        WHERE guild=$1 AND owner=$2 AND slot <= 2`,
+                                        [guildMember.guild.id, guildMember.id]
+                                    ); // removing color from non premium slots
                                 
 
                                 });

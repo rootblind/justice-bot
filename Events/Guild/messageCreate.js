@@ -2,7 +2,8 @@ const {config} = require('dotenv');
 config();
 const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, StringSelectMenuBuilder} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const {text_classification, csvAppend} = require('../../utility_modules/utility_methods.js');
+const {csvAppend} = require('../../utility_modules/utility_methods.js');
+const {classifier} = require('../../utility_modules/filter.js');
 const fs = require('graceful-fs');
 
 const axios = require('axios')
@@ -80,15 +81,19 @@ module.exports = {
 
         if(isChannelIgnored) return; // if the channel is ignored from this type of logging, ignore the event
 
+        const {rows: staffRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype='staff'`,
+            [message.guild.id]
+        )
+        
         const mod_api = process.env.MOD_API_URL; // for ease of coding
         if(!(await checkModApi(mod_api))) return; // at the moment, the event of sending a message has no other goal other than
         // evaluating the messages through the mod_api
 
-        const response = await text_classification(mod_api, message.content).catch(err => {console.error(err);});
+        const response = await classifier(message.content, mod_api).catch(err => {console.error(err);});
         
         if(response)
         {
-            if(!response['labels'].includes('OK')) { // ignoring OK messages
+            if(!response.labels.includes('OK')) { // ignoring OK messages
                 // note for stage two: each message will have buttons:
                 // Confirm: Confirms that the labels are correct and stores the message and labels as they are in the dataset
                 // Correct: Opens a select menu in order to select the appropiated labels and store the corrected version in the dataset
@@ -107,6 +112,14 @@ module.exports = {
                         {
                             name: 'Flags',
                             value: `${response['labels'].join(', ')}`
+                        },
+                        {
+                            name: "RegEx Matches",
+                            value: `${response.matches.join(", ")}`
+                        },
+                        {
+                            name: "Score",
+                            value: `${response.score}`
                         },
                         {
                             name: 'Link',
@@ -152,6 +165,7 @@ module.exports = {
                 // creating a button collector
                 const collector = flaggedMessage.createMessageComponentCollector({
                     ComponentType: ComponentType.Button,
+                    filter: (i) => i.member.roles.cache.has(staffRoleData[0].role),
                     time: 43_200_000
                 });
 

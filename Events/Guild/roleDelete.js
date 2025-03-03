@@ -30,6 +30,7 @@ module.exports = {
         await clearDB(role.id, role.guild.id, 'roleid', 'panelscheme');
         await clearDB(role.id, role.guild.id, 'roleid', 'reactionroles');
         await clearDB(role.id, role.guild.id, 'role', 'serverroles');
+        await clearDB(role.id, role.guild.id, "role", "rankrole");
         
         // if a premium custom role is deleted, database must be updated by setting the specific cell to NULL
         const checkCustomRole = new Promise((resolve, reject) => {

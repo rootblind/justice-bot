@@ -210,6 +210,9 @@ function curated_text(text) {
 }
 
 const axios = require('axios');
+
+// Depricated
+/*
 async function text_classification(api, text) {
     // preparing the text for the classification
     const filteredText = curated_text(text);
@@ -234,7 +237,7 @@ async function text_classification(api, text) {
     }
     else return false;
 
-}
+}*/
 
 function random_code_generation() { // generates a random key code, meaning a string with a random length between 5 and 10 that has random characters
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?';
@@ -293,7 +296,19 @@ function convert_seconds_to_units(seconds) {
     return '0 seconds';
 }
 
+function hasCooldown(userId, cooldowns, cd) {
+    // returns true if the user has a cooldown, false otherwise
+    const now = Date.now();
+    if(cooldowns.has(userId)) {
+        const expires = cooldowns.get(userId) + cd;
+        if(now < expires)
+            return expires
+    }
+    return false;
+}
+
 module.exports = {
+    hasCooldown,
     convert_seconds_to_units,
     duration_timestamp,
     random_code_generation,
@@ -303,7 +318,7 @@ module.exports = {
     csvAppend,
     decryptor,
     encryptor,
-    text_classification,
+    //text_classification,
     getBotMember,
     getPermsInChannel,
     botPermsCheckInChannel,

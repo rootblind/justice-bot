@@ -160,6 +160,16 @@ module.exports = {
                                 .addChannelTypes(ChannelType.GuildText)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('lfg-logs')
+                        .setDescription('Logging user input details about LFGs.')
+                        .addChannelOption(option =>
+                            option.setName('channel')
+                                .setDescription('The channel for the logs to be stored in.')
+                                .setRequired(true)
+                                .addChannelTypes(ChannelType.GuildText)
+                        )
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('remove')
@@ -204,6 +214,10 @@ module.exports = {
                             {
                                 name: 'Justice Logs',
                                 value: 'justice-logs'
+                            },
+                            {
+                                name: "LFG Logs",
+                                value: "lfg-logs"
                             }
                         )
                 )
@@ -318,6 +332,12 @@ module.exports = {
                     parent: logsCategory,
 
                 });
+                // lfg logs
+                const lfgLogs = await logsCategory.children.create({
+                    name: "lfg-logs",
+                    type: ChannelType.GuildText,
+                    parent: logsCategory
+                });
                 //the user activity channel
                 const userLogs = await logsCategory.children.create({
                     name: 'userlogs',
@@ -325,21 +345,25 @@ module.exports = {
                     parent: logsCategory,
 
                 });
+                // server changes and user activity on the server
                 const serverActivity = await logsCategory.children.create({
                     name: 'server-activity',
                     type: ChannelType.GuildText,
                     parent: logsCategory
                 });
+                // messages flagged for being toxic
                 const flaggedMessages = await logsCategory.children.create({
                     name: 'flagged-messages',
                     type: ChannelType.GuildText,
                     parent: logsCategory
                 });
+                // memberships starting/finishing and custom roles
                 const premiumActivity = await logsCategory.children.create({
                     name: 'premium-activity',
                     type: ChannelType.GuildText,
                     parent: logsCategory
                 });
+                // bot related logs such as when a flagged message is being labeled
                 const justiceLogs = await logsCategory.children.create({
                     name: 'justice-logs',
                     type: ChannelType.GuildText,
@@ -377,10 +401,11 @@ module.exports = {
                                 )
                             }
                             poolConnection.query(`INSERT INTO serverlogs (guild, channel, eventtype) 
-                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9), ($1, $10, $11), ($1, $12, $13), ($1, $14, $15), ($1, $16, $17)`,
+                                VALUES ($1, $2, $3), ($1, $4, $5), ($1, $6, $7), ($1, $8, $9), ($1, $10, $11), ($1, $12, $13), ($1, $14, $15), ($1, $16, $17)
+                                ($1, $18, $19)`,
                             [interaction.guildId, modLogs.id, 'moderation', voiceLogs.id, 'voice', messagesLogs.id, 'messages',
                             userLogs.id, 'user-activity', serverActivity.id, 'server-activity', flaggedMessages.id,'flagged-messages',
-                            premiumActivity.id, 'premium-activity', justiceLogs.id, 'justice-logs'],
+                            premiumActivity.id, 'premium-activity', justiceLogs.id, 'justice-logs', lfgLogs.id, "lfg-logs"],
                             (err) => {
                                 if(err) {
                                     console.error(err);
@@ -396,9 +421,9 @@ module.exports = {
             // logging channels need to be ignored
             const ignoreLogs = new Promise((resolve, reject) => {
                 poolConnection.query(`INSERT INTO serverlogsignore (guild, channel)
-                    VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6), ($1, $7), ($1, $8), ($1, $9)`,
+                    VALUES ($1, $2), ($1, $3), ($1, $4), ($1, $5), ($1, $6), ($1, $7), ($1, $8), ($1, $9), ($1, $10)`,
                     [interaction.guildId, modLogs.id, voiceLogs.id, messagesLogs.id, userLogs.id, serverActivity.id,
-                    flaggedMessages.id, premiumActivity.id, justiceLogs.id],
+                    flaggedMessages.id, premiumActivity.id, justiceLogs.id, lfgLogs.id],
                     (err, result) => {
                         if(err) reject(err);
                         resolve(result);
@@ -423,6 +448,11 @@ module.exports = {
                     {
                         name: 'Messages Logs',
                         value: `${messagesLogs}`,
+                        inline: true
+                    },
+                    {
+                        name: "LFG Logs",
+                        value: `${lfgLogs}`,
                         inline: true
                     },
                     {
@@ -455,7 +485,7 @@ module.exports = {
             break;
             case 'all':
                 const eventTypes = ["moderation", "voice", "messages", "user-activity", "server-activity", "flagged-messages",
-                    "premium-activity", "justice-logs"] // array used to iterate in for checking all event types
+                    "premium-activity", "justice-logs", "lfg-logs"] // array used to iterate in for checking all event types
                 // using the map function
                 // set all will set all events to a single channel
                 await Promise.all(eventTypes.map(async (xEvent) => {
@@ -474,6 +504,7 @@ module.exports = {
             case 'flagged-messages':
             case 'premium-activity':
             case 'justice-logs':
+            case "lfg-logs":
                 await setLogChannel(interaction.guildId, channelLogs.id, subcommand);
                 embed.setTitle(`${subcommand} logs set`)
                     .setColor('Green')

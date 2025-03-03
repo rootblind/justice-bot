@@ -36,6 +36,23 @@ commandCateogries.forEach(category => {
 function command_manual(command) {
     const fields = [];
     switch(command) {
+        case "lfg-admin":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Admin"
+                },
+                {
+                    name: "Command",
+                    value: "/lfg-admin - Initialize the LFG system and administrative tools."
+                },
+                {
+                    name: "Subcommands",
+                    value: `**setup <roles|channels|interfaces>** - Initializes the LFG system essencial parts.
+                    **list <parameter>** - Lists setup configuration.`
+                }
+            )
+        break;
         case "announcement":
             fields.push(
                 {
@@ -498,7 +515,7 @@ function command_manual(command) {
                 },
                 {
                     name: "Command",
-                    value: "`/premium` <dashboard|menu> - Opens the respective interface"
+                    value: "`/premium` <dashboard | menu> - Opens the respective interface"
                 }
             )
         break;
