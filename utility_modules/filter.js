@@ -123,6 +123,8 @@ async function classifier(text, modapi=process.env.MOD_API_URL) {
 
     let message = curate_text(text, [emojiPattern, urlPattern, allowedPattern]);
 
+    if(!message) return false;
+
     // disclaimer, this file contains toxic and triggering words commonly associated with the toxic labels located in labelsObject
     // their purpose is to generate regex pattern in order to build tools to filter them out and keep chatrooms online free from this
     // kind of behavior
