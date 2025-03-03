@@ -2188,7 +2188,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
 
     // logs
     const {rows: logChannelData} = await poolConnection.query(`SELECT channel FROM serverlogs
-        WHERE guild=$1 AND eventtype=$2`, [oldState.guild.id, "lfg-logs"]);
+        WHERE guild=$1 AND eventtype=$2`, [interaction.guild.id, "lfg-logs"]);
 
     let logChannel = null;
 
