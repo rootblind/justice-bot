@@ -104,6 +104,7 @@ module.exports = {
                         iconURL: message.member.displayAvatarURL({format: 'jpg'})
                     })
                     .setColor(0xff0005)
+                    .setDescription(`**Score**: \`${response.score}\``)
                     .addFields(
                         {
                             name: 'Channel',
@@ -114,12 +115,8 @@ module.exports = {
                             value: `${response['labels'].join(', ')}`
                         },
                         {
-                            name: "RegEx Matches",
+                            name: "Matching keywords",
                             value: `${response.matches.join(", ")}`
-                        },
-                        {
-                            name: "Score",
-                            value: `${response.score}`
                         },
                         {
                             name: 'Link',

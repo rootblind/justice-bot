@@ -25,9 +25,9 @@
     ],
     "Hateful": [
         "handicapat", "retard", "tigan", "bozgor", "n(i)+?(g)+(e)+?(r)+?", "negrotei", "poponar", "fa(g)+(ot)?", "nigro",
-        "tigan", "ungur(.)+? imputit", "kike", "rusnac", "chink", "e(-| )?girl", "e(-| )?grill",
+        "tigan", "ungur[a-z]+? imputit", "kike", "rusnac", "chink", "e(-| )?girl", "e(-| )?grill",
         "cuck", "whore", "slut", "thot", "bitch", "homalau", "d(i|y)ke", "autist", "pajeet", "exterminarea rasei [a-z]+",
         "rasa [a-z]+ trebuie sa moara", "gas chamber", "nigg", "sperm", "trann(ie|y)", "esti masina de spalat",
-        "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich)", "white power", "sieg heil", "gas jews", "gazez evrei"
+        "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich|spalat)", "white power", "sieg heil", "gas jews", "gazez evrei"
     ]
 }

@@ -48,7 +48,7 @@ function command_manual(command) {
                 },
                 {
                     name: "Subcommands",
-                    value: `**setup <roles|channels|interfaces>** - Initializes the LFG system essencial parts.
+                    value: `**setup <roles | channels | interfaces>** - Initializes the LFG system essencial parts.
                     **list <parameter>** - Lists setup configuration.`
                 }
             )
