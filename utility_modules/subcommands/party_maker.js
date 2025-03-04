@@ -2830,6 +2830,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                 }
 
                 if(togglePrivatePartyObj.private)
+                {
                     perms = { // if private
                         SendMessages: false,
                         Connect: false,
@@ -2838,6 +2839,18 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         Stream: false
                     }
 
+                    for(const member of partyChannel.members) {
+                        partyChannel.permissionOverwrites.edit(member.id, 
+                            {
+                                SendMessages: true,
+                                Connect: true,
+                                Speak: true,
+                                AddReactions: true,
+                                Stream: true
+                            }
+                        )
+                    }
+                }
 
                 await partyChannel.permissionOverwrites.edit(buttonInteraction.guild.roles.everyone.id, perms);
 

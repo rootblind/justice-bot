@@ -454,6 +454,11 @@ module.exports = {
         console.log(
             `${client.user.username} is functional! - ${botUtils.formatDate(new Date())} | [${botUtils.formatTime(new Date())}]`
         );
+
+        const errorFiles = fs.readdirSync("./error_dumps").map(file => file).filter((file) => file !== 'error.log');
+        if(errorFiles.length > 0) {
+            console.log(`FOUND ${errorFiles.length} ERROR FILES.`);
+        }
     }
 
 };
