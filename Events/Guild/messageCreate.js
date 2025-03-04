@@ -104,11 +104,14 @@ module.exports = {
                         iconURL: message.member.displayAvatarURL({format: 'jpg'})
                     })
                     .setColor(0xff0005)
-                    .setDescription(`**Score**: \`${response.score}\``)
                     .addFields(
                         {
                             name: 'Channel',
                             value: `${message.channel}`
+                        },
+                        {
+                            name: "Score",
+                            value: `**${response.score}**`
                         },
                         {
                             name: 'Flags',
@@ -116,7 +119,7 @@ module.exports = {
                         },
                         {
                             name: "Matching keywords",
-                            value: `First 5: ${response.matches.slice(0,5).join(", ")}`
+                            value: `${response.matches.slice(0,5).join(", ")}${response.matches.length > 5 ? `...and ${response.matches.length - 5} more` : ""}`
                         },
                         {
                             name: 'Link',
