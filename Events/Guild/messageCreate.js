@@ -119,7 +119,7 @@ module.exports = {
                         },
                         {
                             name: "Matching keywords",
-                            value: `${response.matches.slice(0,5).join(", ")}${response.matches.length > 5 ? `...and ${response.matches.length - 5} more` : ""}`
+                            value: `${response.matches.length ? response.matches.slice(0,5).join(", ") : "No patterns"}${response.matches.length > 5 ? `...and ${response.matches.length - 5} more` : ""}`
                         },
                         {
                             name: 'Link',
