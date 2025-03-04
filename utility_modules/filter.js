@@ -147,13 +147,16 @@ async function classifier(text, modapi=process.env.MOD_API_URL) {
         .replace(/(.)\1{2,}/g, '$1$1');
     const mod_response = await text_classification(modapi, message);
 
-    if(!mod_response.labels.includes("OK"))
-    {
-        for(const label of mod_response.labels) {
-            labelsObject[label] = 1;
+    if(mod_response) {
+        if(!mod_response.labels.includes("OK"))
+        {
+            for(const label of mod_response.labels) {
+                labelsObject[label] = 1;
+            }
         }
     }
-    
+    else return false;
+        
     const regexMatches = Object.values(matchesDict).flat().filter((x) => x); // get the array of matches filtering false values
 
     const max = (a, b) => { return a > b ? a : b};
