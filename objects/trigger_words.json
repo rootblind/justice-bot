@@ -4,7 +4,7 @@
         "copile", "scarbo", "ratat(ule|o)", "esti (un |o )?ratat(a)?", "lingaule", "fraier(e|o|ilor)",
         "esti pro(st|asta)", "sunteti prosti", "sunteti ratati", "esti retard(at)?", "cine te(-| )?a intrebat",
         "du(-| )?te dracu", "esti un caine", "pisatule", "zdreanto", "esti (o )?zdreanta", "curvo", "esti curva",
-        "e(-| )?girl", "e(-| )?grill", "(esti|iei) cuck", "e(sti)? (un )?incel", "esti (un )?simp",
+        "est(i|e) e(-| )?girl", "est(i|e) e(-| )?grill", "(esti|iei) cuck", "e(sti)? (un )?incel", "esti (un )?simp",
         "esti (un )?soyboy", "nu meriti sa traiesti", "nu meriti sa existi", "o sug(i|eti|e)?", "(^|[^a-zA-Z])mars([^a-zA-Z]|$)",
         "ma-ta"
     ],
@@ -21,13 +21,13 @@
         "pula", "pizda", "gaoaza", "penis", "vagin", "sex", "futu(-| )?(te|ti|le)", "orgasm", "ejacul", "erecti", "clitoris", "dildo",
         "viol(ez|at)", "masturb", "muie", "puli", "pizdi", "muist", "blowjob", "dick", "pussy", "pzda", "porno",
         "futai", "futere", "futu(-| )?ti", "excita", "dezbrac", "handjob", "deepthroat", "dau rape", "boobjob",
-        "labar", "labagiu", "child( )?porn", "cum( )?shot", "o sug(i|eti|e)?"
+        "labar", "labagiu", "child( )?porn", "cum( )?shot", "o sug(i|eti|e)?", "whore", "slut", "sperm"
     ],
     "Hateful": [
         "handicapat", "retard", "tigan", "bozgor", "n(i)+?(g)+(e)+?(r)+?", "negrotei", "poponar", "fa(g)+(ot)?", "nigro",
-        "tigan", "ungur[a-z]+? imputit", "kike", "rusnac", "chink", "e(-| )?girl", "e(-| )?grill",
-        "cuck", "whore", "slut", "thot", "bitch", "homalau", "d(i|y)ke", "autist", "pajeet", "exterminarea rasei [a-z]+",
-        "rasa [a-z]+ trebuie sa moara", "gas chamber", "nigg", "sperm", "trann(ie|y)", "esti masina de spalat",
-        "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich|spalat)", "white power", "sieg heil", "gas jews", "gazez evrei"
+        "tigan", "ungur[a-z]+? imputit", "kike", "rusnac", "chink", "homalau", "d(i|y)ke",
+        "autist", "pajeet", "exterminarea rasei [a-z]+", "rasa [a-z]+ trebuie sa moara", "gas chamber", "nigg",
+        "trann(ie|y)", "esti masina de spalat", "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich|spalat)",
+        "white power", "sieg heil", "gas jews", "gazez evrei"
     ]
 }
