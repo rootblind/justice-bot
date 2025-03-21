@@ -37,6 +37,7 @@ module.exports = {
         await clearDB(channel,'reactionroles');
         await clearDB(channel,'welcomescheme');
         await clearDB(channel, 'serverlfgchannel');
+        await clearDB(channel, "autovoiceroom");
 
 
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored

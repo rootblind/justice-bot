@@ -1,13 +1,11 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const {EmbedBuilder} = require('discord.js')
+const {EmbedBuilder} = require('discord.js');
+const {create_autovoice, remove_autovoice} = require("../../utility_modules/subcommands/autovoice.js");
 
 module.exports = {
     name: 'voiceStateUpdate',
     async execute(oldState, newState) {
         if(!oldState) return;
-
-        if(!oldState.channel) return;
-        if(!oldState.channel.name) return;
         if(!oldState.member) return;
         if(!oldState.member.user) return;
         if(oldState.member.user.bot) return; // ignore bots
@@ -474,6 +472,17 @@ module.exports = {
                 }
             }
             
+        }
+
+        // if auto voice exists
+        const {rows: autovoiceBool} = await poolConnection.query(`SELECT EXISTS
+            (SELECT 1 FROM autovoicechannel WHERE guild=$1 AND type='autovoice')`, [oldState.guild.id]);
+        if(autovoiceBool[0].exists) {
+            // auto voice create and auto voice remove depend on this channel existing
+            if(newState.channel)
+                await create_autovoice(newState.channel, newState.member);
+            if(oldState.channel)
+                await remove_autovoice(oldState.channel, oldState.member);
         }
 
         return;

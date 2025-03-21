@@ -307,7 +307,14 @@ function hasCooldown(userId, cooldowns, cd) {
     return false;
 }
 
+function timestamp_seconds(time = null) {
+    if(time == null) time = Date.now();
+
+    return parseInt(Date.now() / 1000);
+}
+
 module.exports = {
+    timestamp_seconds,
     hasCooldown,
     convert_seconds_to_units,
     duration_timestamp,

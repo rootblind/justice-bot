@@ -403,6 +403,173 @@ module.exports = {
         });
         await serverlfgchannel;
 
+        const partymaker = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS partymaker(
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    message BIGINT NOT NULL
+                )`, (err, result) => {
+                    if(err) reject(err);
+                    table_nameListed.push("partymaker");
+                    resolve(result);
+                })
+          });
+          await partymaker;
+        
+          const partydraft = new Promise((resolve, reject) => {
+            // a party draft is the state of a lfg when it was saved
+            // a member can create an lfg that they know they will use often and save it once and make the process faster next time
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS partydraft(
+                    id SERIAL PRIMARY KEY,
+                    slot INT NOT NULL,
+                    draftname TEXT NOT NULL,
+                    guild BIGINT NOT NULL,
+                    owner BIGINT NOT NULL,
+                    ign TEXT NOT NULL,
+                    region TEXT NOT NULL,
+                    gamemode INT NOT NULL,
+                    size INT NOT NULL,
+                    private BOOLEAN DEFAULT true NOT NULL,
+                    minrank INT,
+                    maxrank INT,
+                    reqroles TEXT[],
+                    description TEXT,
+                    hexcolor INT,
+                    CONSTRAINT unique_guild_owner_slot UNIQUE(guild, owner, slot)
+                )`, (err, result) => {
+                    if(err) reject(err);
+                    table_nameListed.push("partydraft");
+                    resolve(result);
+                });
+          });
+          await partydraft;
+        
+          const partyroom = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS partyroom(
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    owner BIGINT NOT NULL,
+                    ign TEXT NOT NULL,
+                    region TEXT NOT NULL,
+                    gamemode INT NOT NULL,
+                    size INT NOT NULL,
+                    private BOOLEAN DEFAULT true NOT NULL,
+                    minrank INT,
+                    maxrank INT,
+                    reqroles TEXT[],
+                    description TEXT,
+                    channel BIGINT NOT NULL UNIQUE,
+                    message BIGINT NOT NULL,
+                    hexcolor INT DEFAULT 0,
+                    timestamp BIGINT NOT NULL,
+                    CONSTRAINT unique_owner_guild UNIQUE(guild, owner)
+                )`, (err, result) => {
+                    if(err) reject(err);
+                    table_nameListed.push("partyroom");
+                    resolve(result);
+                });
+          });
+          await partyroom;
+        
+          const partyhistory = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS partyhistory(
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    owner BIGINT NOT NULL,
+                    ign TEXT NOT NULL,
+                    region TEXT NOT NULL,
+                    gamemode INT NOT NULL,
+                    size INT NOT NULL,
+                    private BOOLEAN DEFAULT true NOT NULL,
+                    minrank INT,
+                    maxrank INT,
+                    reqroles TEXT[],
+                    description TEXT,
+                    timestamp BIGINT NOT NULL
+                )`, (err, result) => {
+                    if(err) reject(err);
+                    table_nameListed.push("partyhistory");
+                    resolve(result);
+                });
+          });
+          await partyhistory;
+        
+          const lfgblock = new Promise((resolve, reject) => {
+            // in guild G X blocks Y but if Y doesn't block back X, then when X unblocks Y there would be no row containing G, X, Y or G, Y, X
+            // if Y blocks back X in G, then both of them need to unblock in order to be able to join each other parties
+            // in G X cannot block Y twice, once is enough, but Y can block X in G while being block themself
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS lfgblock(
+                    id SERIAL PRIMARY KEY,
+                    guild BIGINT NOT NULL,
+                    blocker BIGINT NOT NULL,
+                    blocked BIGINT NOT NULL,
+                    CONSTRAINT unique_guild_blocker_blocked UNIQUE(guild, blocker, blocked)
+                )`, (err, result) => {
+                    if(err){
+                        console.error(err);
+                        reject(err);
+                    }
+                    table_nameListed.push("lfgblock");
+                    resolve(result);
+                });
+          });
+          await lfgblock;
+        
+          const autovoicechannel = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoicechannel(
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                type TEXT NOT NULL
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    table_nameListed.push("autovoicechannel");
+                    resolve(result);
+                })
+          });
+          await autovoicechannel;
+
+          const autovoiceroom = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoiceroom(
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                channel BIGINT NOT NULL,
+                owner BIGINT NOT NULL,
+                timestamp BIGINT NOT NULL,
+                order_room INT NOT NULL,
+                CONSTRAINT autovoice_guild_owner UNIQUE (guild, owner)
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+        
+                    }
+                    table_nameListed.push("autovoiceroom");
+                    resolve(result);
+                });
+          });
+          await autovoiceroom;
+
+        const autovoicecd = new Promise((resolve, reject) => {
+            poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoicecd(
+                id SERIAL PRIMARY KEY,
+                guild BIGINT NOT NULL,
+                member BIGINT NOT NULL,
+                expires BIGINT NOT NULL
+                )`, (err, result) => {
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    }
+                    table_nameListed.push("autovoicecd");
+                    resolve(result);
+            });
+      });
+        await autovoicecd;
+
         let index = 1;
         for (x of table_nameListed){
             embed.addFields({name: `[${index}] - ${x}`, value: 'exists'});

@@ -12,6 +12,7 @@ const cron = require('node-cron');
 const {exec} = require('child_process');
 const { load_collector } = require("../../utility_modules/subcommands/party_maker.js");
 const { lfg_collector } = require("../../utility_modules/subcommands/lfg_handler.js");
+const {load_autovoice_collector} = require("../../utility_modules/subcommands/autovoice.js");
 
 
 config();
@@ -448,6 +449,23 @@ module.exports = {
             }
         }
 
+        // loading autovoice manager
+        const {rows: autovoicemanagerData} = await poolConnection.query(`SELECT * FROM autovoicemanager`);
+        for(row of autovoicemanagerData) {
+            try{
+                const guild = await client.guilds.fetch(row.guild);
+                const {rows: manageChannelData} = await poolConnection.query(`SELECT channel FROM autovoicechannel
+                    WHERE guild=$1 AND type='manager'`, [guild.id]);
+
+                const channel = await guild.channels.fetch(manageChannelData[0].channel);
+
+                const message = await channel.messages.fetch(row.message);
+                await load_autovoice_collector(message);
+            } catch(err) {
+                console.error("ready.js: " + err);
+                continue;
+            }
+        }
         
 
         // keep it on the last line as confirmation when ready event finishes execution

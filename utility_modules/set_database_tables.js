@@ -491,6 +491,77 @@ async function database_tables_setup() {
   });
   await lfgblock;
 
+  const autovoicechannel = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoicechannel(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        channel BIGINT NOT NULL,
+        type TEXT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("autovoicechannel");
+            resolve(result);
+        })
+  });
+  await autovoicechannel;
+
+  const autovoicemanager = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoicemanager(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        message BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("autovoicemanager");
+            resolve(result);
+        });
+  });
+  await autovoicemanager;
+
+  const autovoiceroom = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoiceroom(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        channel BIGINT NOT NULL,
+        owner BIGINT NOT NULL,
+        timestamp BIGINT NOT NULL,
+        order_room INT NOT NULL,
+        CONSTRAINT autovoice_guild_owner UNIQUE (guild, owner)
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+
+            }
+            table_nameListed.push("autovoiceroom");
+            resolve(result);
+        });
+  });
+  await autovoiceroom;
+
+  const autovoicecd = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS autovoicecd(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        member BIGINT NOT NULL,
+        expires BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("autovoicecd");
+            resolve(result);
+        });
+  });
+  await autovoicecd;
+
   const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
   if(botConfigDefaultRow.length == 0) {
       const insertBotConfig = new Promise((resolve, reject) => {

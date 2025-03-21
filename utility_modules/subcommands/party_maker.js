@@ -2839,8 +2839,8 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         Stream: false
                     }
 
-                    for(const member of partyChannel.members) {
-                        partyChannel.permissionOverwrites.edit(member.id, 
+                    for(const member of partyChannel.members.values()) {
+                        await partyChannel.permissionOverwrites.edit(member.id, 
                             {
                                 SendMessages: true,
                                 Connect: true,
