@@ -167,7 +167,8 @@ async function access_button(interaction, voice) {
 
             for(const userid of selectInteraction.values) {
                 const member = await interaction.guild.members.fetch(userid);
-
+                if(member.id == selectInteraction.user.id)
+                    continue; // ignore self select
                 if(voice.permissionsFor(member).has(PermissionFlagsBits.Connect)) {
                     // if the member has perms, deny them.
                     await voice.permissionOverwrites.edit(member.id, {
