@@ -276,20 +276,19 @@ async function lfg_collector(message) {
                                 return await requestInteraction.reply({content: "The user is not in a voice channel.", ephemeral: true});
                             }
                             try{
+                                await channel.permissionOverwrites.create(
+                                    buttonInteraction.member.id,
+                                    {
+                                        Speak: true,
+                                        Connect: true,
+                                        Stream: true
+                                    }
+                                );
                                 await buttonInteraction.member.voice.setChannel(channel);
                             } catch(err) {
                                 console.error(err);
                                 return await requestInteraction.reply({content: "The user is not in a voice channel.", ephemeral: true});
                             }
-                            await channel.permissionOverwrites.create(
-                                buttonInteraction.member.id,
-                                {
-                                    Speak: true,
-                                    Connect: true,
-                                    Stream: true
-                                }
-                            );
-
                             await requestInteraction.reply({
                                 content: `${buttonInteraction.member} has been granted access to your party.`,
                                 ephemeral: true

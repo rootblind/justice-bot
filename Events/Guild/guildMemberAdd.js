@@ -183,7 +183,9 @@ module.exports = {
                                     await member.roles.add(customRole);
                                 } catch(err) {
                                     console.error(err);
-                                    console.log(customRole);
+                                    await poolConnection.query(`UPDATE premiummembers SET customrole=$1 WHERE guild=$2 AND member=$3`,
+                                        [null, member.guild.id, member.id]
+                                    );
                                 }
                             } 
                         }
