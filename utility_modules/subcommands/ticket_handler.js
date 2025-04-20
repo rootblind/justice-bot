@@ -391,7 +391,7 @@ async function open_ticket_collector(message) {
                     selectSubjectOptions.push(
                         {
                             label: row.subject,
-                            value: row.id,
+                            value: `${row.id}`,
                             description: "Ticket Support Subject"
                         }
                     )
