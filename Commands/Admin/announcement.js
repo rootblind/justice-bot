@@ -16,6 +16,7 @@ const {
     ChannelSelectMenuBuilder,
     PermissionFlagsBits,
     ChannelType,
+    MessageFlags,
 } = require("discord.js");
 const fs = require('graceful-fs');
 const path = require('path');
@@ -112,7 +113,7 @@ module.exports = {
             logChannel = await interaction.guild.channels.fetch(serverLogsData[0].channel);
         }
 
-        const initMessage = await interaction.deferReply({ephemeral: true});
+        const initMessage = await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
         switch(cmd) {
             case 'builder':
@@ -369,7 +370,7 @@ module.exports = {
                                     filter: (interaction) => interaction.customId === 'set-color-modal',
                                     time: 600_000
                                 });
-                                await submitColorModal.deferReply({ephemeral: true})
+                                await submitColorModal.deferReply({flags: MessageFlags.Ephemeral})
                                 const hexColor = "#" + submitColorModal.fields.getTextInputValue('hexcolor');
                                 const hexColorRegex = /^#([A-Fa-f0-9]{6})$/;
                                 if (!hexColorRegex.test(hexColor)) {
@@ -377,14 +378,14 @@ module.exports = {
                                     return await submitColorModal.editReply({
                                         content:
                                             "Invalid input, a hexcolor should look like `#9A00FF`.",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                                 announcementBuilderEmbed.setColor(hexColor);
                                 await initMessage.edit({embeds: [announcementBuilderEmbed]})
                                 await submitColorModal.editReply({content: "Color upated."});
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
 
                         break;
@@ -396,7 +397,7 @@ module.exports = {
                                     filter: (interaction) => interaction.customId === 'set-author-modal',
                                     time: 600_000
                                 });
-                                await submitAuthorModal.deferReply({ephemeral: true});
+                                await submitAuthorModal.deferReply({flags: MessageFlags.Ephemeral});
 
                                 author["name"] = submitAuthorModal.fields.getTextInputValue("author-name");
                                 author["link"] = submitAuthorModal.fields.getTextInputValue("author-link") || null;
@@ -429,7 +430,7 @@ module.exports = {
                             await submitAuthorModal.editReply("Author updated.");
                                 
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
                         break;
                         case "set-content-button":
@@ -441,7 +442,7 @@ module.exports = {
                                     time: 600_000
                                 });
 
-                                await submitContentModal.deferReply({ephemeral: true});
+                                await submitContentModal.deferReply({flags: MessageFlags.Ephemeral});
                                 content["description"] = submitContentModal.fields.getTextInputValue("content-description");
                                 content["title"] = submitContentModal.fields.getTextInputValue("content-title") || null;
                                 content["footer"] = submitContentModal.fields.getTextInputValue("content-footer") || null;
@@ -454,7 +455,7 @@ module.exports = {
                                 await submitContentModal.editReply("Content updated.");
 
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
                         break;
                         case "set-images-button":
@@ -466,7 +467,7 @@ module.exports = {
                                     time: 600_000
                                 });
 
-                                await submitImagesModal.deferReply({ephemeral: true});
+                                await submitImagesModal.deferReply({flags: MessageFlags.Ephemeral});
 
                                 images["thumbnail"] = submitImagesModal.fields.getTextInputValue('thumbnail-link') || null;
                                 images["image"] = submitImagesModal.fields.getTextInputValue('image-link') || null;
@@ -490,14 +491,14 @@ module.exports = {
                                 await submitImagesModal.editReply("Embed images updated.");
 
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
                         break;
                         case "add-field-button":
                             // fields are limited to 25 per embed
                             if(announcementBuilderEmbed.data.fields)
                                 if(announcementBuilderEmbed.data.fields.length + 1 > 25)
-                                    return await collectorInteraction.reply({ephemeral: true, content: "Fields are limited to a total of 25."});
+                                    return await collectorInteraction.reply({flags: MessageFlags.Ephemeral, content: "Fields are limited to a total of 25."});
 
                             await collectorInteraction.showModal(addFieldModal);
 
@@ -507,7 +508,7 @@ module.exports = {
                                     time: 600_000
                                 });
 
-                                await submitFieldModal.deferReply({ephemeral: true});
+                                await submitFieldModal.deferReply({flags: MessageFlags.Ephemeral});
 
                                 field["name"] = submitFieldModal.fields.getTextInputValue('add-field-name');
                                 field["value"] = submitFieldModal.fields.getTextInputValue('add-field-value');
@@ -521,20 +522,20 @@ module.exports = {
                                 await submitFieldModal.editReply("Field added.");
 
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
 
                             
                         break;
                         case "reset-fields-button":
                             announcementBuilderEmbed.setFields()
-                            await collectorInteraction.reply({ephemeral: true, content: "Fields were reset."});
+                            await collectorInteraction.reply({flags: MessageFlags.Ephemeral, content: "Fields were reset."});
                             await initMessage.edit({embeds: [announcementBuilderEmbed]});
                         break;
                         case "reset-embed-button":
                             announcementBuilderEmbed = new EmbedBuilder().setTitle('Empty announcement');
                             await initMessage.edit({embeds: [announcementBuilderEmbed]});
-                            await collectorInteraction.reply({ephemeral: true, content: "The embed was reset."});
+                            await collectorInteraction.reply({flags: MessageFlags.Ephemeral, content: "The embed was reset."});
                         break;
                         case "close-button":
                             await initMessageCollector.stop();
@@ -549,9 +550,9 @@ module.exports = {
                                     time: 600_000
                                 });
                             } catch(err) {
-                                await collectorInteraction.followUp({ephemeral: true, content: "No submission provided before the time ran out!"});
+                                await collectorInteraction.followUp({flags: MessageFlags.Ephemeral, content: "No submission provided before the time ran out!"});
                             }
-                            await submitImportJSONModal.deferReply({ephemeral: true});
+                            await submitImportJSONModal.deferReply({flags: MessageFlags.Ephemeral});
 
                             const jsonString = submitImportJSONModal.fields.getTextInputValue("import-json-embed");
                             try {
@@ -611,7 +612,7 @@ module.exports = {
                             const selectProfileActionRow = new ActionRowBuilder()
                                 .addComponents(selectProfileMenu)
 
-                            const profileMenuMessage = await collectorInteraction.reply({ephemeral: true, components: [selectProfileActionRow]});
+                            const profileMenuMessage = await collectorInteraction.reply({flags: MessageFlags.Ephemeral, components: [selectProfileActionRow]});
                             const profileMenuReply = await collectorInteraction.fetchReply();
 
                             const collectorProfile = profileMenuReply.createMessageComponentCollector({
@@ -621,7 +622,7 @@ module.exports = {
 
                             collectorProfile.on('collect', async (menuInteraction) => {
                                 profile = menuInteraction.values[0];
-                                await menuInteraction.reply({ephemeral: true, content: `Profile set to ${profile}.`});
+                                await menuInteraction.reply({flags: MessageFlags.Ephemeral, content: `Profile set to ${profile}.`});
                             });
 
                             collectorProfile.on('end', async () => {
@@ -643,7 +644,7 @@ module.exports = {
                             const roleMenuActionRow = new ActionRowBuilder()
                                 .addComponents(roleMenu)
 
-                            const roleMenuMessage = await collectorInteraction.reply({ephemeral: true, components: [roleMenuActionRow]});
+                            const roleMenuMessage = await collectorInteraction.reply({flags: MessageFlags.Ephemeral, components: [roleMenuActionRow]});
                             const roleMenuReply = await collectorInteraction.fetchReply();
 
                             const collectorRole = roleMenuReply.createMessageComponentCollector({
@@ -657,7 +658,7 @@ module.exports = {
                                     mentionRolesString += `<@&${id}> `
                                 });
 
-                                await roleMenuInteraction.reply({ephemeral: true, content: "Roles selected: " + mentionRolesString});
+                                await roleMenuInteraction.reply({flags: MessageFlags.Ephemeral, content: "Roles selected: " + mentionRolesString});
                             });
 
                             collectorRole.on("end", async () => {
@@ -668,7 +669,7 @@ module.exports = {
                         break;
                         case "mention-everyone-button":
                             mentionEveryone = !mentionEveryone;
-                            await collectorInteraction.reply({ephemeral: true, content: `Mention everyone set to **${mentionEveryone}**.`});
+                            await collectorInteraction.reply({flags: MessageFlags.Ephemeral, content: `Mention everyone set to **${mentionEveryone}**.`});
                         break;
                         case "send-button":
                             if(mentionEveryone) contentMessage += `${collectorInteraction.guild.roles.everyone} `;
@@ -700,7 +701,7 @@ module.exports = {
                             const channelMenuActionRow = new ActionRowBuilder()
                                 .addComponents(channelMenu);
 
-                            const channelMenuMessage = await collectorInteraction.reply({ephemeral: true, components: [channelMenuActionRow]});
+                            const channelMenuMessage = await collectorInteraction.reply({flags: MessageFlags.Ephemeral, components: [channelMenuActionRow]});
                             const channelMenuReply = await collectorInteraction.fetchReply();
 
                             const channelCollector = channelMenuReply.createMessageComponentCollector({
@@ -750,7 +751,7 @@ module.exports = {
                                         ]});
                                     }
                                 });
-                                await interaction.reply({ephemeral: true, content: "Announcement sent successfully."});
+                                await interaction.reply({flags: MessageFlags.Ephemeral, content: "Announcement sent successfully."});
                                 channelCollector.stop();
                             });
 
@@ -832,7 +833,7 @@ module.exports = {
                                 value: `${channel}`
                             }
                         )
-                    ], ephemeral: true});
+                    ], flags: MessageFlags.Ephemeral});
 
             break;
         }

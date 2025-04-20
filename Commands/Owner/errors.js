@@ -5,6 +5,7 @@
 const {SlashCommandBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType,
     PermissionFlagsBits,
     EmbedBuilder,
+    MessageFlags,
 } = require('discord.js');
 
 const fs = require('graceful-fs');
@@ -32,7 +33,7 @@ module.exports = {
                     embed.setTitle('No error dumps found.')
                         .setDescription('No error logs inside the dump directory.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -84,7 +85,7 @@ module.exports = {
                         });
                     }
                 });
-                await buttonInteraction.reply({content: 'Error logs cleared successfully.', ephemeral: true});
+                await buttonInteraction.reply({content: 'Error logs cleared successfully.', flags: MessageFlags.Ephemeral});
                 collector.stop();
             } else if(buttonInteraction.customId === 'dump-button') {
                 await buttonInteraction.deferReply();

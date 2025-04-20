@@ -17,6 +17,7 @@ const {
     TextInputBuilder,
     TextInputStyle,
     StringSelectMenuBuilder,
+    MessageFlags,
 } = require("discord.js");
 const {
     encryptor,
@@ -108,7 +109,7 @@ module.exports = {
                     "No server roles were set up for such commands."
                 )
                 .setColor(0xff0004);
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
         const premiumRole = await interaction.guild.roles.cache.get(premiumRoleId);
 
@@ -145,7 +146,7 @@ module.exports = {
                 .setDescription(
                     "You require an active premium status in order to use this command."
                 );
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         let logChannel = null;
@@ -209,7 +210,7 @@ module.exports = {
                 const mainMenuMessage = await interaction.reply({
                     embeds: [mainMenu],
                     components: [mainMenuActionRow],
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
 
                 const redeemKeyInput = new TextInputBuilder()
@@ -259,7 +260,7 @@ module.exports = {
                                 let duration = 0;
                                 let isValidKey = false;
                                 await submitRedeemKey.deferReply({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                                 const checkCode = new Promise(
                                     (resolve, reject) => {
@@ -308,7 +309,7 @@ module.exports = {
                                     return await submitRedeemKey.editReply({
                                         content:
                                             "The code key provided is invalid, reached maximum usage or is dedicated to another member!!",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                                 poolConnection.query(
@@ -336,7 +337,7 @@ module.exports = {
                                 await mainMenuMessage.edit({
                                     embeds: [mainMenu],
                                     components: [mainMenuActionRow],
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                                 await submitRedeemKey.editReply({
                                     embeds: [
@@ -408,7 +409,7 @@ module.exports = {
                                 }
                             } catch (error) {
                                 await interaction.followUp({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                     content:
                                         "No submission provided before the time ran out!",
                                 });
@@ -428,7 +429,7 @@ module.exports = {
                 // fetching information from database about the current member premium status
                 let initMessage;
                 try{
-                    initMessage = await interaction.deferReply({ephemeral: true});
+                    initMessage = await interaction.deferReply({flags: MessageFlags.Ephemeral});
                 } catch(err) {
                     return console.error(err);
                 }
@@ -681,7 +682,7 @@ module.exports = {
                 const menuMessage = await interaction.editReply({
                     embeds: [embedMainMenu],
                     components: [mainMenuRow],
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                 });
 
                 // the modals and text inputs to be be used
@@ -783,7 +784,7 @@ module.exports = {
                             await interaction.update({
                                 embeds: [roleMenuEmbed],
                                 components: [roleMenuRow, roleMenuRow2],
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
 
                             break;
@@ -794,14 +795,14 @@ module.exports = {
                             await interaction.update({
                                 embeds: [embedStatusMenu],
                                 components: [statusMenuRow],
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
                             break;
                         case "back":
                             await interaction.update({
                                 embeds: [embedMainMenu],
                                 components: [mainMenuRow],
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
                             break;
                         case "role":
@@ -809,13 +810,13 @@ module.exports = {
                                 await interaction.update({
                                     embeds: [noRoleMenu],
                                     components: [noRoleMenuRow],
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                             } else {
                                 await interaction.update({
                                     embeds: [roleMenuEmbed],
                                     components: [roleMenuRow, roleMenuRow2],
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                             }
                             break;
@@ -830,7 +831,7 @@ module.exports = {
                                         time: 120_000,
                                     });
                                 await submitCreateRole.deferReply({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                                 const roleName =
                                     submitCreateRole.fields.getTextInputValue(
@@ -850,7 +851,7 @@ module.exports = {
                                             return submitCreateRole.editReply({
                                                 content:
                                                     "The role name provided is not appropiated! If you think this is a mistake, contact a staff member.",
-                                                ephemeral: true,
+                                                flags: MessageFlags.Ephemeral,
                                             });
                                         }
                                 }
@@ -860,7 +861,7 @@ module.exports = {
                                         position: premiumRole.position,
                                     });
                                 await submitCreateRole.editReply({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                     content: `Custom role created ${customRole}.`,
                                 });
                                 if (logChannel) {
@@ -933,11 +934,11 @@ module.exports = {
                                 await interaction.editReply({
                                     embeds: [roleMenuEmbed],
                                     components: [roleMenuRow, roleMenuRow2],
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                             } catch (error) {
                                 await interaction.followUp({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                     content:
                                         "No submission provided before the time ran out!",
                                 });
@@ -972,7 +973,7 @@ module.exports = {
                                                 {
                                                     content:
                                                         "The role name provided is not appropiated! If you think this is a mistake, contact a staff member.",
-                                                    ephemeral: true,
+                                                    flags: MessageFlags.Ephemeral,
                                                 }
                                             );
                                         }
@@ -984,15 +985,15 @@ module.exports = {
                                             name: roleName,
                                         }
                                     );
-                                await submitEditRoleName.reply({ephemeral: true, content: `Role name changed to **${roleName}**.`});
+                                await submitEditRoleName.reply({flags: MessageFlags.Ephemeral, content: `Role name changed to **${roleName}**.`});
                                 await interaction.editReply({
                                     embeds: [roleMenuEmbed],
                                     components: [roleMenuRow, roleMenuRow2],
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                             } catch (error) {
                                 await interaction.followUp({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                     content:
                                         "No submission provided before the time ran out!",
                                 });
@@ -1018,7 +1019,7 @@ module.exports = {
                                     return await submitSetColor.reply({
                                         content:
                                             "Invalid input, a hexcolor should look like this `#9A00FF`.",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                                 customRole =
@@ -1030,7 +1031,7 @@ module.exports = {
                                     );
                                 await submitSetColor.reply({
                                     content: "Color updated",
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                                 roleMenuEmbed.setFields(
                                     {
@@ -1068,14 +1069,14 @@ module.exports = {
                                     await interaction.editReply({
                                         embeds: [roleMenuEmbed],
                                         components: [roleMenuRow, roleMenuRow2],
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 } catch (e) {
                                     console.error(e);
                                 }
                             } catch (err) {
                                 await interaction.followUp({
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                     content:
                                         "No submission provided before the time ran out!",
                                 });
@@ -1111,7 +1112,7 @@ module.exports = {
                             const selectMessage = await interaction.reply({
                                 embeds: [selectMenuEmbed],
                                 components: [selectMenuRow],
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
                             const selectReply = await interaction.fetchReply();
                             const selectCollector =
@@ -1164,7 +1165,7 @@ module.exports = {
                                     );
                                     await interaction.reply({
                                         content: `Hexcolor updated to ${interaction.values[0]}`,
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                             );
@@ -1178,7 +1179,7 @@ module.exports = {
                             await interaction.reply({
                                 content:
                                     "Send the desired image icon in the current channel.\nFile size must be less than `256KB`!",
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
                             const filterMessage = (message) => message.author.id === interaction.user.id; // accept only the interaction user's inputs
                             const messageCollector =
@@ -1193,7 +1194,7 @@ module.exports = {
                                     return await interaction.followUp({
                                         content:
                                             "No image was provided, try again!",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                                 const imageAttachment =
@@ -1206,7 +1207,7 @@ module.exports = {
                                 ) {
                                     return await interaction.followUp({
                                         content: "Invalid file format!",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
 
@@ -1214,7 +1215,7 @@ module.exports = {
                                     return await interaction.followUp({
                                         content:
                                             "The image is too large! Must be below 256KB!",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
 
@@ -1229,7 +1230,7 @@ module.exports = {
                                 } catch {};
                                 await interaction.followUp({
                                     content: "Role icon set successfully!",
-                                    ephemeral: true,
+                                    flags: MessageFlags.Ephemeral,
                                 });
                             });
 
@@ -1238,7 +1239,7 @@ module.exports = {
                                     interaction.followUp({
                                         content:
                                             "No image was provided, try again!",
-                                        ephemeral: true,
+                                        flags: MessageFlags.Ephemeral,
                                     });
                                 }
                             });
@@ -1279,7 +1280,7 @@ module.exports = {
                                             customRole
                                         );
                                 } catch(err) {
-                                    return await interaction.followUp({ephemeral: true, content: "Looks like the role no longer exists or an error occured, please contact an admin!"});
+                                    return await interaction.followUp({flags: MessageFlags.Ephemeral, content: "Looks like the role no longer exists or an error occured, please contact an admin!"});
                                 }
 
                             roleMenuEmbed.setThumbnail(null);
@@ -1287,7 +1288,7 @@ module.exports = {
                             interaction.update({
                                 embeds: [noRoleMenu],
                                 components: [noRoleMenuRow],
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                             });
                             break;
                     }

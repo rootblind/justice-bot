@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, MessageFlags} = require('discord.js');
 
 const {poolConnection} = require('../../utility_modules/kayle-db.js')
 const {warn_handler} = require('../../utility_modules/warn_handler.js');
@@ -94,7 +94,7 @@ module.exports = {
                         .setTitle('No staff role on this server')
                         .setDescription('A staff role must be set up in order for this command to work.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
 
             });
         }
@@ -109,7 +109,7 @@ module.exports = {
                         .setTitle('Invalid staff role')
                         .setDescription('The current staff role is invalid, set a new one.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -121,7 +121,7 @@ module.exports = {
                         .setTitle('Missing Permission')
                         .setDescription('You lack the staff role of this server.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
         let member = null;
@@ -135,7 +135,7 @@ module.exports = {
                         .setTitle('Invalid target')
                         .setDescription('The user provided is not valid or not a member of this server.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -162,7 +162,7 @@ module.exports = {
                                 .setTitle('Invalid target')
                                 .setDescription('You can not time out another staff member or myself!')
                         ],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.deferReply();
@@ -263,7 +263,7 @@ module.exports = {
                                 .setTitle('Invalid target')
                                 .setDescription('The member is not currently timed out.')
                         ],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 await interaction.deferReply();

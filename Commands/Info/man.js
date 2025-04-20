@@ -4,7 +4,8 @@
 
 const {SlashCommandBuilder, ComponentType, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder,
     ButtonStyle,
-    EmbedBuilder
+    EmbedBuilder,
+    MessageFlags
 } = require("discord.js");
 
 const {command_manual, commandsCategories, categoriesFields, categoriesMenu} = require("../../utility_modules/manual.js");
@@ -34,7 +35,7 @@ module.exports = {
                             .setTitle("Invalid command")
                             .setDescription("No manual was found for the specified command or it doesn\'t exist.")
                         ],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 const commandEmbed = new EmbedBuilder()
@@ -84,7 +85,7 @@ module.exports = {
                         value: fieldvalue
                     }
                 )
-                await selectInteraction.reply({ephemeral: true, content: `Page: ${option} commands`});
+                await selectInteraction.reply({flags: MessageFlags.Ephemeral, content: `Page: ${option} commands`});
                 await message.edit({embeds: [embedManual]});
             });
     }

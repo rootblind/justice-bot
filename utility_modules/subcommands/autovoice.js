@@ -2,7 +2,8 @@ const {
     EmbedBuilder, ComponentType, ButtonBuilder, ButtonStyle, ActionRowBuilder, Collection,
     ModalBuilder, TextInputBuilder, TextInputStyle, UserSelectMenuBuilder,
     ChannelType,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 
 } = require("discord.js");
 const {poolConnection} = require("../kayle-db.js");
@@ -104,27 +105,27 @@ async function limit_button(interaction, voice) {
         const limit = submit.fields.getTextInputValue("user-limit-input");
         if(Number.isNaN(Number(limit))) {
             return await submit.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: "The input provided must be a number!"
             });
         }
 
         if(Number(limit) < 2 || Number(limit) > 99) {
             return await submit.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: "The number provided must be between 2 and 99!"
             });
         }
 
         await voice.setUserLimit(Number(limit));
         await submit.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: `User limit is now set to **${limit}** people.`
         });
     } catch(err) {
         console.error(err);
         await interaction.followUp({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "Time ran out, try again!"
         });
     }
@@ -140,7 +141,7 @@ async function access_button(interaction, voice) {
     const actionRow = new ActionRowBuilder().addComponents(userSelect)
 
     const reply = await interaction.reply({
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
         components: [actionRow]
     });
 
@@ -199,7 +200,7 @@ async function access_button(interaction, voice) {
                 replyMessage += `\nRevoked access to: ${revokedAccess.join(", ")}`;
 
             await selectInteraction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: replyMessage
             });
 
@@ -220,7 +221,7 @@ async function lock_button(interaction, voice) {
         });
 
         await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "Voice room set to **Public**."
         });
     } else {
@@ -242,7 +243,7 @@ async function lock_button(interaction, voice) {
         });
 
         await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "The voice room is now private.\nAccess was granted to the members already in this channel."
         });
     }
@@ -255,7 +256,7 @@ async function bot_access_button(interaction, voice) {
 
     if(botRoleData.length == 0) {
         return await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "You can not do that since there is no bot role defined on this server."
         });
     }
@@ -265,7 +266,7 @@ async function bot_access_button(interaction, voice) {
         botrole = await interaction.guild.roles.fetch(botRoleData[0].role);
     } catch(err) {
         return await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: 'Something went wrong with the bot role.'
         });
     }
@@ -281,7 +282,7 @@ async function bot_access_button(interaction, voice) {
         });
 
         await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "Bots can now join your voice!"
         });
     } else {
@@ -299,7 +300,7 @@ async function bot_access_button(interaction, voice) {
         }
 
         await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             content: "Now bots can no longer join this voice."
         });
     }
@@ -332,7 +333,7 @@ async function status_button(interaction, voice) {
             botrole = await interaction.guild.roles.fetch(botRoleData[0].role);
         } catch(err) {
             return await interaction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: 'Something went wrong with the bot role.'
             });
         }
@@ -379,7 +380,7 @@ async function status_button(interaction, voice) {
         )
 
     return await interaction.reply({
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
         embeds: [embed]
     });
 }
@@ -397,7 +398,7 @@ async function load_autovoice_collector(message) {
 
         if(userCooldown) {
             return await interaction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: `You're pressing buttons too fast! Cooldown: <t:${timestamp_seconds(userCooldown)}:R>`
             });
         }
@@ -414,14 +415,14 @@ async function load_autovoice_collector(message) {
 
         if(voiceData.length == 0) {
             return await interaction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: "You do not own a voice room."
             });
         }
 
         if(interaction.customId != "status-button" && interaction.member.voice.channelId != voiceData[0].channel) {
             return await interaction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 value: "You must be in your voice room to do that.\nJoin **Auto Voice** channel if you don\'t have one."
             });
         }

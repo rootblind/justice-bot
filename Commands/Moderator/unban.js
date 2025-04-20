@@ -1,4 +1,4 @@
-const {EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits} = require('discord.js');
+const {EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 
 module.exports = {
@@ -35,7 +35,7 @@ module.exports = {
                             .setTitle('Wrong unban method!')
                             .setDescription('You are trying to unban someone that is permanently banned!\nYou need administrative permissions and to use `/unban-perma` in order to do so.')
                     ],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }

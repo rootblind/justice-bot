@@ -41,6 +41,10 @@ module.exports = {
                             {
                                 name: "LFG EUW",
                                 value: "lfg-euw"
+                            },
+                            {
+                                name: "Ticket Support",
+                                value: "ticket-support"
                             }
                             // more to be added as this bot evolves
                         )
@@ -82,6 +86,10 @@ module.exports = {
                             {
                                 name: "LFG EUW",
                                 value: "lfg-euw"
+                            },
+                            {
+                                name: "Ticket Support",
+                                value: "ticket-support"
                             }
                             // more to be added as this bot evolves
                         )

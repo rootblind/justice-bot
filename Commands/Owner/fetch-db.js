@@ -1,7 +1,7 @@
 /*
     This command acts as an interface to send queries to the database and recieve results.
 */
-const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, Client} = require('discord.js')
+const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, Client, MessageFlags} = require('discord.js')
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
 
 module.exports = {
@@ -19,7 +19,7 @@ module.exports = {
     ,
     botPermissions: [PermissionFlagsBits.SendMessages],
     async execute(interaction, client) {
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({flags: MessageFlags.Ephemeral});
         let clientResponse;
         const query = interaction.options.getString('query');
         const queryPromise = new Promise((resolve, reject) => {
@@ -45,6 +45,6 @@ module.exports = {
             clientResponse = 'Invalid inputs! Check the console for more details.';
             console.error(error);
         }
-        return interaction.editReply({content: `${clientResponse || "No response!"}`, ephemeral: true});
+        return interaction.editReply({content: `${clientResponse || "No response!"}`, flags: MessageFlags.Ephemeral});
     }
 }

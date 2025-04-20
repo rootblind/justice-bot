@@ -170,6 +170,16 @@ module.exports = {
                                 .addChannelTypes(ChannelType.GuildText)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand.setName('ticket-support')
+                        .setDescription('Logging ticket related events.')
+                        .addChannelOption(option =>
+                            option.setName('channel')
+                                .setDescription('The channel for the logs to be stored in.')
+                                .setRequired(true)
+                                .addChannelTypes(ChannelType.GuildText)
+                        )
+                )
         )
         .addSubcommand(subcommand =>
             subcommand.setName('remove')
@@ -505,6 +515,7 @@ module.exports = {
             case 'premium-activity':
             case 'justice-logs':
             case "lfg-logs":
+            case "ticket-support":
                 await setLogChannel(interaction.guildId, channelLogs.id, subcommand);
                 embed.setTitle(`${subcommand} logs set`)
                     .setColor('Green')

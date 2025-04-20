@@ -2,7 +2,7 @@
     Members can look each other's infractions
 */
 
-const {EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, ComponentType} = require('discord.js');
+const {EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, ComponentType, MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 
 // using the object for easier reference in code
@@ -280,7 +280,7 @@ module.exports = {
                 break;
             }
 
-            await selectInteraction.reply({ephemeral: true, content: "Menu list updated."});
+            await selectInteraction.reply({flags: MessageFlags.Ephemeral, content: "Menu list updated."});
         })
     }
 }

@@ -1,5 +1,5 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
-const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder} = require('discord.js');
+const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder, MessageFlags} = require('discord.js');
 const fs = require('fs');
 
 // Setting up the database
@@ -37,7 +37,7 @@ module.exports = {
                     if(err){
                         console.error(err);
                         interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                         reject(err);
                     }
                     else {
@@ -57,7 +57,7 @@ module.exports = {
             embed.setTitle('All tables already exist!')
                 .setDescription('No table needs to be created!')
                 .setColor('Red');
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
         }
 
         // Taking care of awaiting the query to execute through a promise
@@ -76,7 +76,7 @@ module.exports = {
                 if(err){
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {
@@ -101,7 +101,7 @@ module.exports = {
                 if(err){
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {
@@ -124,7 +124,7 @@ module.exports = {
                 if(err){
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {
@@ -150,7 +150,7 @@ module.exports = {
                 if(err){
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {
@@ -175,7 +175,7 @@ module.exports = {
                 if(err){
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                            .setColor('Red')], ephemeral: true});
+                            .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {
@@ -199,7 +199,7 @@ module.exports = {
                 if(err) {
                     console.error(err);
                     interaction.reply({embeds: [embed.setDescription('Database fault, check the console for reference!')
-                        .setColor('Red')], ephemeral: true});
+                        .setColor('Red')], flags: MessageFlags.Ephemeral});
                     reject(err);
                 }
                 else {

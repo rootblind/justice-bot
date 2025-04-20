@@ -4,7 +4,8 @@ const {
     ActionRow,
     ButtonBuilder,
     ButtonStyle,
-    ComponentType
+    ComponentType,
+    MessageFlags
 } = require("discord.js");
 
 module.exports = {
@@ -16,7 +17,7 @@ module.exports = {
     async execute(interaction, client) {
         if(interaction.user.id != interaction.guild.ownerId) {
             return await interaction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: "This command can be executed only by the server owner!"
             });
         }
@@ -42,7 +43,7 @@ module.exports = {
         const buttonActionRow = new ActionRowBuilder().addComponents(nukeButton);
 
         const reply = await interaction.reply({
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
             embeds: [
                 new EmbedBuilder()
                     .setColor("Red")
@@ -75,7 +76,7 @@ module.exports = {
             }
 
             await selectInteraction.reply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: `${categoriesSelected.join(", ")}\n${categoriesSelected.length > 1 ? "Are" : "Is"} selected to be nuked!`
             });
 
@@ -94,7 +95,7 @@ module.exports = {
         buttonCollector.on("collect", async (buttonInteraction) => {
             if(!buttonInteraction.isButton()) return;
             await buttonInteraction.deferReply({
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
                 content: "Nuking channels..."
             });
             for(category of categoriesSelected) {

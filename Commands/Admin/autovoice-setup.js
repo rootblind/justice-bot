@@ -3,7 +3,7 @@
     Also sets up the manager menu to make changes to the voice
 */
 
-const {SlashCommandBuilder, EmbedBuilder, ChannelType, PermissionFlagsBits} = require("discord.js");
+const {SlashCommandBuilder, EmbedBuilder, ChannelType, PermissionFlagsBits, MessageFlags} = require("discord.js");
 const {poolConnection} = require("../../utility_modules/kayle-db.js");
 const {autovoice_manager} = require("../../utility_modules/subcommands/autovoice.js");
 
@@ -14,7 +14,7 @@ module.exports = {
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction, client) {
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({flags: MessageFlags.Ephemeral});
         
         // Clearing the database in case a previous setup was ran
         await poolConnection.query(`DELETE FROM autovoicechannel WHERE guild=$1`, [interaction.guild.id]);

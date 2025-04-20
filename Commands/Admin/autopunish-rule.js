@@ -1,5 +1,6 @@
 const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle,
     ComponentType, ActionRowBuilder, StringSelectMenuBuilder,
+    MessageFlags,
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {convert_seconds_to_units} = require('../../utility_modules/utility_methods.js');
@@ -402,7 +403,7 @@ module.exports = {
 
                                 await selectInteraction.reply({
                                     content: `The following rules were deleted: ${selectInteraction.values.join(", ")}`,
-                                    ephemeral: true
+                                    flags: MessageFlags.Ephemeral
                                 })
 
                                 selectCollector.stop();
@@ -428,7 +429,7 @@ module.exports = {
                             });
                             await buttonInteraction.reply({
                                 content: "All rules were cleared.",
-                                ephemeral: true
+                                flags: MessageFlags.Ephemeral
                             });
                         break;
                     }

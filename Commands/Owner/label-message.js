@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, PermissionFlagsBits, ComponentType} = require('discord.js');
+const {SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, PermissionFlagsBits, ComponentType, MessageFlags} = require('discord.js');
 const fs = require('graceful-fs');
 const {csvAppend, curated_text} = require('../../utility_modules/utility_methods');
 
@@ -19,7 +19,7 @@ module.exports = {
         const filteredText = curated_text(text);
 
         if(!filteredText) {
-            return await interaction.reply({content: 'The input is invalid. The text must have alphabetical characters and must not be only a link.', ephemeral: true});
+            return await interaction.reply({content: 'The input is invalid. The text must have alphabetical characters and must not be only a link.', flags: MessageFlags.Ephemeral});
         }
 
         const flagTags = {
@@ -48,7 +48,7 @@ module.exports = {
         const selectMenuActionRow = new ActionRowBuilder()
             .addComponents(selectMenu)
 
-        const selectMessage = await interaction.reply({components: [selectMenuActionRow], ephemeral: true});
+        const selectMessage = await interaction.reply({components: [selectMenuActionRow], flags: MessageFlags.Ephemeral});
 
         const selectMessageReply = await interaction.fetchReply();
 
@@ -64,7 +64,7 @@ module.exports = {
                 interaction.values.forEach((value) => {
                     flagTags[value] = 1;
                 });
-            await interaction.reply({ephemeral: true, content: `Flags selected: ${interaction.values.join(', ')}`});
+            await interaction.reply({flags: MessageFlags.Ephemeral, content: `Flags selected: ${interaction.values.join(', ')}`});
             csvAppend(filteredText, flagTags, 'flag_data.csv');
             collector.stop();
         });

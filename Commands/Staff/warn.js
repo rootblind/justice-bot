@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 const {warn_handler} = require('../../utility_modules/warn_handler.js');
 /*
@@ -46,13 +46,13 @@ module.exports = {
                         .setTitle('Missing configuration')
                         .setDescription('An admin must use `/server-role` in order to set up a Staff role.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         let staffRole = await interaction.guild.roles.fetch(staffRoleData[0].role);
         if(!staffRole) {
-            return await interaction.reply({ephemeral: true, embeds: [
+            return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                 new EmbedBuilder()
                     .setColor('Red')
                     .setTitle("Error")
@@ -69,7 +69,7 @@ module.exports = {
                         .setTitle("Missing staff role")
                         .setDescription(`You're missing the ${staffRole} role.`)
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -78,7 +78,7 @@ module.exports = {
         try { // throw an error if the user is not of this server
             member = await interaction.guild.members.fetch(user);
         } catch(err) {
-            return await interaction.reply({ephemeral: true, embeds: [
+            return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                 new EmbedBuilder()
                     .setColor("Red")
                     .setTitle("Invalid member")
@@ -94,7 +94,7 @@ module.exports = {
                         .setTitle('Invalid member')
                         .setDescription('You cannot warn another staff member!')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             })
         }
 

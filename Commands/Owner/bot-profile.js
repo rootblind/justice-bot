@@ -2,7 +2,7 @@
     The bot-profile command provides control over the bot's display. It's faster than navigating to the dev portal.
 */
 
-const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder, ActivityType, DiscordAPIError} = require('discord.js');
+const {SlashCommandBuilder, Client, PermissionFlagsBits, EmbedBuilder, ActivityType, DiscordAPIError, MessageFlags} = require('discord.js');
 const botUtils = require('../../utility_modules/utility_methods.js'); 
 const fs = require('fs');
 
@@ -164,7 +164,7 @@ module.exports = {
                     embed.setTitle('Invalid content type!')
                         .setDescription('The attachment must be a text/json file!')
                         .setColor('Red');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
                 const presets = await botUtils.handleFetchFile(attachedFile); //fetching the json file
@@ -174,7 +174,7 @@ module.exports = {
                     embed.setTitle('Invalid file contents!')
                         .setDescription('The file provided does not meet the expected content.')
                         .setColor('Red');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
                 // If the file passes the validation, then it is accepted as the new presets
@@ -262,7 +262,7 @@ module.exports = {
                             console.error(error);
                             
                     }
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 embed.setTitle(`Username change`)
                         .setDescription(`Username changed from ${oldUsername} to ${newUsername}.`)
@@ -288,14 +288,14 @@ module.exports = {
                     embed.setTitle('Invalid avatar name')
                         .setDescription('The image name provided is invalid, check spelling and make sure the extension matches.')
                         .setColor('Red');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 
                 try{
                     client.user.setAvatar(`${avatarDirectoryPath}${imageName}`);
                 } catch(error) {
                     console.error(error);
-                    return interaction.reply({content:'Something went wrong, check the console!', ephemeral: true});
+                    return interaction.reply({content:'Something went wrong, check the console!', flags: MessageFlags.Ephemeral});
                 }
             break;
             

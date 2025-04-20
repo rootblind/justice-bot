@@ -1,4 +1,4 @@
-const {Client, EmbedBuilder, SlashCommandBuilder, ChannelType, PermissionFlagsBits} = require('discord.js');
+const {Client, EmbedBuilder, SlashCommandBuilder, ChannelType, PermissionFlagsBits, MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
@@ -123,7 +123,7 @@ module.exports = {
                 embed.setTitle('No existing reaction roles!')
                     .setDescription('There is no reaction role set up on this server.')
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // wiping all reactions of the registered messages
             const allReactions = new Promise((resolve, reject) => {
@@ -159,7 +159,7 @@ module.exports = {
             embed.setTitle('Wipe complete')
                 .setDescription('All reactions were wiped from the reactions roles messages.')
                 .setColor('Green');
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
 
         }
 
@@ -171,7 +171,7 @@ module.exports = {
             embed.setTitle('The message id is invalid')
                 .setDescription('You provided an invalid message id.')
                 .setColor('Red');
-            return interaction.reply({ embeds:[embed], ephemeral: true });
+            return interaction.reply({ embeds:[embed], flags: MessageFlags.Ephemeral });
         }
         const message = await channel.messages.fetch(interaction.options.getString('message-id'));      
         const emoji = interaction.options.getString('emoji');
@@ -206,7 +206,7 @@ module.exports = {
                 embed.setTitle('Reaction already exists')
                     .setDescription('The emoji provided already exists as a reaction.')
                     .setColor('Red');
-                    return interaction.reply({ embeds:[embed], ephemeral: true });
+                    return interaction.reply({ embeds:[embed], flags: MessageFlags.Ephemeral });
             }
 
             try{
@@ -215,7 +215,7 @@ module.exports = {
                 embed.setTitle('Invalid emoji')
                     .setDescription('The emoji provided is invalid!')
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true})
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral})
             }
 
             const addReactionPromise = new Promise((resolve, reject) => {
@@ -236,7 +236,7 @@ module.exports = {
             embed.setTitle('Reaction role added susccesfully')
                 .setDescription(`${role} was added to the message using ${emoji}.`)
                 .setColor('Green');
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
 
         }
         else if(subcommands === 'remove') {
@@ -244,7 +244,7 @@ module.exports = {
                 embed.setTitle('Invalid target')
                     .setDescription('The reaction targeted doesn\'t exist')
                     .setColor('Red');
-                    return interaction.reply({ embeds:[embed], ephemeral: true });
+                    return interaction.reply({ embeds:[embed], flags: MessageFlags.Ephemeral });
             }
 
             const removeReaction = new Promise((resolve, reject) => {
@@ -278,7 +278,7 @@ module.exports = {
             embed.setTitle('Reaction removed successfully')
                 .setDescription(`The reaction role for ${emoji} was removed.`)
                 .setColor('Green');
-            interaction.reply({embeds: [embed], ephemeral: true});
+            interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
 
         } else if(subcommands === 'wipe-message') {
             message.reactions.removeAll();
@@ -297,7 +297,7 @@ module.exports = {
             embed.setTitle('Message wiped')
                 .setDescription('The targeted message was wiped of reaction roles.')
                 .setColor('Green');
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
         }
     }
 }

@@ -1,6 +1,7 @@
 const {SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder,
     StringSelectMenuBuilder, RoleSelectMenuBuilder, ModalBuilder, TextInputStyle, TextInputBuilder,
     PermissionFlagsBits, ComponentType, ChannelType,
+    MessageFlags,
 } = require('discord.js');
 
 const {poolConnection} = require("../../utility_modules/kayle-db.js");
@@ -47,7 +48,7 @@ module.exports = {
         );
 
         if(lfgRolesData.length < 2) {
-            return await interaction.reply({ephemeral: true, content: "You are missing the LFG EUNE/EUW roles."})
+            return await interaction.reply({flags: MessageFlags.Ephemeral, content: "You are missing the LFG EUNE/EUW roles."})
         }
         const cmd = interaction.options.getSubcommand();
         const reply = await interaction.deferReply();
@@ -135,7 +136,7 @@ module.exports = {
                                         .setTitle("Select Rank Role Menu")
                                     rankid = Number(selectOption);
                                     await message.edit({embeds: [rankEmbed], components: [roleMenuRow]});
-                                    await selectInteraction.reply({content: `${id2rank[Number(selectOption)]} rank selected`, ephemeral: true});
+                                    await selectInteraction.reply({content: `${id2rank[Number(selectOption)]} rank selected`, flags: MessageFlags.Ephemeral});
                                 } else {
                                     // when a role-rank pair is selected, the previous row will be removed if it exists
                                     const role = await interaction.guild.roles.fetch(selectOption);
@@ -148,7 +149,7 @@ module.exports = {
                                     try{
                                         await message.delete();
                                     } catch(err) {};
-                                    await selectInteraction.reply({ephemeral: true, content: `**${id2rank[rankid]}** rank has been paired to ${role}.`});
+                                    await selectInteraction.reply({flags: MessageFlags.Ephemeral, content: `**${id2rank[rankid]}** rank has been paired to ${role}.`});
                                 }
                             })
                         break;
@@ -189,7 +190,7 @@ module.exports = {
                     if(buttonInteraction.customId === "create-channels-button") {
                         // clearing the previous configuration
                         await poolConnection.query(`DELETE FROM serverlfgchannel WHERE guild=$1`, [interaction.guild.id]);
-                        await buttonInteraction.deferReply({ephemeral: true});
+                        await buttonInteraction.deferReply({flags: MessageFlags.Ephemeral});
                         const {rows : staffRoleData} = await poolConnection.query(`SELECT role, roletype FROM serverroles WHERE
                             guild=$1 AND (roletype=$2 OR roletype=$3)`,
                             [interaction.guild.id, "staff", "bot"]);
@@ -408,7 +409,7 @@ module.exports = {
                             components: [clearRow]
                         });
                         
-                        await buttonInteraction.reply({ephemeral: true, content: "Rank Role List has been cleared."})
+                        await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: "Rank Role List has been cleared."})
                     }
                 })
             break;

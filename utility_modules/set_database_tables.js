@@ -453,23 +453,6 @@ async function database_tables_setup() {
   });
   await partyhistory;
 
-  /* not sure if i need to keep track of all the members
-  const partymember = new Promise((resolve, reject) => {
-    poolConnection.query(`CREATE TABLE IF NOT EXISTS partymember(
-            id SERIAL PRIMARY KEY,
-            guild BIGINT NOT NULL,
-            member BIGINT NOT NULL,
-            channel BIGINT NOT NULL REFERENCES partyroom(channel) ON DELETE CASCADE,
-            CONSTRAINT unique_guild_member_channel UNIQUE(guild, member, channel)
-        )`, (err, result) => {
-            if(err) reject(err);
-            table_nameListed.push("partymember");
-            resolve(result);
-        })
-  });
-  await partymember
-  */
-
   const lfgblock = new Promise((resolve, reject) => {
     // in guild G X blocks Y but if Y doesn't block back X, then when X unblocks Y there would be no row containing G, X, Y or G, Y, X
     // if Y blocks back X in G, then both of them need to unblock in order to be able to join each other parties
@@ -561,6 +544,41 @@ async function database_tables_setup() {
         });
   });
   await autovoicecd;
+
+  const ticketmanager = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS ticketmanager(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        category BIGINT NOT NULL,
+        channel BIGINT NOT NULL,
+        message BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("ticketmanager");
+            resolve(result);
+        });
+  });
+  await ticketmanager;
+
+  const ticketsubject = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS ticketsubject(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        subject TEXT NOT NULL,
+        description TEXT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("ticketsubject");
+            resolve(result);
+        });
+  });
+  await ticketsubject;
 
   const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
   if(botConfigDefaultRow.length == 0) {

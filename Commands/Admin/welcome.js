@@ -3,7 +3,7 @@
     Which means whenever someone joins the server, if this event is set up, the bot will send a welcome message.
 */
 
-const { SlashCommandBuilder, Client, EmbedBuilder, PermissionFlagsBits, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, Client, EmbedBuilder, PermissionFlagsBits, ChannelType, MessageFlags } = require('discord.js');
 const { poolConnection } = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
@@ -136,7 +136,7 @@ module.exports = {
                         embed.setTitle('Lack of permissions!')
                             .setDescription('I lack the ManageChannels permission!')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
                     welcomeChannel = await interaction.guild.channels.create({
                         name: 'welcome',
@@ -153,7 +153,7 @@ module.exports = {
                         position: 0,
                     });
                 } else if (botUtils.botPermsCheckInChannel(client, welcomeChannel, [PermissionFlagsBits.SendMessages]) == 0) {
-                    return interaction.reply({content:`I am missing SendMessages permission in ${welcomeChannel} channel.`, ephemeral: true});
+                    return interaction.reply({content:`I am missing SendMessages permission in ${welcomeChannel} channel.`, flags: MessageFlags.Ephemeral});
                 }
                 let welcomeMessage = `Welcome to ${interaction.guild.name}!`;
                 let hasAuthorEmbed = true;
@@ -231,7 +231,7 @@ module.exports = {
                     const embed = EmbedBuilder()
                         .setTitle('An error occurred while running this command!')
                         .setColor('Red');
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
                 }
 
@@ -240,28 +240,28 @@ module.exports = {
                     embed.setTitle('Overflow!')
                         .setDescription('The description provided is too long!')
                         .setColor('Red');
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
 
                 if (messageTitle && messageTitle.length > 255) {
                     embed.setTitle('Overflow!')
                         .setDescription('The title provided is too long!')
                         .setColor('Red');
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
 
                 if (embedColor && embedColor > 0xffffff) {
                     embed.setTitle('Wrong input!')
                         .setDescription('The value of hexcolor must be something like 0xc30000.')
                         .setColor('Red');
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
 
                 if (imageLinkCustom && imageLinkCustom.length > 255) {
                     embed.setTitle('Overflow!')
                         .setDescription('The image link provided is too long!')
                         .setColor('Red');
-                    return interaction.reply({ embeds: [embed], ephemeral: true });
+                    return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                 }
                 embed.setDescription(messageDescription);
                 if (customAuthor)
@@ -273,7 +273,7 @@ module.exports = {
                     try {
                         embed.setImage(imageLinkCustom);
                     } catch (error) {
-                        return interaction.reply({ content: 'Invalid image link provided!', ephemeral: true });
+                        return interaction.reply({ content: 'Invalid image link provided!', flags: MessageFlags.Ephemeral });
                     }
                 embed.setTimestamp()
                     .setThumbnail(interaction.guild.iconURL())
@@ -407,7 +407,7 @@ module.exports = {
                         const embed = EmbedBuilder()
                             .setTitle('An error occurred while running this command!')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
                     changeQuery = changeQuery + ` channel=$${variableIndex},`;
                     queryValues.push(changeChannel.id);
@@ -419,7 +419,7 @@ module.exports = {
                         embed.setTitle('Overflow!')
                             .setDescription('The description provided is too long!')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
                     changeQuery = changeQuery + ` message=$${variableIndex},`;
                     queryValues.push(changeDescription);
@@ -439,7 +439,7 @@ module.exports = {
                         embed.setTitle('Overflow!')
                             .setDescription('The title provided is too long!')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
 
                     changeQuery = changeQuery + ` title=$${variableIndex},`;
@@ -452,7 +452,7 @@ module.exports = {
                         embed.setTitle('Wrong input!')
                             .setDescription('The value of hexcolor must be something like 0xc30000.')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
                     changeQuery = changeQuery + ` colorcode=$${variableIndex},`;
                     queryValues.push(botUtils.hexToString(changeColor));
@@ -464,12 +464,12 @@ module.exports = {
                         embed.setTitle('Overflow!')
                             .setDescription('The image link provided is too long!')
                             .setColor('Red');
-                        return interaction.reply({ embeds: [embed], ephemeral: true });
+                        return interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
                     }
                     try {
                         embed.setImage(changeLink);
                     } catch (error) {
-                        return interaction.reply({ content: 'Invalid image link provided!', ephemeral: true });
+                        return interaction.reply({ content: 'Invalid image link provided!', flags: MessageFlags.Ephemeral });
                     }
                     changeQuery = changeQuery + ` imagelink=$${variableIndex},`;
                     queryValues.push(changeLink);

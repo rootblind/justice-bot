@@ -10,7 +10,7 @@ const {poolConnection} = require('../../utility_modules/kayle-db.js');
 
 const {encryptor, decryptor} = require('../../utility_modules/utility_methods.js');
 
-const {EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits} = require('discord.js');
+const {EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, MessageFlags} = require('discord.js');
 const {config} = require('dotenv');
 config();
 
@@ -261,7 +261,7 @@ module.exports = {
         if(guildMember)// making sure user is a member of the guild
         {
             if(!(await interaction.guild.members.cache.get(guildMember.id)))
-                return await interaction.reply({ephemeral: true, embeds: [
+                return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setTitle('Invalid user')
                         .setColor('Red')
@@ -291,7 +291,7 @@ module.exports = {
             embed.setTitle('No premium status role was set on this server.')
                 .setDescription('No server roles were set up for such commands.')
                 .setColor(0xff0004);
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
         }
 
         const premiumRole = await interaction.guild.roles.cache.get(premiumRoleId);
@@ -320,7 +320,7 @@ module.exports = {
                 // also if a member has a role positioned between the premium and nitro booster role, it means that role is a custom role
                 // and must be assigned to the customrole column from premiummembers
                 // if the member is boosting the server, then its membership is marked as from_boosting=true
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
                 // array of all members that have the defined premium role
                 const arrayMembers = await interaction.guild.members.cache.filter(member => member.roles.cache.has(premiumRoleId));
 
@@ -459,7 +459,7 @@ module.exports = {
                     ]})
                 }
 
-                await interaction.editReply({ephemeral: true, embeds: [
+                await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                             .setColor(0xd214c7)
                             .setTitle('Members with premium role migrated successfully')
@@ -479,7 +479,7 @@ module.exports = {
             break;
             case 'create-customrole':
                 // will require multiple awaits so interaction will defer
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
                 let membershipUser = interaction.options.getUser('member');
                 let member = await interaction.guild.members.cache.get(membershipUser.id);
@@ -503,7 +503,7 @@ module.exports = {
                 await checkIfMember;
 
                 if(!boolMember) {
-                    return await interaction.editReply({ephemeral: true, embeds: [
+                    return await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('User has no membership.')
@@ -521,7 +521,7 @@ module.exports = {
 
                 if(hexColor > 0xffffff)
                 {
-                    return await interaction.editReply({embeds: [embed.setColor('Red').setDescription('The hexcolor is invalid!')], ephemeral: true});
+                    return await interaction.editReply({embeds: [embed.setColor('Red').setDescription('The hexcolor is invalid!')], flags: MessageFlags.Ephemeral});
                 }
 
                 // validating the role icon
@@ -529,13 +529,13 @@ module.exports = {
                     if(!imageIcon.contentType.includes('image'))
                         {
                             embed.setColor('Red').setDescription('The attachment provided is not an image!');
-                            return interaction.editReply({embeds: [embed], ephemeral: true});
+                            return interaction.editReply({embeds: [embed], flags: MessageFlags.Ephemeral});
                         }
         
                     if(imageIcon.size > 262100) {
                         // the image is too large
                         embed.setColor('Red').setDescription('The image is too large! 256KB is the maximum size!');
-                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                        return interaction.editReply({embeds: [embed], flags: MessageFlags.Ephemeral});
                     }
                     roleIcon = imageIcon.url;
                    
@@ -545,13 +545,13 @@ module.exports = {
                         emojiIcon = emojiIcon.match(/\d+/)[0];
                     else {
                         embed.setColor('Red').setDescription('Invalid emoji format!');
-                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                        return interaction.editReply({embeds: [embed], flags: MessageFlags.Ephemeral});
                     }
                     try {
                         emojiIcon = await interaction.guild.emojis.fetch(emojiIcon);
                     } catch(e) {
                         embed.setColor('Red').setDescription('Emoji not found on this server!');
-                        return interaction.editReply({embeds: [embed], ephemeral: true});
+                        return interaction.editReply({embeds: [embed], flags: MessageFlags.Ephemeral});
                     }
                     roleIcon = emojiIcon.imageURL();
                 }
@@ -619,7 +619,7 @@ module.exports = {
                 }
 
                 //reply
-                await interaction.editReply({ephemeral: true, embeds: [
+                await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                             .setColor(0xd214c7)
                             .setTitle('You created a custom role for a member!')
@@ -645,7 +645,7 @@ module.exports = {
                 const revokeUser = interaction.options.getUser('member');
                 const revokeMember = await interaction.guild.members.cache.get(revokeUser.id);
                 let revokeCode = null; // the code uses must be updated
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
                 // if reason to do anything if the user is not a premium user
                 const checkMembership = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, revokeUser.id],
@@ -674,7 +674,7 @@ module.exports = {
                 await checkMembership;
 
                 if(!revokeCode) { // if no code was fetched, then the member doesn't have premium membership
-                    return await interaction.editReply({ephemeral: true, embeds: [
+                    return await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('Invalid user!')
@@ -752,7 +752,7 @@ module.exports = {
                     ]});
                 }
                 // reply to the interaction
-                await interaction.editReply({ephemeral: true, embeds: [
+                await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('You revoked a membership')
@@ -802,7 +802,7 @@ module.exports = {
                     return await interaction.reply({embeds: [
                         editEmbedError.setTitle('There is nothing to change!')
                             .setDescription('No changes were provided!')
-                    ], ephemeral: true})
+                    ], flags: MessageFlags.Ephemeral})
                 }
 
                 let keyExists = false;
@@ -828,7 +828,7 @@ module.exports = {
                 if(!keyExists) {
                     editEmbedError.setTitle('The code provided doesn\'t exist!')
                         .setDescription('You must provide an existing code in order to edit the key!')
-                    return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                    return await interaction.reply({embeds: [editEmbedError], flags: MessageFlags.Ephemeral});
                 }
 
                 if(editDuration){ // validation for duration when specified
@@ -836,14 +836,14 @@ module.exports = {
                     {
                         editEmbedError.setTitle('Invalid input!')
                             .setDescription('The duration format is invalid.\n Provide a duration that respects the format: <number: 1-99>< m | h | d | w | y >')
-                        return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                        return await interaction.reply({embeds: [editEmbedError], flags: MessageFlags.Ephemeral});
                     }
                     const match = editDuration.match(durationRegex); // breaking the duration format into value and time unit in order to validate the input
                     if(parseInt(match[1]) < 1 || parseInt(match[1] > 99)) {
                         editEmbedError.setTitle('Duration value is out of range')
                             .setDescription('The value must be a number between 0 and 99!')
                         
-                        return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+                        return await interaction.reply({embeds: [editEmbedError], flags: MessageFlags.Ephemeral});
                     }
 
                     editDuration = duration_timestamp(editDuration);
@@ -907,7 +907,7 @@ module.exports = {
             if(logChannel) {
                 await logChannel.send({embeds: [embedUpdateKeySuccess]});
             }
-            await interaction.reply({embeds: [embedUpdateKeySuccess], ephemeral: true});
+            await interaction.reply({embeds: [embedUpdateKeySuccess], flags: MessageFlags.Ephemeral});
 
             break;
             case 'assign-key': // assigning a premium key for someone
@@ -923,12 +923,12 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Invalid user')
                             .setDescription('Bots can not recieve membership.')
-                ], ephemeral: true});
+                ], flags: MessageFlags.Ephemeral});
 
                 let isKeyValid = false; // boolean for key's eligiblity to be redeemed
                 let usesnumber = 0;
                 let expiresat;
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
                 const checkCodeKey = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT expiresat, usesnumber, dedicateduser FROM premiumkey WHERE guild=$1 AND code=$2`, [interaction.guild.id, encryptor(codeKey)],
@@ -959,7 +959,7 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Invalid code key')
                             .setDescription('The code key provided doesn\'t exist, is left out of usage or is dedicated to another user.')
-                    ], ephemeral: true});
+                    ], flags: MessageFlags.Ephemeral});
                 }
                 
                 // checking the code key is done, now the following lines will check the member's eligibility
@@ -988,7 +988,7 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Target is already a premium user')
                             .setDescription('The member selected already has a membership going.')
-                    ], ephemeral: true});
+                    ], flags: MessageFlags.Ephemeral});
                 }
 
                 // after botch checkers, everything is valid
@@ -1089,14 +1089,14 @@ module.exports = {
                             }
                         )
                         .setColor(0xd214c7)
-                ], ephemeral: true});
+                ], flags: MessageFlags.Ephemeral});
             break;
             case 'display':
                 const displayUser = interaction.options.getUser('member') || null;
                 if(displayUser) { // if an user is provided, then the command must display a profile instead of a  list
                     const {rows: displayMemberData} = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, displayUser.id]);
                     if(displayMemberData.length == 0) {
-                        return await interaction.reply({ephemeral: true, embeds: [
+                        return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                             new EmbedBuilder()
                                 .setColor('Red')
                                 .setTitle('Invalid user')
@@ -1108,7 +1108,7 @@ module.exports = {
                     if(displayMemberData[0].customrole) {
                         displayCustomRole = await interaction.guild.roles.fetch(displayMemberData[0].customrole);
                     }
-                    return await interaction.reply({ephemeral: true, embeds: [
+                    return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor(0xd214c7)
                             .setAuthor({
@@ -1137,7 +1137,7 @@ module.exports = {
                 // if no user is provided, list all members
                 let displayEmbed = new EmbedBuilder().setTitle('Display membership list.')
                 let membersArray = [];
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
                 // fetching the member ids and codes
                 const fetchMembersData = new Promise((resolve, reject) => {
                     poolConnection.query(`SELECT member, code FROM premiummembers WHERE guild=$1`, [interaction.guild.id], 
@@ -1164,7 +1164,7 @@ module.exports = {
                 await fetchMembersData;
 
                 if(membersArray.length == 0) {
-                    return await interaction.editReply({embeds: [displayEmbed], ephemeral: true});
+                    return await interaction.editReply({embeds: [displayEmbed], flags: MessageFlags.Ephemeral});
                 }
 
                 let memberCount = 0;
@@ -1178,7 +1178,7 @@ module.exports = {
                     );
                     
                     if(memberCount % 25 == 0 || memberCount == membersArray.length) {
-                        await interaction.followUp({embeds: [displayEmbed], ephemeral: true});
+                        await interaction.followUp({embeds: [displayEmbed], flags: MessageFlags.Ephemeral});
                         displayEmbed = new EmbedBuilder();
                     }
                 }
@@ -1190,7 +1190,7 @@ module.exports = {
                 let expiresAt = null;
                 let usesNumber = null;
                 let dedicateduser = null;
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
                 // the command will do different things based on if a code is provided or not
                 if(codeDetails)
                 {
@@ -1223,7 +1223,7 @@ module.exports = {
                                 .setTitle('Invalid key input')
                                 .setDescription('The key provided doesn\'t exist!')
                                 .setColor('Red')
-                        ], ephemeral: true});
+                        ], flags: MessageFlags.Ephemeral});
                     
                     generatedBy = await interaction.guild.members.cache.get(generatedBy) || generatedBy;
 
@@ -1255,7 +1255,7 @@ module.exports = {
                             }
                         )
                         .setColor(0xd214c7)
-                    await interaction.editReply({embeds: [codeDetailsEmbed], ephemeral: true});
+                    await interaction.editReply({embeds: [codeDetailsEmbed], flags: MessageFlags.Ephemeral});
 
                 } else {
                     let listEmbed = new EmbedBuilder()
@@ -1302,7 +1302,7 @@ module.exports = {
                     let keyCount = 0;
 
                     if(keysArray.length == 0) // if the list is empty
-                        return await interaction.followUp({embeds: [listEmbed], ephemeral: true});
+                        return await interaction.followUp({embeds: [listEmbed], flags: MessageFlags.Ephemeral});
 
                     for(let key of keysArray) {
                         ++keyCount;
@@ -1314,7 +1314,7 @@ module.exports = {
                         );
                         
                         if(keyCount % 25 == 0 || keyCount == keysArray.length) {
-                            await interaction.followUp({embeds: [listEmbed], ephemeral: true});
+                            await interaction.followUp({embeds: [listEmbed], flags: MessageFlags.Ephemeral});
                             listEmbed = new EmbedBuilder();
                         }
                         
@@ -1330,7 +1330,7 @@ module.exports = {
                 removeCode = encryptor(removeCode); // encrypting the code for the db query
 
                 // defer the reply because a lot of DB calls are made so a late response can be expected when there is a lot of data
-                await interaction.deferReply({ephemeral: true});
+                await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
                 // here we remove the key from the database table of premiumkey and premiummembers and also removing the premium membership
                 // of affected users
@@ -1357,7 +1357,7 @@ module.exports = {
                             .setTitle('Invalid code!')
                             .setDescription('The code provided doesn\'t exist!\nNothing was changed.')
                             .setColor('Red')
-                    ], ephemeral: true})
+                    ], flags: MessageFlags.Ephemeral})
                 }
 
                 const proceedRemoval = new Promise((resolve, reject) => {
@@ -1455,14 +1455,14 @@ module.exports = {
                     {
                         embedError.setTitle('Invalid input!')
                             .setDescription('The duration format is invalid.\n Provide a duration that respects the format: <number: 1-99>< m | h | d | w | y >')
-                        return await interaction.reply({embeds: [embedError], ephemeral: true});
+                        return await interaction.reply({embeds: [embedError], flags: MessageFlags.Ephemeral});
                     }
                     const match = duration.match(durationRegex); // breaking the duration format into value and time unit in order to validate the input
                     if(parseInt(match[1]) < 1 || parseInt(match[1] > 99)) {
                         embedError.setTitle('Duration value is out of range')
                             .setDescription('The value must be a number between 0 and 99!')
                         
-                        return await interaction.reply({embeds: [embedError], ephemeral: true});
+                        return await interaction.reply({embeds: [embedError], flags: MessageFlags.Ephemeral});
                     }
 
                     duration = duration_timestamp(duration);
@@ -1512,7 +1512,7 @@ module.exports = {
                     if(!isKeyUnique) {
                         embedError.setTitle('The code already exists!')
                             .setDescription('You must provide an unique code for the key.')
-                        return await interaction.reply({embeds: [embedError], ephemeral: true});
+                        return await interaction.reply({embeds: [embedError], flags: MessageFlags.Ephemeral});
                     }
                 }
             
@@ -1574,7 +1574,7 @@ module.exports = {
             if(logChannel) {
                 await logChannel.send({embeds: [embedNewKeySuccess]});
             }
-            await interaction.reply({embeds: [embedNewKeySuccess], ephemeral: true});
+            await interaction.reply({embeds: [embedNewKeySuccess], flags: MessageFlags.Ephemeral});
                 
             break;
             case 'set-customrole':
@@ -1587,7 +1587,7 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Invalid user')
                             .setDescription('Bots can not recieve membership.')
-                ], ephemeral: true});
+                ], flags: MessageFlags.Ephemeral});
                 
                 const { rows } = await poolConnection.query(`SELECT * FROM premiummembers WHERE guild=$1 AND member=$2`, [interaction.guild.id, setUser.id]);
                 
@@ -1597,7 +1597,7 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Invalid user')
                             .setDescription('User lacks premium membership.')
-                    ], ephemeral: true});
+                    ], flags: MessageFlags.Ephemeral});
                 }
 
                 if(role.position > premiumRole.position ||  // validate role
@@ -1607,7 +1607,7 @@ module.exports = {
                                     .setColor('Red')
                                     .setTitle('Role is not valid')
                                     .setDescription('The role selected is not valid for such action!\nSelect a role that is between the Nitro booster role and the premium role.')
-                            ], ephemeral: true});
+                            ], flags: MessageFlags.Ephemeral});
                     }
                 await poolConnection.query(`UPDATE premiummembers SET customrole=$1 WHERE guild=$2 AND member=$3`, [role.id, interaction.guild.id, setUser.id]);
                 
@@ -1638,7 +1638,7 @@ module.exports = {
                 }
                 
                 await setMember.roles.add(role);
-                await interaction.reply({ephemeral: true, embeds: [
+                await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setColor(0xd214c7)
                         .setTitle('Successfully set a custom role')
@@ -1667,10 +1667,10 @@ module.exports = {
                             .setColor('Red')
                             .setTitle('Invalid user')
                             .setDescription('Bots can not recieve membership.')
-                ], ephemeral: true});
+                ], flags: MessageFlags.Ephemeral});
 
                 if(!boosterMember.roles.cache.has(interaction.guild.roles.premiumSubscriberRole.id)) {
-                    return await interaction.reply({ephemeral: true, embeds: [
+                    return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('Invalid member')
@@ -1697,7 +1697,7 @@ module.exports = {
                 await checkHasPremium;
 
                 if(!hasPremium) {
-                    return await interaction.reply({ephemeral: true, embeds: [
+                    return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('Member has no premium membership')
@@ -1735,7 +1735,7 @@ module.exports = {
                 }
 
                 // interaction reply
-                await interaction.reply({ephemeral: true, embeds: [
+                await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setTitle('Membership changed')
                         .setColor(0xd214c7)

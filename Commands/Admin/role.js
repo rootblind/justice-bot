@@ -2,7 +2,7 @@
     Role Management
     This command is mostly from Lain bot, but with a few more input validation
 */
-const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags} = require('discord.js');
 const {config} = require('dotenv');
 const fs = require('graceful-fs')
 config();
@@ -145,7 +145,7 @@ module.exports = {
             if(user)// making sure user is a member of the guild
             {
                 if(!(await interaction.guild.members.cache.get(user.id)))
-                    return await interaction.reply({ephemeral: true, embeds: [
+                    return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setTitle('Invalid user')
                             .setColor('Red')
@@ -161,13 +161,13 @@ module.exports = {
                 if(!imageIcon.contentType.includes('image'))
                     {
                         embed.setColor('Red').setDescription('The attachment provided is not an image!');
-                        return interaction.reply({embeds: [embed], ephemeral: true});
+                        return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                     }
     
                 if(imageIcon.size > 262100) {
                     // the image is too large
                     embed.setColor('Red').setDescription('The image is too large! 256KB is the maximum size!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 roleIcon = imageIcon.url;
                
@@ -177,13 +177,13 @@ module.exports = {
                     emojiIcon = emojiIcon.match(/\d+/)[0];
                 else {
                     embed.setColor('Red').setDescription('Invalid emoji format!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 try {
                     emojiIcon = await interaction.guild.emojis.fetch(emojiIcon);
                 } catch(e) {
                     embed.setColor('Red').setDescription('Emoji not found on this server!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 roleIcon = emojiIcon.imageURL();
             }
@@ -192,7 +192,7 @@ module.exports = {
                 if(position >= interaction.member.roles.highest.position && guild.ownerId !== interaction.member.id)
                 {
                     embed.setColor('Red').setDescription('You can not edit a role\'s position to one higher than your role position!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
             if(color)
                 if(color > 0xffffff)
@@ -204,25 +204,25 @@ module.exports = {
                 if(interaction.member.roles.highest.position <= role.position && guild.ownerId !== interaction.member.id)
                 {
                     embed.setColor('Red').setDescription('Your highest role is too low!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
                 if(role.id == guild.roles.everyone.id)
                 {
                     embed.setColor('Red').setDescription('You can not access @everyone');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
                 if(me.roles.highest.position <= role.position)
                 {
                     embed.setColor('Red').setDescription('My highest role is too low!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
                 // Excluding bot roles as valid inputs
                 if(role.managed)
                 {
                     embed.setColor('Red').setDescription('Bot roles are not manageable!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
             }
 
@@ -236,7 +236,7 @@ module.exports = {
                 if(user)
                 {
                     embed.setColor('Red').setDescription('The user provided is not a member of this server!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
             }
             

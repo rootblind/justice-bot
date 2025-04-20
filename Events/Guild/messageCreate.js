@@ -1,6 +1,6 @@
 const {config} = require('dotenv');
 config();
-const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, StringSelectMenuBuilder} = require('discord.js');
+const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ComponentType, StringSelectMenuBuilder, MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {csvAppend} = require('../../utility_modules/utility_methods.js');
 const {classifier} = require('../../utility_modules/filter.js');
@@ -226,7 +226,7 @@ module.exports = {
                                     .setTimestamp()
                                     .setFooter({text: `ID: ${interaction.user.id}`})
                             ]});
-                        await interaction.reply({ephemeral: true, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
+                        await interaction.reply({flags: MessageFlags.Ephemeral, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
                         // appending the message
                         csvAppend(response['text'], flagTags, 'flag_data.csv');
                         collector.stop();
@@ -251,7 +251,7 @@ module.exports = {
 
                         const selectFlagsActionRow = new ActionRowBuilder().addComponents(selectFlagsMenu);
 
-                        const selectFlagsMessage = await interaction.reply({ephemeral: true, components: [selectFlagsActionRow], embeds: [
+                        const selectFlagsMessage = await interaction.reply({flags: MessageFlags.Ephemeral, components: [selectFlagsActionRow], embeds: [
                             new EmbedBuilder()
                                 .setDescription('Please select all the appropiate flags for the message.')
                                 .addFields(
@@ -284,7 +284,7 @@ module.exports = {
                             for(let label of interaction.values) {
                                 flagTags[label] = 1;
                             }
-                            await interaction.reply({ephemeral: true, content:`The flags were corrected to: ${interaction.values.join(', ')}\nMessage ID: ${flaggedMessage.id}`});
+                            await interaction.reply({flags: MessageFlags.Ephemeral, content:`The flags were corrected to: ${interaction.values.join(', ')}\nMessage ID: ${flaggedMessage.id}`});
                             if(justiceLogChannel)
                                 await justiceLogChannel.send({embeds: [
                                     new EmbedBuilder()
@@ -318,7 +318,7 @@ module.exports = {
                         });
                     } else if(interaction.customId === 'ok-button') {
                         flagTags['OK'] = 1;
-                        await interaction.reply({ephemeral: true, content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${flaggedMessage.id}`});
+                        await interaction.reply({flags: MessageFlags.Ephemeral, content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${flaggedMessage.id}`});
                         if(justiceLogChannel)
                             await justiceLogChannel.send({embeds: [
                                 new EmbedBuilder()

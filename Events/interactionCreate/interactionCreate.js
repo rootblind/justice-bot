@@ -1,4 +1,4 @@
-const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder} = require('discord.js');
+const {CommandInteraction, PermissionFlagsBits, Collection, EmbedBuilder, MessageFlags} = require('discord.js');
 const {config} = require('dotenv');
 config();
 const fs = require('fs');
@@ -25,7 +25,7 @@ module.exports = {
                         .setColor('Red')
                         .setTitle('Error')
                         .setDescription('This command requires Master privileges.');
-                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], flags: MessageFlags.Ephemeral });
                     return;
             }
 
@@ -38,7 +38,7 @@ module.exports = {
                         .setColor(`Red`)
                         .setTitle('Error')
                         .setDescription(`You have insufficient permissions! ${PermissionFlagsBits[permission]}`);
-                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], flags: MessageFlags.Ephemeral });
                     return;
                 }
             }
@@ -52,7 +52,7 @@ module.exports = {
                         .setColor(`Red`)
                         .setTitle('Error')
                         .setDescription(`I lack the permission(s) to do that! ${PermissionFlagsBits[permission]}`);
-                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], flags: MessageFlags.Ephemeral });
                     return;
                 }
             }
@@ -64,7 +64,7 @@ module.exports = {
                     .setColor('Red')
                     .setTitle('Error')
                     .setDescription('Application scope is set to testing!\nMaintenance might be undergoing.')
-                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], flags: MessageFlags.Ephemeral });
                     return;
             }
             
@@ -73,7 +73,7 @@ module.exports = {
                     .setColor('Red')
                     .setTitle('Error')
                     .setDescription('This command cannot be ran outside the Test Server!')
-                    await interaction.reply({ embeds: [rEmbed], ephemeral: true });
+                    await interaction.reply({ embeds: [rEmbed], flags: MessageFlags.Ephemeral });
                     return;
             }
 
@@ -96,7 +96,7 @@ module.exports = {
                 // checking if the cooldown expired and gives a reply if not
                 if(now < expirationTime) {
                     const expiredTimestamp = Math.round(expirationTime / 1000);
-		            return await interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
+		            return await interaction.reply({ content: `Please wait, you are on a cooldown for \`${command.data.name}\`. You can use it again <t:${expiredTimestamp}:R>.`, flags: MessageFlags.Ephemeral });
 	
                 }
                 
@@ -135,7 +135,7 @@ module.exports = {
                     }
                 }
 
-                await interaction.reply({content: "Role updated", ephemeral: true});
+                await interaction.reply({content: "Role updated", flags: MessageFlags.Ephemeral});
             }
             else if(interaction.customId === 'custom-color-menu') {
                 return;

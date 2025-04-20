@@ -2,7 +2,8 @@
     Manual database backup and scheduling backups
 */
 const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, ActionRowBuilder,
-    ComponentType} = require('discord.js')
+    ComponentType,
+    MessageFlags} = require('discord.js')
 const {poolConnection} = require('../../utility_modules/kayle-db');
 const {config} = require('dotenv');
 const {exec} = require('child_process');
@@ -100,7 +101,7 @@ module.exports = {
         const dirPath = './backup-db';
         const bkFiles = fs.readdirSync(dirPath).map(file => file);
 
-        await interaction.deferReply({ephemeral: true});
+        await interaction.deferReply({flags: MessageFlags.Ephemeral});
 
         if((cmd == 'clear' || cmd == 'dump') && bkFiles.length == 0) {
             return await interaction.reply({
@@ -110,21 +111,21 @@ module.exports = {
                         .setTitle('No backup dumps were found.')
                         .setDescription('The backup directory is empty.')
                 ],
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
         switch(cmd) {
             case 'now':
                 try{
                     const bkFile = await createBackup();
-                    await interaction.editReply({ephemeral: true, embeds: [
+                    await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setTitle('Database backup executed successfully')
                             .setColor('Green')
                             .setDescription(`Backup file: ${bkFile}`)
                     ]});
                 } catch(err) {
-                    await interaction.editReply({ephemeral: true, embeds: [
+                    await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setColor('Red')
                             .setTitle('Error')
@@ -137,7 +138,7 @@ module.exports = {
                 const cronExpression = interaction.options.getString('cron-expression');
                 
                 if(!cron.validate(cronExpression))
-                    return await interaction.editReply({ephemeral: true, embeds: [
+                    return await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                         new EmbedBuilder()
                             .setTitle('Invalid cron expression!')
                             .setColor('Red')
@@ -155,7 +156,7 @@ module.exports = {
                 await schedule_backup(cronExpression);
                 await poolConnection.query(`UPDATE botconfig SET backup_db_schedule=$1`, [cronExpression]);
 
-                await interaction.editReply({ephemeral: true, embeds: [
+                await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setColor('Green')
                         .setTitle('Database backup schedule set up')
@@ -166,7 +167,7 @@ module.exports = {
             case 'stop':
                 schedule.stop();
                 await poolConnection.query(`UPDATE botconfig SET backup_db_schedule=$1`, [null]);
-                await interaction.editReply({ephemeral: true, embeds: [
+                await interaction.editReply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setColor('Green')
                         .setTitle('Database backup schedule stopped...')
@@ -204,7 +205,7 @@ module.exports = {
                             });
                         }
                     });
-                    await buttonInteraction.reply({content: 'All backup files have been deleted permanently!', ephemeral: true});
+                    await buttonInteraction.reply({content: 'All backup files have been deleted permanently!', flags: MessageFlags.Ephemeral});
                     clearMessageCollector.stop();
                 });
 

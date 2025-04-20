@@ -1,6 +1,6 @@
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {EmbedBuilder} = require("@discordjs/builders");
-const fs = require('graceful-fs');
+const fs = require('graceful-fs').promises;
 const path = require('path');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
@@ -72,11 +72,11 @@ module.exports = {
             messagesFormatted +=`[${username}] [${id}] At ${botUtils.formatDate(date)} | ${botUtils.formatTime(date)} - Message:\n${message.content || "no content fetched"}\n`
         });
         // writing the string of all messages to the temp file
-        fs.writeFile(filePath, messagesFormatted);
+        await fs.writeFile(filePath, messagesFormatted);
         // sending the temp file to the logging channel
         const sendFile = await logChannel.send({files:[filePath]});
         // we no longer need the temp file so it can be deleted now
-        fs.unlink(filePath, (err) => {
+        await fs.unlink(filePath, (err) => {
             if(err) throw err;
         });
 

@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder} = require('discord.js')
+const {SlashCommandBuilder, EmbedBuilder, MessageFlags} = require('discord.js')
 
 const Colors = [
     0xf62e36,
@@ -28,7 +28,7 @@ module.exports = {
         const user = interaction.options.getUser('member') || null;
         const member = user ? await interaction.guild.members.fetch(user.id) : interaction.member;
         if(!member) {
-            return await interaction.reply({ephemeral: true, embeds: [
+            return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                 new EmbedBuilder()
                     .setColor("Red")
                     .setTitle("Invalid input")

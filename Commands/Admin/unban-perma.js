@@ -1,5 +1,6 @@
 const {EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, ButtonBuilder, ActionRowBuilder, ButtonStyle,
-    ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle
+    ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle,
+    MessageFlags
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 
@@ -37,7 +38,7 @@ module.exports = {
                             .setTitle('Wrong unban method!')
                             .setDescription('You are trying to unban someone that is NOT permanently banned!\nYou need to use `/unban` in order to do so.')
                     ],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
         }
@@ -173,7 +174,7 @@ module.exports = {
                 }
                 await submitReason.editReply({embeds: [embed]});
             }catch (err) {
-                await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given in time, try again.'});
+                await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: 'No reason was given in time, try again.'});
             }
         });
 

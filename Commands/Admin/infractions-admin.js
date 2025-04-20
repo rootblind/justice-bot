@@ -9,6 +9,7 @@
 
 const {SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ButtonBuilder, ButtonStyle, ActionRowBuilder,
     ComponentType,
+    MessageFlags,
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 
@@ -388,7 +389,7 @@ module.exports = {
                                     .setDescription(`${buttonInteraction.member} removed this infraction.`)
                             ]
                         });
-                        await buttonInteraction.reply({ephemeral: true, content: `Infraction ${ID} was deleted.`});
+                        await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: `Infraction ${ID} was deleted.`});
 
                         //logging if possible
                         if(logChannel) {
@@ -503,7 +504,7 @@ module.exports = {
                                     components: []
                                 }
                             )
-                            await buttonInteraction.reply({ephemeral: true, content: 'List cleared.'});
+                            await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: 'List cleared.'});
 
                             if(logChannel)
                                 await logChannel.send({

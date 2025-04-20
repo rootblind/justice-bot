@@ -2,7 +2,8 @@ const {EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder,
     StringSelectMenuBuilder, RoleSelectMenuBuilder, ModalBuilder, TextInputStyle, TextInputBuilder,
     ComponentType, ChannelType, UserSelectMenuBuilder,
     PermissionFlagsBits,
-    Collection
+    Collection,
+    MessageFlags
 } = require("discord.js");
 const { poolConnection } = require("../kayle-db");
 const {rankOptions, id2rank} = require("../../objects/select_role_options.js");
@@ -78,7 +79,7 @@ async function lfg_collector(message) {
 
         // member must be in a voice channel if wants to join
         if(buttonInteraction.member.voice.channelId == null && buttonInteraction.customId != "delete-button") {
-            return await buttonInteraction.reply({ephemeral: true,
+            return await buttonInteraction.reply({flags: MessageFlags.Ephemeral,
                 content: "You must be in a voice channel in order to join."
             });
         }
@@ -87,7 +88,7 @@ async function lfg_collector(message) {
             const userCooldown = hasCooldown(buttonInteraction.user.id, askCooldowns, askButtonCooldown);
             if(userCooldown) {
                 return await buttonInteraction.reply({
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                     content: `This button is on cooldown! <t:${parseInt(userCooldown / 1000)}:R>`
                 });
             }
@@ -100,7 +101,7 @@ async function lfg_collector(message) {
             const userCooldown = hasCooldown(buttonInteraction.user.id, otherButtonsCooldowns, 1_500);
             if(userCooldown) {
                 return await buttonInteraction.reply({
-                    ephemeral: true,
+                    flags: MessageFlags.Ephemeral,
                     content: `This button is on cooldown! <t:${parseInt(userCooldown / 1000)}:R>`
                 });
             }
@@ -137,20 +138,20 @@ async function lfg_collector(message) {
 
         // the party owner can not join his own party
         if(buttonInteraction.customId != "delete-button" && buttonInteraction.member.id === partyOwner.id) {
-            return await buttonInteraction.reply({ephemeral: true, content: "You are the party owner, you can not join your own party"});
+            return await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: "You are the party owner, you can not join your own party"});
         }
 
         // checking if the room is full
         if(buttonInteraction.customId != "delete-button" && channel.members.size + 1 > channel.userLimit) {
-            return await buttonInteraction.reply({ephemeral: true, content: "The party you are trying to join is full."})
+            return await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: "The party you are trying to join is full."})
         }
 
         // check if member is already part of the party
         if(buttonInteraction.customId == "ask-to-join-button" && channel.permissionsFor(buttonInteraction.member).has(PermissionFlagsBits.Connect)) {
-            return await buttonInteraction.reply({ephemeral: true, content: `You do already have permission to join ${channel}!`});
+            return await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: `You do already have permission to join ${channel}!`});
         }
 
-        await buttonInteraction.deferReply({ephemeral: true});
+        await buttonInteraction.deferReply({flags: MessageFlags.Ephemeral});
 
         // deny access to blocklisted member
         const {rows: isBlocked} = await poolConnection.query(`SELECT EXISTS
@@ -273,7 +274,7 @@ async function lfg_collector(message) {
                     switch(requestInteraction.customId) {
                         case "accept-button":
                             if(buttonInteraction.member.voice.channelId == null) {
-                                return await requestInteraction.reply({content: "The user is not in a voice channel.", ephemeral: true});
+                                return await requestInteraction.reply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
                             }
                             try{
                                 await channel.permissionOverwrites.create(
@@ -287,22 +288,22 @@ async function lfg_collector(message) {
                                 await buttonInteraction.member.voice.setChannel(channel);
                             } catch(err) {
                                 console.error(err);
-                                return await requestInteraction.reply({content: "The user is not in a voice channel.", ephemeral: true});
+                                return await requestInteraction.reply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
                             }
                             await requestInteraction.reply({
                                 content: `${buttonInteraction.member} has been granted access to your party.`,
-                                ephemeral: true
+                                flags: MessageFlags.Ephemeral
                             });
                         break;
                         case "reject-button":
                             await thread.members.remove(buttonInteraction.member.id);
-                            await requestInteraction.reply({content: `${buttonInteraction.member}'s request was rejected.`, ephemeral: true});
-                            await buttonInteraction.followUp({ephemeral: true, content: `${buttonInteraction.member} Your request was rejected.`});
+                            await requestInteraction.reply({content: `${buttonInteraction.member}'s request was rejected.`, flags: MessageFlags.Ephemeral});
+                            await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: `${buttonInteraction.member} Your request was rejected.`});
                         break;
                         case "block-button":
                             await thread.members.remove(buttonInteraction.member.id);
                             await buttonInteraction.followUp({
-                                ephemeral: true, 
+                                flags: MessageFlags.Ephemeral, 
                                 content: `${buttonInteraction.member} you have been blocked from joining ${partyOwner}'s lobbies.`
                             });
 
@@ -311,7 +312,7 @@ async function lfg_collector(message) {
                                     VALUES($1, $2, $3)`, [buttonInteraction.guild.id, partyOwner.id, buttonInteraction.member.id]);
                             } catch(err) { console.error(err); };
                             await requestInteraction.reply({
-                                ephemeral: true,
+                                flags: MessageFlags.Ephemeral,
                                 content: `${buttonInteraction.member} has been added to your blocklist and won't be able to join your lobbies.`
                             });
 

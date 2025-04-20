@@ -36,6 +36,18 @@ commandCateogries.forEach(category => {
 function command_manual(command) {
     const fields = [];
     switch(command) {
+        case "nuke-category":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Admin (Owner)"
+                },
+                {
+                    name: "Command",
+                    value: "/nuke-category - Open a select menu and delete a category and all of its channels"
+                }
+            )
+        break;
         case "lfg-admin":
             fields.push(
                 {

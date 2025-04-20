@@ -2,7 +2,7 @@
     Fetch discordAPI about server members.
 */
 
-const {SlashCommandBuilder, EmbedBuilder, CommandInteraction, PermissionFlagsBits} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, CommandInteraction, PermissionFlagsBits, MessageFlags} = require('discord.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 
 module.exports = {
@@ -23,14 +23,14 @@ module.exports = {
                 const embed = EmbedBuilder()
                     .setTitle('An error occurred while running this command!')
                     .setColor('Red');
-                return interaction.reply({embeds:[embed], ephemeral:true});
+                return interaction.reply({embeds:[embed], flags: MessageFlags.Ephemeral});
                 
             }
         const user = interaction.options.getUser('user') || interaction.user; // if no user is provided, the command is self targeted
         if(user)// making sure user is a member of the guild
         {
             if(!(await interaction.guild.members.cache.get(user.id)))
-                return await interaction.reply({ephemeral: true, embeds: [
+                return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                     new EmbedBuilder()
                         .setTitle('Invalid user')
                         .setColor('Red')

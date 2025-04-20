@@ -7,7 +7,8 @@
     The panels are stored in the panelscheme
 */
 const {SlashCommandBuilder, PermissionFlagsBits, Client, EmbedBuilder, ActionRowBuilder,
-        StringSelectMenuBuilder, ChannelType, Embed} = require('discord.js');
+        StringSelectMenuBuilder, ChannelType, Embed,
+        MessageFlags} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const botUtils = require('../../utility_modules/utility_methods.js');
 const fs = require('fs');
@@ -136,7 +137,7 @@ module.exports = {
             embed.setTitle('Invalid input!')
                 .setDescription('Panel name must be alphanumeric!')
                 .setColor('Red');
-            return interaction.reply({embeds: [embed], ephemeral: true});
+            return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
         }
         // checking if the panel name does exist (and is valid)
         if(panelName != null) {
@@ -161,7 +162,7 @@ module.exports = {
                 embed.setName('Panel name does not already exists')
                     .setColor('Red')
                     .setDescription('Provide an unique panel name!')
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
         }
         
@@ -190,7 +191,7 @@ module.exports = {
                 embed.setTitle('Default panel already exists')
                     .setColor('Red')
                     .setDescription('You can not have two default panels!')
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // a JSON default will be used
             const readFile = async (filePath, encoding) => {
@@ -223,7 +224,7 @@ module.exports = {
                 embed.setTitle('Error')
                     .setColor('Red')
                     .setDescription('Something went wrong with creating the roles.')
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // storing data into the database
             colorKeys.forEach(async (color) => {
@@ -274,7 +275,7 @@ module.exports = {
                 embed.setTitle('Invalid input!')
                     .setDescription('Panel name must be alphanumeric!')
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             let validateNewPanelName; // false if already exists, true if it doesn't
             const validateNewPanelPromise = new Promise((resolve, reject) => {
@@ -298,7 +299,7 @@ module.exports = {
                 embed.setTitle('Duplicate panel name!')
                     .setDescription(`The panel name provided "${newPanel}" already exists.`)
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // if newPanel is alphanumeric and does not already exist, it's good to go
             // inserting it into the panel headers
@@ -361,25 +362,25 @@ module.exports = {
             if(interaction.member.roles.highest.position <= addRole.position && interaction.guild.ownerId !== interaction.member.id)
                 {
                     embed.setColor('Red').setDescription('Your highest role is too low!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
             if(addRole.id == interaction.guild.roles.everyone.id)
                 {
                     embed.setColor('Red').setDescription('You can not access @everyone');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
 
             if(me.roles.highest.position <= addRole.position)
                 {
                     embed.setColor('Red').setDescription('My highest role is too low!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
            // Excluding bot roles as valid inputs
             if(addRole.managed)
                 {
                     embed.setColor('Red').setDescription('Bot roles are not manageable!');
-                    return interaction.reply({embeds: [embed], ephemeral: true});
+                    return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
                 }
             //check if role is already in the panel
             let validateRoleInPanel;
@@ -403,7 +404,7 @@ module.exports = {
                 embed.setTitle('Role is already in panel')
                     .setDescription('The role can not be added twice in the same panel.')
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // after all of that, addRole must be valid
             const addRolePromise = new Promise((resolve, reject) =>{
@@ -448,7 +449,7 @@ module.exports = {
                 embed.setTitle('Nothing was removed')
                     .setDescription(`${removeRole} is not part of the specified panel`)
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
 
             const removeRolePromise = new Promise((resolve, reject) => {
@@ -592,7 +593,7 @@ module.exports = {
                 embed.setTitle('Panel is empty')
                     .setDescription('There is nothing to be sent, add some roles first.')
                     .setColor('Red');
-                return interaction.reply({embeds: [embed], ephemeral: true});
+                return interaction.reply({embeds: [embed], flags: MessageFlags.Ephemeral});
             }
             // if panel is not empty, then panelRolesArray must contain all roles as objects for select menu
             const components = [
@@ -637,7 +638,7 @@ module.exports = {
                     .setTitle('The panel has been sent')
                     .setColor('Green')
                     .setDescription(`The panel was sent successfully in ${sendChannel.name}.`)
-            ], ephemeral: true});
+            ], flags: MessageFlags.Ephemeral});
             break;
         }
 

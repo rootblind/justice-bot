@@ -8,7 +8,8 @@
 */
 
 const {SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder,
-    ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle
+    ComponentType, ModalBuilder, TextInputBuilder, TextInputStyle,
+    MessageFlags
 } = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db.js');
 const {warn_handler} = require('../../utility_modules/warn_handler.js')
@@ -146,7 +147,7 @@ module.exports = {
                             .setDescription('Cannot ban a member with a higher role position than yours.')
                             .setColor('Red')
                     ],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -158,7 +159,7 @@ module.exports = {
                             .setDescription('Cannot ban a member whose role is above mine!')
                             .setColor('Red')
                     ],
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
             const {rows: staffRoleData} = await poolConnection.query(`SELECT role FROM serverroles WHERE guild=$1 AND roletype=$2`,
@@ -181,7 +182,7 @@ module.exports = {
         {
             const editEmbedError = new EmbedBuilder().setTitle('Invalid input!')
                 .setDescription('The duration format is invalid.\n Provide a duration that respects the format: <number: 1-99>< d | w | y >')
-            return await interaction.reply({embeds: [editEmbedError], ephemeral: true});
+            return await interaction.reply({embeds: [editEmbedError], flags: MessageFlags.Ephemeral});
         }
         else if(durationRegex.test(duration) && duration_timestamp(duration) < parseInt(Date.now() / 1000) + 259_200)
         {
@@ -190,7 +191,7 @@ module.exports = {
                 new EmbedBuilder().setTitle('The duration is too short!')
                     .setDescription('The duration of a temporary ban must be at least three days (3d) long!')
                     .setColor("Red")
-            ], ephemeral: true});
+            ], flags: MessageFlags.Ephemeral});
         }
         let logChannel = null;
 
@@ -384,7 +385,7 @@ module.exports = {
 
                         await submitReason.editReply({embeds: [embed]});
                     } catch(err) {
-                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given in time, try again.'});
+                        await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: 'No reason was given in time, try again.'});
                     }
 
                     
@@ -548,7 +549,7 @@ module.exports = {
     
                         await submitReason.editReply({embeds: [embed]});
                     } catch(err) {
-                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
+                        await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: 'No reason was given before the time ended.'});
                     }
                 });
 
@@ -566,7 +567,7 @@ module.exports = {
                                 .setTitle("Insufficient permissions!")
                                 .setDescription('Permanently banning users requires administrator permissions.')
                         ],
-                        ephemeral: true
+                        flags: MessageFlags.Ephemeral
                     });
                 }
                 try{
@@ -716,7 +717,7 @@ module.exports = {
                         await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
                         await submitReason.editReply({embeds: [embed]})
                     } catch(err) {
-                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
+                        await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: 'No reason was given before the time ended.'});
                     }
                     
                 });
@@ -752,7 +753,6 @@ module.exports = {
                 const tempBanCount = resultData.rows.length;
 
                 await interaction.editReply({
-                    ephemeral: false,
                     embeds: [
                         new EmbedBuilder()
                             .setAuthor({name: `${interaction.guild.name}'s ban counter`, iconURL: interaction.guild.iconURL({extension: 'png'})})
@@ -932,7 +932,7 @@ module.exports = {
                         await poolConnection.query(`DELETE FROM banlist WHERE guild=$1 AND target=$2`, [buttonInteraction.guild.id, target.id]);
                         await submitReason.editReply({embeds: [embed]})
                     } catch(err) {
-                        await buttonInteraction.followUp({ephemeral: true, content: 'No reason was given before the time ended.'});
+                        await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: 'No reason was given before the time ended.'});
                     }
                     
                 });

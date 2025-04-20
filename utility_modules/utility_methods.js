@@ -313,6 +313,7 @@ function timestamp_seconds(time = null) {
     return parseInt(Date.now() / 1000);
 }
 
+
 module.exports = {
     timestamp_seconds,
     hasCooldown,
