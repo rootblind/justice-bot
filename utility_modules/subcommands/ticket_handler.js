@@ -463,6 +463,9 @@ async function open_ticket_collector(message) {
                     }
 
                     if(subject)
+                        try{
+                            await reply.delete();
+                        } catch(err) {};
                         await create_ticket(
                             {
                                 subject: subject,
