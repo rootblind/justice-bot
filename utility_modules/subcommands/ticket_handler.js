@@ -229,7 +229,10 @@ async function create_ticket(context, category, logs) {
 
                     const tempFile = path.join(__dirname, `../../temp/${ticket.id}.txt`);
                     if(stringlogs.length) {
-                        fs.writeFile(tempFile, stringlogs, (err) => console.error(err));
+                        fs.writeFile(tempFile, stringlogs, (err) => {
+                            if(err)
+                                console.error(err)
+                        });
                         files.push(tempFile);
                     }
                     
