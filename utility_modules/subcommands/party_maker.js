@@ -2612,6 +2612,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         content: `Party room voice size set to ${size}.`
                     });
                 } catch(err) {
+                    console.error(err);
                     return await buttonInteraction.followUp({
                         flags: MessageFlags.Ephemeral,
                         content: "Something went wrong or the interaction timed out."
