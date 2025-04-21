@@ -423,7 +423,7 @@ async function load_autovoice_collector(message) {
         if(interaction.customId != "status-button" && interaction.member.voice.channelId != voiceData[0].channel) {
             return await interaction.reply({
                 flags: MessageFlags.Ephemeral,
-                value: "You must be in your voice room to do that.\nJoin **Auto Voice** channel if you don\'t have one."
+                content: "You must be in your voice room to do that.\nJoin **Auto Voice** channel if you don\'t have one."
             });
         }
 
