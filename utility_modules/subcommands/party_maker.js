@@ -649,16 +649,6 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                         return await submitIgn.reply({flags: MessageFlags.Ephemeral, content: "The summoner name format is invalid. <3-16 characters>#<3-5 characters>"})
                     }
 
-                    const response = await classifier(ign);
-                    if(response) {
-                        if(!response.labels.includes("OK")) {
-                            return await submitIgn.reply({
-                                flags: MessageFlags.Ephemeral,
-                                value: "Please avoid using slurs or derogatory language!"
-                            })
-                        }
-                    }
-
                     partyObj.ign = ign;
                     await submitIgn.reply({flags: MessageFlags.Ephemeral, content: `IGN set to **${ign}**`});
                     sendLFGButton.setDisabled(false);
@@ -2709,16 +2699,6 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                     const ign = submitIgn.fields.getTextInputValue("ign-text-input");
                     if(!ignRegex.test(ign)) {
                         return await submitIgn.reply({flags: MessageFlags.Ephemeral, content: "The summoner name format is invalid. <3-16 characters>#<3-5 characters>"})
-                    }
-
-                    const responseIgn = await classifier(ign);
-                    if(responseIgn) {
-                        if(!responseIgn.labels.includes("OK")) {
-                            return await submitIgn.reply({
-                                flags: MessageFlags.Ephemeral,
-                                value: "Please avoid using slurs or derogatory language!"
-                            })
-                        }
                     }
 
                     partyRoomData[0].ign = ign;
