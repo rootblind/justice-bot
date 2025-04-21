@@ -27,13 +27,7 @@ module.exports = {
             option.setName('send-dm')
                 .setDescription('Announce the member of their warn.')
         ),
-        cooldown: 5,
-        botPermissions: [
-            PermissionFlagsBits.ModerateMembers,
-            PermissionFlagsBits.BanMembers,
-            PermissionFlagsBits.SendMessages,
-            PermissionFlagsBits.EmbedLinks
-        ]
+        cooldown: 5
 
     ,
     async execute(interaction, client) {

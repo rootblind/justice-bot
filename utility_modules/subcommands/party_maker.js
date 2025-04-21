@@ -267,7 +267,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
         channel: null,
         message: null,
         hexcolor: 0,
-        private: true, // [true] private party is invite-only, joining the voice channels is based on perms otherwise it's public [false]
+        private: false, // [true] private party is invite-only, joining the voice channels is based on perms otherwise it's public [false]
         timestamp: parseInt(Date.now() / 1000),
         isPremium: isPremiumMember[0].exists
     } // all selections will be stored in this object
@@ -284,6 +284,10 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                 {
                     name: "Gamemode",
                     value: id2gamemode[partyObj.gamemode]
+                },
+                {
+                    name: "Owner",
+                    value: `${interaction.user}`
                 },
                 {
                     name: "IGN",
@@ -1328,6 +1332,10 @@ async function drafts_button(interaction, cooldowns, partyCooldowns, cd) {
                     value: id2gamemode[partydraft.gamemode]
                 },
                 {
+                    name: "Owner",
+                    value: `${interaction.user}`
+                },
+                {
                     name: "IGN",
                     value: partydraft.ign
                 },
@@ -1684,6 +1692,10 @@ async function drafts_button(interaction, cooldowns, partyCooldowns, cd) {
                                     {
                                         name: "Gamemode",
                                         value: id2gamemode[partyObj.gamemode]
+                                    },
+                                    {
+                                        name: "Owner",
+                                        value: `${buttonInteraction.user}`
                                     },
                                     {
                                         name: "IGN",
@@ -2261,6 +2273,10 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                     value: id2gamemode[partyObj.gamemode]
                 },
                 {
+                    name: "Owner",
+                    value: `${user}`
+                },
+                {
                     name: "IGN",
                     value: partyObj.ign
                 },
@@ -2362,6 +2378,11 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
         .setLabel("Private Toggle")
         .setStyle(ButtonStyle.Secondary)
 
+    const changeRoomSize = new ButtonBuilder()
+        .setCustomId("change-size")
+        .setStyle(ButtonStyle.Secondary)
+        .setLabel("Room Size")
+
     const firstRow = new ActionRowBuilder()
         .addComponents(bumpMessageButton, addRemoveAccessButton, transferOwnershipButton);
 
@@ -2369,7 +2390,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
         .addComponents(changeGamemodeButton, changeIgnButton, changeRolesButton, togglePrivateButton, changeLfMembersButton)
 
     const thirdRow = new ActionRowBuilder()
-        .addComponents(changeDescriptionButton, changeColorButton)
+        .addComponents(changeDescriptionButton, changeColorButton, changeRoomSize)
 
 
     // select menu
@@ -2432,6 +2453,21 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
         .addComponents(selectColor);
     
     // modals
+    const changeSizeInput = new TextInputBuilder()
+        .setCustomId("room-size-input")
+        .setRequired(true)
+        .setPlaceholder("5...")
+        .setLabel("Voice Room Size")
+        .setMinLength(1)
+        .setMaxLength(2)
+        .setStyle(TextInputStyle.Short)
+    const roomSizeRow = new ActionRowBuilder()
+        .addComponents(changeSizeInput)
+    const roomSizeModal = new ModalBuilder()
+        .setTitle("Party Room Size")
+        .setCustomId("room-size-modal")
+        .addComponents(roomSizeRow)
+
     const ignTextInput = new TextInputBuilder()
         .setCustomId("ign-text-input")
         .setRequired(true)
@@ -2546,6 +2582,42 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
         setTimeout(() => internalCooldowns.delete(buttonInteraction.user.id), internalcooldown);
 
         switch(buttonInteraction.customId) {
+            case "change-size":
+                await buttonInteraction.showModal(roomSizeModal);
+                try{
+                    const submitSize = await buttonInteraction.awaitModalSubmit({
+                        time: 120_000,
+                        filter: (i) => i.user.id === buttonInteraction.user.id
+                    });
+
+                    const size = submitSize.fields.getTextInputValue("room-size-input");
+
+                    if(Number.isNaN(Number(size))) {
+                        return await submitSize.reply({
+                            flags: MessageFlags.Ephemeral,
+                            content: "Invalid input. The input given is not a number!"
+                        });
+                    }
+
+                    if(Number(size) > 99 || Number(slots) < 2) {
+                        return await submitSlots.reply({
+                            flags: MessageFlags.Ephemeral,
+                            content: `Number given must be between 2 and 99`
+                        });
+                    }
+
+                    await partyChannel.setUserLimit(Number(size));
+                    await submitSize.reply({
+                        flags: MessageFlags.Ephemeral,
+                        content: `Party room voice size set to ${size}.`
+                    });
+                } catch(err) {
+                    return await buttonInteraction.followUp({
+                        flags: MessageFlags.Ephemeral,
+                        content: "Something went wrong or the interaction timed out."
+                    });
+                }
+            break;
             case "bump-button":
                 if(partyChannel.members.size === partyChannel.userLimit) {
                     return await buttonInteraction.reply({
