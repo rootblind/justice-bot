@@ -99,7 +99,7 @@ module.exports = {
             subcommand.setName('info')
                 .setDescription('Show the current role types and the associated server roles.')
         ),
-    botPermissions: [],
+    botPermissions: [PermissionFlagsBits.EmbedLinks, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageRoles],
 
     async execute(interaction, client)
     {

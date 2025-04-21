@@ -7,7 +7,7 @@ const {config} = require('dotenv');
 const fs = require('graceful-fs')
 config();
 module.exports = {
-    cooldown: 2,
+    cooldown: 5,
     testOnly: false,
     data: new SlashCommandBuilder()
         .setName('role')

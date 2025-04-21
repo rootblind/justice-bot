@@ -116,7 +116,7 @@ module.exports = {
                         .setMaxLength(255)
                 )
         ),
-    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels],
+    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.EmbedLinks],
 
     async execute(interaction, client) {
 

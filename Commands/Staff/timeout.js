@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder, MessageFlags} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionFlagsBits} = require('discord.js');
 
 const {poolConnection} = require('../../utility_modules/kayle-db.js')
 const {warn_handler} = require('../../utility_modules/warn_handler.js');
@@ -78,6 +78,12 @@ module.exports = {
                         .setRequired(true)
                 )
         ),
+        cooldown: 5,
+        botPermissions: [
+            PermissionFlagsBits.ModerateMembers,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks
+        ],
 
     async execute(interaction, client) {
         const user = interaction.options.getUser('user');

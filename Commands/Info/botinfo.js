@@ -13,7 +13,7 @@ module.exports = {
     data : new SlashCommandBuilder()
         .setName('botinfo')
         .setDescription('Check details about my system.'),
-    botPermissions: [PermissionFlagsBits.SendMessages],
+    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks],
 
     async execute(interaction, client){
             //getting time numbers for the following embedded messages

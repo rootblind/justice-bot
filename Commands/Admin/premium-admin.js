@@ -253,6 +253,11 @@ module.exports = {
         )
     ,
     cooldown: 5,
+    botPermissions: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.ManageRoles
+    ],
     async execute(interaction, client) {
         const subcmd = interaction.options.getSubcommand();
         const guildMember = interaction.options.getUser('member');

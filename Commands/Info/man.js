@@ -5,7 +5,8 @@
 const {SlashCommandBuilder, ComponentType, StringSelectMenuBuilder, ActionRowBuilder, ButtonBuilder,
     ButtonStyle,
     EmbedBuilder,
-    MessageFlags
+    MessageFlags,
+    PermissionFlagsBits
 } = require("discord.js");
 
 const {command_manual, commandsCategories, categoriesFields, categoriesMenu} = require("../../utility_modules/manual.js");
@@ -19,6 +20,10 @@ module.exports = {
                 .setDescription("Open the manual at the specified command page.")
                 .setAutocomplete(true)
         ),
+        cooldown: 5,
+        botPermissions: [
+            PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks
+        ],
     async execute(interaction, client) {
             const commandOption = interaction.options.getString("command") || null;
             if(commandOption) {

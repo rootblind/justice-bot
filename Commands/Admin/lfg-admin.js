@@ -38,8 +38,15 @@ module.exports = {
                     subcommand.setName("ranks")
                         .setDescription("List rank roles")
                 )
-        )
-    
+        ),
+        botPermissions: [
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ManageRoles,
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.MoveMembers
+        ],
+        cooldown: 60
     ,
     async execute(interaction, client) {
         const {rows: lfgRolesData} = await poolConnection.query(`SELECT role FROM serverroles 

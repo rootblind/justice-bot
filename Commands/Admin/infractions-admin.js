@@ -99,8 +99,12 @@ module.exports = {
                         .setDescription('The user to delete the list from.')
                         .setRequired(true)
                 )
-        )
-
+        ),
+    botPermissions: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks
+    ],
+    cooldown: 10
     ,
     async execute(interaction, client) {
         

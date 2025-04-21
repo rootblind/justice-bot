@@ -2,7 +2,7 @@
     Members can look each other's infractions
 */
 
-const {EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, ComponentType, MessageFlags} = require('discord.js');
+const {EmbedBuilder, SlashCommandBuilder, StringSelectMenuBuilder, ActionRowBuilder, ComponentType, MessageFlags, PermissionFlagsBits} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 
 // using the object for easier reference in code
@@ -23,6 +23,10 @@ module.exports = {
                 .setDescription('The member to look up infractions for.')
 
         ),
+        cooldown: 5,
+        botPermissions: [
+            PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks
+        ],
 
     async execute(interaction, client) {
         const user = interaction.options.getUser('member') || interaction.user;

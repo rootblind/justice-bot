@@ -13,6 +13,14 @@ module.exports = {
         .setDescription("Create the channels and manager for autovoice.")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
+    botPermissions: [
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.MoveMembers
+        ],
+    cooldown: 10,
+
     async execute(interaction, client) {
         await interaction.deferReply({flags: MessageFlags.Ephemeral});
         

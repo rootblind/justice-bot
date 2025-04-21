@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder, MessageFlags} = require('discord.js')
+const {SlashCommandBuilder, EmbedBuilder, MessageFlags, PermissionFlagsBits} = require('discord.js')
 
 const Colors = [
     0xf62e36,
@@ -16,6 +16,7 @@ const Colors = [
 module.exports = {
 
     cooldown: 5,
+    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks],
     data: new SlashCommandBuilder()
         .setName('avatar')
         .setDescription('Take a look at someone\'s avatar!')
@@ -26,8 +27,10 @@ module.exports = {
 
     async execute(interaction, client) {
         const user = interaction.options.getUser('member') || null;
-        const member = user ? await interaction.guild.members.fetch(user.id) : interaction.member;
-        if(!member) {
+        let member = null;
+        try{
+            member = user ? await interaction.guild.members.fetch(user.id) : interaction.member;
+        } catch(err) {
             return await interaction.reply({flags: MessageFlags.Ephemeral, embeds: [
                 new EmbedBuilder()
                     .setColor("Red")
@@ -35,6 +38,7 @@ module.exports = {
                     .setDescription("The user provided is not a member of this server.")
             ]});
         }
+
 
         return await interaction.reply({embeds: [
             new EmbedBuilder()

@@ -17,7 +17,13 @@ module.exports = {
                 .setRequired(true)
                 .setMinLength(4)
                 .setMaxLength(512)
-        )
+        ),
+        cooldown: 5,
+        botPermissions: [
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.BanMembers
+        ]
 
     ,
     async execute(interaction, client) {

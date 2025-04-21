@@ -7,6 +7,7 @@ const botUtils = require('../../utility_modules/utility_methods.js');
 
 module.exports = {
     cooldown: 3,
+    botPermissions: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks],
     data: new SlashCommandBuilder()
         .setName('userinfo')
         .setDescription('Information about the targeted user.')

@@ -21,7 +21,6 @@ const {
 const fs = require('graceful-fs');
 const path = require('path');
 const { poolConnection } = require("../../utility_modules/kayle-db.js");
-const { Channel } = require("diagnostics_channel");
 
 const urlPattern = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
@@ -69,7 +68,11 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand.setName('builder')
                 .setDescription('Build an announcement embeded message through interactive buttons.')
-        )
+        ),
+    botPermissions: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks
+    ]
     ,
     async execute(interaction, client) {
         const cmd = interaction.options.getSubcommand();

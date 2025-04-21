@@ -72,7 +72,13 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand.setName('list')
                 .setDescription('List all active auto punish rules.')
-        )
+        ),
+    botPermissions: [
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.BanMembers
+        ],
+    cooldown: 5
 
     ,async execute(interaction, client) {
         const punishmentDict = {

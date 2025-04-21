@@ -18,6 +18,7 @@ const {
     TextInputStyle,
     StringSelectMenuBuilder,
     MessageFlags,
+    PermissionFlagsBits,
 } = require("discord.js");
 const {
     encryptor,
@@ -62,6 +63,11 @@ const Colors = {
 
 module.exports = {
     cooldown: 5,
+    botPermissions: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.ManageRoles
+    ],
     data: new SlashCommandBuilder()
         .setName("premium")
         .setDescription("Premium related menus and options.")

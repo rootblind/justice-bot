@@ -57,7 +57,7 @@ async function setLogChannel(guild, channel, eventType) {
 
 
 module.exports = {
-    cooldown: 2,
+    cooldown: 5,
     data: new SlashCommandBuilder()
         .setName('server-logs')
         .setDescription('Log server events and messages.')

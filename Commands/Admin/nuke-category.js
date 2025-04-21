@@ -14,6 +14,11 @@ module.exports = {
         .setName("nuke-category")
         .setDescription("Delete a category and all channels inside it.")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        botPermissions: [
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ManageChannels
+        ],
     async execute(interaction, client) {
         if(interaction.user.id != interaction.guild.ownerId) {
             return await interaction.reply({

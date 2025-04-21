@@ -28,6 +28,14 @@ module.exports = {
                 .setDescription("Select the subject(s) you desire to remove.")
         )
     ,
+    cooldown: 10,
+    botPermissions: [
+        PermissionFlagsBits.ManageChannels,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles
+    ],
+
     async execute(interaction, client) {
         const cmd = interaction.options.getSubcommand();
 

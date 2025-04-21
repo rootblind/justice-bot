@@ -116,8 +116,9 @@ module.exports = {
                         .setDescription('Check the ban of the target.')
                         .setRequired(true)
                 )
-        )
-
+        ),
+        cooldown: 5,
+        botPermissions: [ PermissionFlagsBits.BanMembers, PermissionFlagsBits.EmbedLinks ]
     ,
     async execute(interaction, client) {
         const target = interaction.options.getUser('target') || null;

@@ -1,4 +1,4 @@
-const {SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags} = require('discord.js');
+const {SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType, MessageFlags, PermissionFlagsBits} = require('discord.js');
 const {poolConnection} = require('../../utility_modules/kayle-db');
 const {warn_handler} = require('../../utility_modules/warn_handler.js');
 /*
@@ -26,7 +26,14 @@ module.exports = {
         .addBooleanOption(option =>
             option.setName('send-dm')
                 .setDescription('Announce the member of their warn.')
-        )
+        ),
+        cooldown: 5,
+        botPermissions: [
+            PermissionFlagsBits.ModerateMembers,
+            PermissionFlagsBits.BanMembers,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks
+        ]
 
     ,
     async execute(interaction, client) {

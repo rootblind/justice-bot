@@ -13,8 +13,12 @@ module.exports = {
             option.setName('target')
                 .setDescription('The user to be unbanned.')
                 .setRequired(true)
-        )
-
+        ),
+    botPermissions: [
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.BanMembers
+    ],
+    cooldown: 5
     ,
     async execute(interaction, client) {
         const target = interaction.options.getUser('target');

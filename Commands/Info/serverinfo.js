@@ -8,6 +8,7 @@ const {SlashCommandBuilder, EmbedBuilder, CommandInteraction, ChannelType, Guild
 // credits: The North Solution on YouTube
 module.exports = {
     cooldown: 5,
+    botPermissions: [ PermissionFlagsBits.SendMessages, PermissionFlagsBits.EmbedLinks ],
     data: new SlashCommandBuilder()
         .setName('serverinfo')
         .setDescription('Details about the server.'),
