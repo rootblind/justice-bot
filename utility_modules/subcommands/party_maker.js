@@ -2599,8 +2599,8 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         });
                     }
 
-                    if(Number(size) > 99 || Number(slots) < 2) {
-                        return await submitSlots.reply({
+                    if(Number(size) > 99 || Number(size) < 2) {
+                        return await submitSize.reply({
                             flags: MessageFlags.Ephemeral,
                             content: `Number given must be between 2 and 99`
                         });
@@ -2612,7 +2612,6 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         content: `Party room voice size set to ${size}.`
                     });
                 } catch(err) {
-                    console.error(err);
                     return await buttonInteraction.followUp({
                         flags: MessageFlags.Ephemeral,
                         content: "Something went wrong or the interaction timed out."
