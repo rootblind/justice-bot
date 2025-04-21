@@ -665,6 +665,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                     saveDraftButton.setDisabled(false);
                     await reply.edit({embeds: [partyEmbedRefresh()], components: [firstRowButtons, secondRowButtons]});
                 } catch(err) {
+                    console.error(err);
                     await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: "Time ran out, try again."})
                 }
             break;

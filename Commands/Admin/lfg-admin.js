@@ -46,7 +46,7 @@ module.exports = {
             PermissionFlagsBits.ManageChannels,
             PermissionFlagsBits.MoveMembers
         ],
-        cooldown: 60
+        cooldown: 10
     ,
     async execute(interaction, client) {
         const {rows: lfgRolesData} = await poolConnection.query(`SELECT role FROM serverroles 
