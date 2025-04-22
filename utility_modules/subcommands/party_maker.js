@@ -502,7 +502,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
         .setRequired(true)
         .setPlaceholder("example#tag")
         .setLabel("Summoner Name")
-        .setMaxLength(22)
+        .setMaxLength(30)
         .setMinLength(3)
         .setStyle(TextInputStyle.Short)
     const ignRow = new ActionRowBuilder()
@@ -646,12 +646,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                         filter: (i) => i.user.id === buttonInteraction.user.id,
                         time: 120_000
                     });
-                    const ignRegex = /^.{3,16}#.{3,5}$/;
                     const ign = submitIgn.fields.getTextInputValue("ign-text-input");
-
-                    if(!ignRegex.test(ign)) {
-                        return await submitIgn.reply({flags: MessageFlags.Ephemeral, content: "The summoner name format is invalid. <3-16 characters>#<3-5 characters>"})
-                    }
 
                     partyObj.ign = ign;
                     await submitIgn.reply({flags: MessageFlags.Ephemeral, content: `IGN set to **${ign}**`});
@@ -2473,7 +2468,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
         .setRequired(true)
         .setPlaceholder("example#tag")
         .setLabel("Summoner Name")
-        .setMaxLength(22)
+        .setMaxLength(30)
         .setMinLength(3)
         .setStyle(TextInputStyle.Short)
     const ignRow = new ActionRowBuilder()
@@ -2766,11 +2761,7 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
                         filter: (i) => i.user.id === buttonInteraction.user.id,
                         time: 120_000
                     });
-                    const ignRegex = /^.{3,16}#.{3,5}$/;
                     const ign = submitIgn.fields.getTextInputValue("ign-text-input");
-                    if(!ignRegex.test(ign)) {
-                        return await submitIgn.reply({flags: MessageFlags.Ephemeral, content: "The summoner name format is invalid. <3-16 characters>#<3-5 characters>"})
-                    }
 
                     partyRoomData[0].ign = ign;
 
