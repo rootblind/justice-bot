@@ -677,7 +677,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                 }
 
                 await reply.edit({components: [firstRowButtons, secondRowButtons, selectMembersRow]});
-                await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: `Select the members of your party. No more than ${partyObj.size - 2} members.\nIf you see 0, then why LFG if you have a full party.`});
+                await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: `Select the members of your party. No more than ${partyObj.size - 2} members.`});
             break;
             case "add-info":
                 await buttonInteraction.showModal(addInfoModal);
@@ -3419,12 +3419,11 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
             }
 
             const member = await selectInteraction.guild.members.fetch(user);
-
-            
            
             if(partyChannel.permissionOverwrites.cache.find(
-                perms => perms.id === member.id && perms.allow.has(PermissionFlagsBits.Connect)
-            )) {
+                perms => perms.id === member.id && perms.allow.has(PermissionFlagsBits.Connect)) ||
+                member.voice.channelId === partyChannel.id
+            ) {
                 // if it has permission, remove it
                 await partyChannel.permissionOverwrites.edit(user, {
                     SendMessages: false,
