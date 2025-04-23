@@ -166,6 +166,7 @@ async function lfg_collector(message) {
             return await buttonInteraction.editReply({content: "You or the party owner have each other on your blocklists."});
         }
 
+        /* rank restriction is disabled
         let validateJoin = true; // for ranked queue
         // validation is needed to deny people that do not meet the rank requirements
         if(partyRoomData[0].gamemode == 1) // flex
@@ -186,6 +187,7 @@ async function lfg_collector(message) {
                 content: `You do not meet the rank range required by the party (**${id2rank[partyRoomData[0].minrank]}** - **${id2rank[partyRoomData[0].maxrank]}**) in ${id2gamemode[partyRoomData[0].gamemode]}\nUse @Orianna bot config to get your ranked roles on this server!`
             });
         }
+        */
 
         switch(buttonInteraction.customId) {
             case "join-button":

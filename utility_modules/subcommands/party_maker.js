@@ -628,6 +628,9 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
             case "eune":
             case "euw":
                 // the region is stored and the gamemode selection process will start
+                await buttonInteraction.deferReply({
+                    flags: MessageFlags.Ephemeral
+                });
                 partyObj.region = buttonInteraction.customId;
                 partyCreateEmbed.setFields()
                     .setAuthor({
@@ -637,7 +640,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                     .setDescription("Select the gamemode you want to play with the party")
 
                 await reply.edit({embeds: [partyCreateEmbed], components: [selectGamemodeActionRow]});
-                await buttonInteraction.reply({flags: MessageFlags.Ephemeral, content: `Party set on ${partyObj.region.toUpperCase()} region`});
+                await buttonInteraction.editReply({flags: MessageFlags.Ephemeral, content: `Party set on ${partyObj.region.toUpperCase()} region`});
             break;
             case "ign":
                 await buttonInteraction.showModal(ignModal);
@@ -1064,6 +1067,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
 
         switch(selectInteraction.customId) {
             case "select-gamemode":
+                
                 partyObj.gamemode = Number(selectInteraction.values[0]);
 
                 if(partyObj.gamemode == 0)
@@ -3412,8 +3416,9 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
             const member = await selectInteraction.guild.members.fetch(user);
            
             if(partyChannel.permissionOverwrites.cache.find(
-                perms => perms.id === member.id && perms.allow.has(PermissionFlagsBits.Connect)) ||
-                member.voice.channelId === partyChannel.id
+                perms => (perms.id === member.id && perms.allow.has(PermissionFlagsBits.Connect))) ||
+                    (perms.id === member.id && !perms.deny.has(PermissionFlagsBits.Connect))
+                
             ) {
                 // if it has permission, remove it
                 await partyChannel.permissionOverwrites.edit(user, {

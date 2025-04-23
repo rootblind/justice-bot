@@ -448,6 +448,25 @@ async function open_ticket_collector(message) {
                                 flags: MessageFlags.Ephemeral,
                                 content: `Ticket subject set to ${subject}`
                             });
+
+                            if(subject) {
+                                try{
+                                    await reply.delete();
+                                } catch(err) {};
+                                await create_ticket(
+                                    {
+                                        subject: subject,
+                                        description: description,
+                                        member: selectInteraction.member,
+                                        guild: selectInteraction.guild,
+                                        pingRole: ticketSupportRole,
+                                        staffRole: staffRole
+                                    },
+                                    category,
+                                    ticketLogs
+        
+                                );
+                            }
                         } catch (err) {
                             console.error(err);
                             await selectInteraction.followUp({
@@ -460,25 +479,25 @@ async function open_ticket_collector(message) {
                         const {rows: selectSubjectData} = await poolConnection.query(`SELECT * FROM ticketsubject WHERE id=$1`, [id]);
                         subject = selectSubjectData[0].subject;
                         description = selectSubjectData[0].description;
-                    }
-
-                    if(subject)
-                        try{
-                            await reply.delete();
-                        } catch(err) {};
-                        await create_ticket(
-                            {
-                                subject: subject,
-                                description: description,
-                                member: selectInteraction.member,
-                                guild: selectInteraction.guild,
-                                pingRole: ticketSupportRole,
-                                staffRole: staffRole
-                            },
-                            category,
-                            ticketLogs
-
-                        );
+                        if(subject) {
+                            try{
+                                await reply.delete();
+                            } catch(err) {};
+                            await create_ticket(
+                                {
+                                    subject: subject,
+                                    description: description,
+                                    member: selectInteraction.member,
+                                    guild: selectInteraction.guild,
+                                    pingRole: ticketSupportRole,
+                                    staffRole: staffRole
+                                },
+                                category,
+                                ticketLogs
+    
+                            );
+                        }
+                    }   
                 }
             });
         }
