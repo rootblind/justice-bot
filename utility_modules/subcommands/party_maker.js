@@ -3415,11 +3415,10 @@ async function manage_party_button(interaction, cooldowns, partyCooldowns, chang
 
             const member = await selectInteraction.guild.members.fetch(user);
            
-            if(partyChannel.permissionOverwrites.cache.find(
-                perms => (perms.id === member.id && perms.allow.has(PermissionFlagsBits.Connect))) ||
-                    (perms.id === member.id && !perms.deny.has(PermissionFlagsBits.Connect))
-                
-            ) {
+            if(partyChannel.permissionOverwrites.cache.find(perms =>
+                perms.id === member.id &&
+                (perms.allow.has(PermissionFlagsBits.Connect) || !perms.deny.has(PermissionFlagsBits.Connect))
+            )) {
                 // if it has permission, remove it
                 await partyChannel.permissionOverwrites.edit(user, {
                     SendMessages: false,

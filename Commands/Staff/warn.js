@@ -180,7 +180,7 @@ module.exports = {
         const collector = await warnMessage.createMessageComponentCollector({
             ComponentType: ComponentType.Button,
             time: 300_000,
-            filter: (i) => i.member.roles.cache.has(staffRole.id)
+            filter: (i) => i.user.id === interaction.user.id
         })
 
         collector.on('collect', async (buttonInteraction) => {

@@ -275,8 +275,12 @@ async function lfg_collector(message) {
 
                     switch(requestInteraction.customId) {
                         case "accept-button":
+                            await requestInteraction.deferReply({
+                                flags: MessageFlags.Ephemeral
+                            });
+
                             if(buttonInteraction.member.voice.channelId == null) {
-                                return await requestInteraction.reply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
+                                return await requestInteraction.editReply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
                             }
                             try{
                                 await channel.permissionOverwrites.create(
@@ -290,9 +294,9 @@ async function lfg_collector(message) {
                                 await buttonInteraction.member.voice.setChannel(channel);
                             } catch(err) {
                                 console.error(err);
-                                return await requestInteraction.reply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
+                                return await requestInteraction.editReply({content: "The user is not in a voice channel.", flags: MessageFlags.Ephemeral});
                             }
-                            await requestInteraction.reply({
+                            await requestInteraction.editReply({
                                 content: `${buttonInteraction.member} has been granted access to your party.`,
                                 flags: MessageFlags.Ephemeral
                             });
