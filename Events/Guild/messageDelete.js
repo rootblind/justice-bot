@@ -93,7 +93,7 @@ module.exports = {
                                     
                                     const context = await logChannel.send({embeds: [messageLogEmbed]}); // sending the embed to the defined channel for logging
                                     
-                                    if(entry.extra.channel.id == message.channel.id &&
+                                    if(entry.extra?.channel.id == message.channel.id &&
                                         entry.targetId == message.author.id &&
                                         entry.createdTimestamp > (Date.now() - 2000) && !entry.target.bot){
                                         let modChannel = null;

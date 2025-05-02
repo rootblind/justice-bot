@@ -123,7 +123,6 @@ async function limit_button(interaction, voice) {
             content: `User limit is now set to **${limit}** people.`
         });
     } catch(err) {
-        console.error(err);
         await interaction.followUp({
             flags: MessageFlags.Ephemeral,
             content: "Time ran out, try again!"
@@ -413,10 +412,18 @@ async function load_autovoice_collector(message) {
             [interaction.guild.id, interaction.user.id]
         );
 
+        const {rows: cooldownData} = await poolConnection.query(`SELECT expires FROM autovoicecd WHERE guild=$1 AND member=$2`,
+            [interaction.guild.id, interaction.user.id]
+        );
+
         if(voiceData.length == 0) {
+            let reply = "You do not own a voice room.";
+            if(cooldownData.length) {
+                reply += `\nYou can create a new room in <t:${cooldownData[0].expires}:R>.`
+            }
             return await interaction.reply({
                 flags: MessageFlags.Ephemeral,
-                content: "You do not own a voice room."
+                content: reply
             });
         }
 
@@ -557,9 +564,7 @@ async function remove_autovoice(channel, member) {
     // delete the channel and remove it from db
     try{
         await channel.delete();
-    } catch(err) {
-        console.error(err);
-    }
+    } catch(err) {}
 
     await poolConnection.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND channel=$2`, [guild.id, channel.id]);
 }
