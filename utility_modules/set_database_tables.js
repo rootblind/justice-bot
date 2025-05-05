@@ -580,6 +580,61 @@ async function database_tables_setup() {
   });
   await ticketsubject;
 
+  const staffroles = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS staffroles(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        role BIGINT NOT NULL,
+        roletype TEXT NOT NULL,
+        position INT NOT NULL,
+        CONSTRAINT staffroles_guild_role UNIQUE (guild, role)
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("staffroles");
+            resolve(result);
+        });
+  });
+  await staffroles;
+
+  const staffstrike = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS staffstrike(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        striked BIGINT NOT NULL,
+        striker BIGINT NOT NULL,
+        reason TEXT NOT NULL,
+        expires BIGINT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("staffstrike");
+            resolve(result);
+        });
+  });
+  await staffstrike;
+
+  const customreact = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS customreact(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        keyword TEXT NOT NULL,
+        reply TEXT NOT NULL
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("customreact");
+            resolve(result);
+        });
+  });
+  await customreact;
+
   const {rows: botConfigDefaultRow} = await poolConnection.query(`SELECT * FROM botconfig`);
   if(botConfigDefaultRow.length == 0) {
       const insertBotConfig = new Promise((resolve, reject) => {

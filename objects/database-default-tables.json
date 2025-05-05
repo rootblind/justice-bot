@@ -5,7 +5,7 @@
                     "serverlogs", "serverlogsignore", "premiummembers", "premiumkey", "botconfig", "banlist", "punishlogs",
                     "autopunishrule", "rankrole", "serverlfgchannels", "partymaker", "partydraft", "partyroom", "partyhistory",
                     "lfgblock", "autovoicechannel", "autovoiceroom", "autovoicemanager", "autovoicecd", "ticketmanager",
-                    "ticketsubject"
+                    "ticketsubject", "staffroles", "staffstrike", "customreact"
 
                 ]
 }

@@ -39,7 +39,14 @@ module.exports = {
     async execute(message) {
         if(!message.guildId || !message.member || message.author.bot) return;
 
-        
+        // custom reaction
+        const {rows: customReactData} = await poolConnection.query(`SELECT reply FROM customreact WHERE guild=$1 AND keyword=$2`,
+            [message.guild.id, message.content.toLowerCase()]
+        );
+
+        if(customReactData.length) {
+            await message.channel.send(customReactData[0].reply);
+        }
         
         let logChannel = null; // if there is no log channel set for messages, then logChannel will be null and this event will be ignored
 

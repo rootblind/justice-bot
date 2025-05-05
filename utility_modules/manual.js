@@ -36,6 +36,43 @@ commandCateogries.forEach(category => {
 function command_manual(command) {
     const fields = [];
     switch(command) {
+        case "custom-react":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Moderator"
+                },
+                {
+                    name: "Command",
+                    value: "/custom-react - Manage the custom reactions of the server"
+                },
+                {
+                    name: "Subcommands",
+                    value: `**add** <keyword> <reply> - Set a new custom reaction based on the specified keyword or keyphrase.
+                    **remove** <keyword> - Remove the custom reaction associated with the keyword.
+                    **list** - List all custom reactions on this server.`
+                }
+            )
+        break;
+        case "staff-roles":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Admin (Above bot)"
+                },
+                {
+                    name: "Command",
+                    value: "/staff-roles - Define and list roles as staff roles."
+                },
+                {
+                    name: "Subcommands",
+                    value: `**set** <role> <roletype> - Define a role as staff role and specify the category of staff role
+                    **remove-role** <role> - Remove a defined staff role.
+                    **remove-type** <roletype> - Remove the entire category of staff roles.
+                    **list** - List all categories with their roles and the staff members.`
+                }
+            )
+        break;
         case "nuke-category":
             fields.push(
                 {
