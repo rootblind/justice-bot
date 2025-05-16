@@ -148,6 +148,13 @@ module.exports = {
             }
         });
 
+        // removing expired staff strikes
+        const clearExpiredStrikes = cron.schedule("0 * * * *", async () => {
+            await poolConnection.query(`DELETE FROM staffstrike WHERE expires <= $1`,
+                [Math.floor(Date.now() / 1000)]
+            );
+        });
+
         const banListChecks =  cron.schedule("0 * * * *", async () => {
             // temporary bans that expired must be removed
             const {rows : banListData} = await poolConnection.query(`SELECT * FROM banlist WHERE expires > 0 AND expires <=$1`,

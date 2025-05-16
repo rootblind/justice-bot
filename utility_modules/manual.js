@@ -36,6 +36,58 @@ commandCateogries.forEach(category => {
 function command_manual(command) {
     const fields = [];
     switch(command) {
+        case "strike-rule":
+            fields.push(
+                {
+                    name: 'Category',
+                    value: "Admin (above bot)"
+                },
+                {
+                    name: "Command",
+                    value: "/strike-rule - Manage strike rules"
+                },
+                {
+                    name: "Subcommands",
+                    value: `**set** <strikes> <punishment> - Set a punishment when a staff member reaches the specified strike count.
+                    **remove** <strikes> - Remove the rule associated with the strike count.
+                    **list** - List the strike rules configuration.`
+                }
+            )
+        break;
+        case "strike":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Admin"
+                },
+                {
+                    name: "Command",
+                    value: "/strike - Manage staff members strikes."
+                },
+                {
+                    name: "Subcommands",
+                    value: `**apply** <staff> <duration> <reason> - Apply a strike to a staff member ex: @staffmember 90d reason
+                    **list** <staff> - List the strikes of a staff member and use the buttons to clear one or more strikes.`
+                }
+            )
+        break;
+        case "ticket-member":
+            fields.push(
+                {
+                    name: "Category",
+                    value: "Staff"
+                },
+                {
+                    name: "Command",
+                    value: "/ticket-member - Add or remove members to the ticket the command is sent in."
+                },
+                {
+                    name: "Subcommands",
+                    value: `**add** <user> - Add a new member to the ticket
+                    **remove** <user> - Remove a member from the ticket`
+                }
+            )
+        break;
         case "custom-react":
             fields.push(
                 {

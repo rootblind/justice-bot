@@ -21,7 +21,7 @@ module.exports = {
                     option =>
                         option.setName("key")
                             .setDescription("The keyword or keyphrase.")
-                            .setMinLength(4)
+                            .setMinLength(3)
                             .setMaxLength(20)
                             .setRequired(true)
                 )
@@ -29,7 +29,7 @@ module.exports = {
                     option.setName("reply")
                         .setDescription("The reply of the bot.")
                         .setMaxLength(256)
-                        .setMinLength(4)
+                        .setMinLength(3)
                         .setRequired(true)
                 )
         )
@@ -39,7 +39,7 @@ module.exports = {
                 .addStringOption(option => 
                     option.setName("key")
                         .setDescription("The keyword or keyphrase to be removed")
-                        .setMinLength(4)
+                        .setMinLength(3)
                         .setMaxLength(20)
                         .setRequired(true)
                 )

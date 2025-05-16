@@ -618,6 +618,24 @@ async function database_tables_setup() {
   });
   await staffstrike;
 
+  const strikerule = new Promise((resolve, reject) => {
+    poolConnection.query(`CREATE TABLE IF NOT EXISTS strikerule(
+        id SERIAL PRIMARY KEY,
+        guild BIGINT NOT NULL,
+        strikecount INT NOT NULL,
+        punishment TEXT NOT NULL,
+        CONSTRAINT strikerule_guild_strikecount UNIQUE (guild, strikecount)
+        )`, (err, result) => {
+            if(err) {
+                console.error(err);
+                reject(err);
+            }
+            table_nameListed.push("strikerule");
+            resolve(result);
+        });
+  });
+  await strikerule;
+
   const customreact = new Promise((resolve, reject) => {
     poolConnection.query(`CREATE TABLE IF NOT EXISTS customreact(
         id SERIAL PRIMARY KEY,

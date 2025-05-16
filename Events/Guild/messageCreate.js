@@ -173,10 +173,12 @@ module.exports = {
                 const collector = flaggedMessage.createMessageComponentCollector({
                     ComponentType: ComponentType.Button,
                     filter: (i) => i.member.roles.cache.has(staffRoleData[0].role),
-                    time: 43_200_000
+                    time: 86_400_000
                 });
 
                 collector.on('collect', async (interaction) => {
+                    await interaction.deferReply({flags: MessageFlags.Ephemeral});
+
                     let justiceLogChannel = null;
                     const fetchLogChannel = new Promise((resolve, reject) => {
                         poolConnection.query(`SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [message.guildId, 'justice-logs'],
@@ -233,7 +235,7 @@ module.exports = {
                                     .setTimestamp()
                                     .setFooter({text: `ID: ${interaction.user.id}`})
                             ]});
-                        await interaction.reply({flags: MessageFlags.Ephemeral, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
+                        await interaction.editReply({flags: MessageFlags.Ephemeral, content:`Confirmed tags: ${response['labels'].join(', ')}\nMessage ID: ${flaggedMessage.id}`});
                         // appending the message
                         csvAppend(response['text'], flagTags, 'flag_data.csv');
                         collector.stop();
@@ -258,7 +260,7 @@ module.exports = {
 
                         const selectFlagsActionRow = new ActionRowBuilder().addComponents(selectFlagsMenu);
 
-                        const selectFlagsMessage = await interaction.reply({flags: MessageFlags.Ephemeral, components: [selectFlagsActionRow], embeds: [
+                        const selectFlagsMessage = await interaction.editReply({flags: MessageFlags.Ephemeral, components: [selectFlagsActionRow], embeds: [
                             new EmbedBuilder()
                                 .setDescription('Please select all the appropiate flags for the message.')
                                 .addFields(
@@ -325,7 +327,7 @@ module.exports = {
                         });
                     } else if(interaction.customId === 'ok-button') {
                         flagTags['OK'] = 1;
-                        await interaction.reply({flags: MessageFlags.Ephemeral, content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${flaggedMessage.id}`});
+                        await interaction.editReply({flags: MessageFlags.Ephemeral, content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${flaggedMessage.id}`});
                         if(justiceLogChannel)
                             await justiceLogChannel.send({embeds: [
                                 new EmbedBuilder()
