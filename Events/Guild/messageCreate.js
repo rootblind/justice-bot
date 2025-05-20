@@ -320,7 +320,10 @@ module.exports = {
                             selectCollector.stop();
                         });
                         selectCollector.on('end', async () => {
-                            await selectFlagsMessage.delete();
+                            try{
+                                await selectFlagsReply.delete();
+                            } catch(err) {};
+                           
                             // appending the message
                             csvAppend(response['text'], flagTags, 'flag_data.csv');
                             collector.stop();
