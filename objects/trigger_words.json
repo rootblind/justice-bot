@@ -1,6 +1,6 @@
 {
     "Aggro": [
-        "javr[aoe]", "prostule", "proasto", "idio(tule|ato)", "retardat(ule|o)", "jego(sule|aso)", "gunoiule", "esti (un )?gunoi",
+        "prostule", "proasto", "idio(tule|ato)", "retardat(ule|o)", "jego(sule|aso)", "gunoiule", "esti (un )?gunoi",
         "copile", "scarbo", "ratat(ule|o)", "esti (un |o )?ratat(a)?", "lingaule", "fraier(e|o|ilor)",
         "esti pro(st|asta)", "sunteti prosti", "sunteti ratati", "esti retard(at)?", "cine te(-| )?a intrebat",
         "du(-| )?te dracu", "esti un caine", "pisatule", "zdreanto", "esti (o )?zdreanta", "curvo", "esti curva",
@@ -24,7 +24,7 @@
         "labar", "labagiu", "child( )?porn", "cum( )?shot", "o sug(i|eti|e)?", "sperm"
     ],
     "Hateful": [
-        "handicapat", "retard", "tigan", "bozgor", "n(i)+?(g)+(e)+?(r)+?", "negrotei", "poponar", "fa(g)+(ot)?", "nigro",
+        "handicapat", "retard", "tigan", "bozgor", "n(i)+?(g)+(e)+?(r)+?", "negrotei", "poponar", "fa(g)+(ot)", "nigro",
         "tigan", "ungur[a-z]+? imputit", "kike", "rusnac", "chink", "homalau", "d(i|y)ke",
         "autist", "pajeet", "exterminarea rasei [a-z]+", "rasa [a-z]+ trebuie sa moara", "gas chamber", "nigg",
         "trann(ie|y)", "esti masina de spalat", "(mars|du(-| )?te) (in|la|fa) (bucatarie|cratita|mancare|cartofi|senvis|sandwich|spalat)",

@@ -13,7 +13,7 @@ module.exports = {
 
         if(interaction.isChatInputCommand())
         {
-
+			const botMember = await interaction.guild.members.fetchMe();
             const command = client.commands.get(interaction.commandName);
             if(interaction.guild === null) {
                 return await interaction.reply('Private commands are not available yet!');
@@ -45,7 +45,7 @@ module.exports = {
 
             if (command.botPermissions?.length) {
                 for (const permission of command.botPermissions) {
-                    if (interaction.member.permissions.has(permission)) {
+                    if (botMember.permissions.has(permission)) {
                         continue;
                     }
                     const rEmbed = new EmbedBuilder()

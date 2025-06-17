@@ -269,7 +269,7 @@ module.exports = {
                 dumpMessageCollector.on('end', async () => {
                     try{
                         await dumpMessage.delete();
-                    } catch(err) {console.error(err)}
+                    } catch(err) {}
                 });
             break;
         }
