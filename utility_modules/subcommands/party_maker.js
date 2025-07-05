@@ -233,7 +233,12 @@ const firstRowButtonsMenu = () => {
 }
 
 async function create_button(interaction, cooldowns, partyCooldowns, cd) {
-    const reply = await interaction.deferReply({flags: MessageFlags.Ephemeral});
+    let reply = null;
+    try{
+        reply = await interaction.deferReply({flags: MessageFlags.Ephemeral});
+    } catch(err) {
+        console.error(err);
+    }
     const fetchedReply = await interaction.fetchReply();
 
     const {rows : isPremiumMember} = await poolConnection.query(`SELECT EXISTS
