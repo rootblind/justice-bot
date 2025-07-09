@@ -239,7 +239,13 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
     } catch(err) {
         console.error(err);
     }
-    const fetchedReply = await interaction.fetchReply();
+    let fetchedReply = null;
+    
+    try{
+        fetchedReply = await interaction.fetchReply();
+    } catch(err) {
+        console.error(err);
+    }
 
     const {rows : isPremiumMember} = await poolConnection.query(`SELECT EXISTS
         (SELECT 1 FROM premiummembers WHERE guild=$1 AND member=$2)`,
