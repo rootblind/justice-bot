@@ -116,7 +116,7 @@ module.exports = {
 
         switch(cmd) {
             case "apply":
-                // checking if the user has permission to apply strike the target
+                // checking if the user has permission to apply strike to the target
                 if(staffMember.roles.highest.position >= interaction.member.roles.highest.position) {
                     // admins can not strike another one of the same position
                     return await interaction.editReply({

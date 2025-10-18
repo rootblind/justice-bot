@@ -696,6 +696,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                         time: 120_000
                     });
                     const description = submitInfo.fields.getTextInputValue("description-text-input");
+                    await submitInfo.deferReply({flags: MessageFlags.Ephemeral});
                     const response = await classifier(description);
                     if(response) {
                         if(!response.labels.includes("OK")) {
@@ -707,7 +708,7 @@ async function create_button(interaction, cooldowns, partyCooldowns, cd) {
                     }
                     // here a filter would be implemented for improper language
                     partyObj.description = description;
-                    await submitInfo.reply({flags: MessageFlags.Ephemeral, content: "A description has been provided."});
+                    await submitInfo.editReply({flags: MessageFlags.Ephemeral, content: "A description has been provided."});
                     await reply.edit({embeds: [partyEmbedRefresh()]});
                 } catch(err) {
                     await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, content: "Time ran out, try again."})
