@@ -1,11 +1,16 @@
 {
   "name": "justice",
-  "version": "1.0.0",
+  "version": "2.0.0b",
   "description": "League of Legends Romania discord BOT",
   "main": "justice.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
-    "dev": "nodemon ./source/justice.js"
+    "build": "tsc",
+    "start": "node ./dist/justice.js",
+    "dev": "tsc --watch & nodemon --watch dist --ext js --exec \"node ./dist/justice.js\"",
+    "clean": "rm -rf dist/*",
+    "lint": "eslint source --ext .ts",
+    "lint:fix": "eslint source --ext .ts --fix"
   },
   "author": "rootblind",
   "license": "ISC",
@@ -16,11 +21,14 @@
     "axios": "^1.7.4",
     "child_process": "^1.0.2",
     "colors": "^1.4.0",
+    "cors": "^2.8.5",
     "cpu-stat": "^2.0.1",
     "csv-parser": "^3.0.0",
     "csv-write-stream": "^2.0.0",
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
+    "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "fs": "^0.0.1-security",
     "graceful-fs": "^4.2.11",
     "node-cron": "^3.0.3",
@@ -28,5 +36,27 @@
     "pg": "^8.11.3",
     "re": "^0.1.4",
     "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-env": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@eslint/js": "^9.39.1",
+    "@jest/globals": "^30.2.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/express-session": "^1.18.2",
+    "@types/graceful-fs": "^4.1.9",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.0"
   }
 }

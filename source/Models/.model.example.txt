@@ -1,0 +1,17 @@
+import type { Result } from "pg";
+
+import database from '../Config/database.js';
+import type {  } from "../Interfaces/database_types.js";
+
+export default async function Table(): Promise<Result<TableInterface>> {
+    try{
+        const result: Result<TableInterface> = await database.query(
+            
+        );
+        
+        return result;
+    } catch(error) {
+        console.error(error);
+        throw error;
+    }
+}

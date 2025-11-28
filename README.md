@@ -3,8 +3,6 @@
 
  
  Discord.js bot developed for [League of Legends Romania Discord](https://discord.com/invite/lolro) and multi purpose features.
- 
- This project is ON GOING, you can raise **issues** if you wish for features or to contribute!
 
 
 ![Banner](https://i.ibb.co/FWShYyQ/Ephoto360-com-16587092ed1a60.jpg)
@@ -18,7 +16,6 @@ You can find them [here](https://github.com/rootblind/justice-bot/tree/main/Comm
 - Server Management
 - Miscellaneous
 - Plenty of features planned
-- And many more!
 
 ## Demo / Tutorial
 This section will be updated at a later date when the project is mature enough.
@@ -124,8 +121,6 @@ Do note, that project is still in work as well!
  - [Nodejs](https://nodejs.org/en/)
  - [Discordjs](https://discordjs.guide/#before-you-begin)
  - [PostgreSQL](https://www.postgresql.org/)
-## Credits
-- [The North Solution YouTube channel](https://www.youtube.com/@thenorthsolution) - Tutorials
 
 
 ## Author
