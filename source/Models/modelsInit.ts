@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import "colors";
 import AsciiTable from "ascii-table";
-import { error_logger } from "../utility_modules/error_logger.js";
+import { errorLogHandle } from "../utility_modules/error_logger.js";
 import BotConfigRepo from "../Repositories/botconfig.js";
 
 /**
@@ -49,12 +49,12 @@ export default async function modelsInit() {
                     continue;
                 }
             } catch(error) {
-                error_logger.error(error);
+                await errorLogHandle(error);
             }
 
             table.addRow(modelName, "Ready");
         } catch(error) {
-            error_logger.error(error);
+            await errorLogHandle(error);
             continue;
         }
     }
@@ -65,7 +65,7 @@ export default async function modelsInit() {
             await BotConfigRepo.setDefault();
         }
     } catch(error) {
-        error_logger.error(error);
+        await errorLogHandle(error);
     }
     
     console.log(table.toString(), "\nDatabase tables");

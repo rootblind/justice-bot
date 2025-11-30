@@ -1,6 +1,9 @@
 import winston from "winston";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { EmbedBuilder } from "discord.js";
+import { notifyOwnerDM } from "./discord_helpers.js";
+import { getClient } from "../client_provider.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,7 +29,7 @@ export const error_logger = winston.createLogger({
         ),
       }),
       new winston.transports.File({
-        filename: path.join(__dirname, `../../error_dumps/error-${date.getDay()}_${date.getMonth()}_${date.getFullYear()}.log`),
+        filename: path.join(__dirname, `../../error_dumps/error-${date.getDate()}_${date.getMonth()}_${date.getFullYear()}.log`),
         level: 'error',
         format: winston.format.combine(
             winston.format.timestamp(),
@@ -39,3 +42,22 @@ export const error_logger = winston.createLogger({
       }),
     ],
 });
+
+export async function errorLogHandle(error: unknown, message?: string, embedTitle?: string) {
+  const embedMessage: EmbedBuilder = new EmbedBuilder()
+    .setColor("Red")
+    .setTitle(embedTitle ?? "Error")
+    .setTimestamp()
+
+  if(error instanceof Error) {
+    const errorMsg = message ? message + " " + error.message : error.message;
+    error_logger.error(errorMsg, { stack: error.stack });
+    embedMessage.setDescription(errorMsg);
+  } else {
+    error_logger.error(message ? message + String(error) : String(error));
+    embedMessage.setDescription(message ?? "Unknown error occured, check the console and logs for details.");
+  }
+
+  const client = getClient();
+  await notifyOwnerDM(client, embedMessage);
+}

@@ -1,9 +1,9 @@
 import type { Request, Response } from "express"; 
 import type { Client } from "discord.js";
 
-import { fetchGuild, fetchMember } from "../../utility_modules/discord_helpers.js";
+import { fetchGuild, fetchGuildMember } from "../../utility_modules/discord_helpers.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
-import { error_logger } from "../../utility_modules/error_logger.js";
+import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import type { MemberInfo } from "../../Interfaces/server_types.js";
 
 export const getMember = async (req: Request, res: Response, client: Client) => {
@@ -15,7 +15,7 @@ export const getMember = async (req: Request, res: Response, client: Client) => 
         return res.status(400).json({success: false, member: null, error: "Invalid guild_id"});
     }
 
-    const member = await fetchMember(guild, String(member_id));
+    const member = await fetchGuildMember(guild, String(member_id));
 
     if(!member) {
         return res.status(400).json({
@@ -40,8 +40,8 @@ export const getMember = async (req: Request, res: Response, client: Client) => 
         });
 
     } catch(error) {
-        error_logger.error(error);
-
+        await errorLogHandle(error);
+        
         return res.status(500).json({
             success: false,
             member: null,

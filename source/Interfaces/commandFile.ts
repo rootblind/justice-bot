@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * The interface for command files inside source/Commands
+ */
 interface CommandFile {
   data: {
     name: string;

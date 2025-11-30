@@ -8,10 +8,11 @@ import {
 } from "discord.js";
 
 import type { Event } from "../../Interfaces/event.js";
-import { embed_error, fetch_bot_member, permission_names } from "../../utility_modules/discord_helpers.js";
+import { fetch_bot_member, permission_names } from "../../utility_modules/discord_helpers.js";
 import  { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/utility_methods.js";
 import BotConfigRepo from "../../Repositories/botconfig.js";
-import { error_logger } from "../../utility_modules/error_logger.js";
+import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import { embed_error } from "../../utility_modules/embed_builders.js";
 
 config();
 
@@ -79,7 +80,7 @@ const interactonCreate: Event = {
                 }
                 
             } catch(error) {
-                error_logger.error(error);
+                await errorLogHandle(error);
 
                 return;
             }

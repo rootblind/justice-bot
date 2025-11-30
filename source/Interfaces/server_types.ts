@@ -1,3 +1,5 @@
+// Interfaces and types associated with the API server of the bot for requests and responses
+
 interface BanInfo {
     banned: boolean,
     moderator: string | bigint | null,

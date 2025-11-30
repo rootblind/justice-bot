@@ -1,6 +1,7 @@
 import type { Collection, Snowflake } from "discord.js";
 import fs from "graceful-fs";
-import { error_logger } from "./error_logger.js";
+import { errorLogHandle } from "./error_logger.js";
+import axios from "axios";
 
 /**
  * 
@@ -84,11 +85,11 @@ export function formatTime(date: Date) {
  */
 export function directoryCheck(dirPath: string) {
     let itExists = true;
-    fs.access(dirPath, fs.constants.F_OK, (err: Error) => {
-        if(err) { // throwing an error here means the directory doesn't exist
-            fs.mkdir(dirPath, {recursive: true}, (err: Error) => {
-                if(err) {
-                    error_logger.error(err);
+    fs.access(dirPath, fs.constants.F_OK, (error: Error) => {
+        if(error) { // throwing an error here means the directory doesn't exist
+            fs.mkdir(dirPath, {recursive: true}, (error: Error) => {
+                if(error) {
+                    console.error(error);
                     itExists = false;
                 }
             });
@@ -150,8 +151,48 @@ export async function get_current_version() {
             return packageObject.version;
         }
     } catch(error) {
-        error_logger.error(error);
+        await errorLogHandle(error);
     }
     
     return null;
+}
+
+/**
+ * @param filePath String to the file location
+ * 
+ * @returns boolean
+ * 
+ * The method tries to access the file, if the file is not readable or does not exists,
+ * fs.promises.access will throw an error, meaning the file is not ok. It will return true otherwise.
+ */
+export async function isFileOk(filePath: string): Promise<boolean> {
+    try {
+        await fs.promises.access(filePath, fs.constants.R_OK);
+    } catch(error) {
+        if(error) return false; 
+    }
+
+    return true;
+}
+
+/**
+ * 
+ * @param api string to the api
+ * @returns boolean
+ * 
+ * Used mainly to check on moderation model api's status.
+ */
+export async function check_api_status(api: string) {
+    try {
+        const response = await axios.get(api);
+
+        if(response.status === 200) {
+            return true;
+        } else {
+            console.log(`Unexpected status code from ${api} : ${response.status}`);
+            return false;
+        }
+    } catch(error) {
+        if(error) return false;
+    }
 }

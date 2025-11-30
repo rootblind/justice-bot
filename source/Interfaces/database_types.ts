@@ -1,3 +1,5 @@
+// Interfaces and types to respect the database tables
+
 interface GuildTable {
     id: number,
     guild: bigint
