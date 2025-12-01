@@ -1,3 +1,7 @@
+/**
+ * Error logging is handled through winston object and a customly written method to handle any type of errors
+ */
+
 import winston from "winston";
 import * as path from "path";
 import { fileURLToPath } from "url";

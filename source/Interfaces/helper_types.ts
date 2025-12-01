@@ -36,10 +36,25 @@ interface CronTaskBuilder {
   
 }
 
+/**
+ * @param name The name of the task
+ * @param task The function that will be executed
+ * @param runCondition The condition for the task() method to be executed
+ * @param fatal (Optional) Whether the bot should shutdown in the event that task runCondition throw errors
+ */
+interface OnReadyTaskBuilder {
+  name: string,
+  task: () => Promise<void>,
+  runCondition: () => Promise<boolean>,
+  fatal?: boolean
+
+}
+
 export type {
     PresenceConfig,
     PresencePreset,
     PresencePresetKey,
     CronString,
-    CronTaskBuilder
+    CronTaskBuilder,
+    OnReadyTaskBuilder
 };

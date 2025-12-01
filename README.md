@@ -25,7 +25,11 @@ This section will be updated at a later date when the project is mature enough.
 Clone the project
 
 ```bash
+  # HTTP
   git clone https://github.com/rootblind/justice-bot.git
+
+  # SSH
+  git@github.com:rootblind/justice-bot.git
 ```
 
 Go to the project directory
@@ -44,25 +48,34 @@ Install dependencies
 Use Nodejs to run the bot
 
 ```bash
-  node ./source/justice.js
+  node -r dotenv/config ./dist/justice.js
 ```
 
-Also you can run the bot using nodemon
+## NPM scripts
 
-This is how I defined it in package.json
-```json
-"dev": "nodemon ./source/justice.js"
-```
-And this is the command
 ```bash
+# Compile the TypeScript sources into JavaScript
+npm run build
+
+# Start the bot
+npm run start 
+
+# Build and start the bot, on source change, re-build and re-start the bot using nodemon
 npm run dev
+
+# Empty the dist/ directory
+npm run clean
+
+# Scan the code using ESlint
+npm run lint
+
+# Scan the code and automatically fix ESlint errors if possible
+npm run lint:fix
 ```
 
-Pleanty of the bot's features require a database connection, my code is using a Postgre SQL database, you can get started [here](https://www.youtube.com/watch?v=SpfIwlAYaKk).
+## Database
 
-Then you have to fill in the corresponding environment variables for the database connection.
-
-Continue reading for the environment variables section.
+Justice-bot uses Postgresql, while the database can be replaced with not much effort, you can learn about Postgres [here](https://www.youtube.com/watch?v=SpfIwlAYaKk).
 
 ## Get the latest Nodejs version from here:
 [Click](https://nodejs.org/en/)
@@ -72,7 +85,6 @@ Continue reading for the environment variables section.
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your .env file
-
 
 
 `Your token: BOT_TOKEN`
@@ -85,8 +97,6 @@ To run this project, you will need to add the following environment variables to
 
 `The server where you test the bot: HOME_SERVER_ID`
 
-`The version of the bot: VERSION`
-
 `The database password: DBPASS`
 
 `The host IP (set to localhost if you run it on your PC): DBHOST`
@@ -97,7 +107,7 @@ To run this project, you will need to add the following environment variables to
 
 `The database name: DBNAME`
 
-`The text classification LM API: MOD_API_URL`
+`The text classification ML API: MOD_API_URL`
 
 `Encryption key: ENCRYPT_KEY`
 
@@ -105,23 +115,27 @@ To run this project, you will need to add the following environment variables to
 
 `Encryption algorithm: ALGORITHM`
 
-The environment file should look like this example: [env_vars](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
+If you want to connect the bot to an web application:
 
-You can change the name of the variables, but make sure to make the changes in the code as well!
+`WEB_BACK_PORT`
+
+`WEB_FRONT_PORT`
+
+Environment variables example: [env_vars.txt](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
 
 ## Language Model API
 
 The bot uses an API provided by my own language model. At the moment there is only one classification model that helps with auto moderation if you set up a `flagged-messages` logging channel.
 
-Please visit the LM repository [here](https://github.com/rootblind/opjustice-lm).
+Please visit the ML repository [here](https://github.com/rootblind/opjustice-lm).
 
 Do note, that project is still in work as well!
 
 ## Technologies used
  - [Nodejs](https://nodejs.org/en/)
+ - [TypeScript](https://www.typescriptlang.org/)
  - [Discordjs](https://discordjs.guide/#before-you-begin)
  - [PostgreSQL](https://www.postgresql.org/)
-
 
 ## Author
 

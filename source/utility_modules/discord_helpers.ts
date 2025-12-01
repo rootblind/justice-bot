@@ -1,5 +1,9 @@
+/**
+ * Toolkit implementing helpful methods revolving around the Discord API
+ */
+
 import type {
-    Client, Guild, GuildBan, GuildBasedChannel, GuildMember, GuildTextBasedChannel, 
+    Client, Guild, GuildBan, GuildBasedChannel, GuildMember, GuildTextBasedChannel,
     PermissionResolvable, Role, Snowflake,
     User,
 } from "discord.js";
@@ -8,6 +12,10 @@ import { get_env_var, random_number, read_json_async } from "./utility_methods.j
 import { PresenceConfig, PresencePreset, PresencePresetKey } from "../Interfaces/helper_types.js";
 import { errorLogHandle } from "./error_logger.js";
 import ServerLogsRepo from "../Repositories/serverlogs.js";
+import type { EventGuildLogsString } from "../Interfaces/database_types.js";
+import ServerRolesRepo from "../Repositories/serverroles.js";
+import PremiumMembersRepo from "../Repositories/premiummembers.js";
+import PartyDraftRepo from "../Repositories/partydraft.js";
 
 /**
  * 
@@ -15,11 +23,11 @@ import ServerLogsRepo from "../Repositories/serverlogs.js";
  * @returns The bot as GuildMember object if valid
  */
 export async function fetch_bot_member(guild: Guild | null): Promise<GuildMember | undefined> {
-    if(!guild) return undefined;
+    if (!guild) return undefined;
 
     try {
         return await guild.members.fetchMe();
-    } catch(error) {
+    } catch (error) {
         console.error("Failed to fetch bot member object: ", error);
         return undefined;
     }
@@ -69,7 +77,7 @@ export async function fetchGuildBan(guild: Guild, id: Snowflake): Promise<GuildB
     try {
         ban = await guild.bans.fetch(id);
     } catch { /* the ban doesn't exist, do nothing */ }
-    
+
     return ban;
 }
 
@@ -85,10 +93,10 @@ export async function fetchGuildMember(guild: Guild, id: Snowflake): Promise<Gui
     let member = null;
     try {
         member = await guild.members.fetch(id);
-    } catch {/* the member doesn't exist, do nothing */}
-    
+    } catch {/* the member doesn't exist, do nothing */ }
+
     return member;
-    
+
 }
 
 /**
@@ -102,7 +110,7 @@ export async function fetchGuildChannel(guild: Guild, id: Snowflake): Promise<Gu
     let channel = null;
     try {
         channel = await guild.channels.fetch(id);
-    } catch {/* The channel doesn't exist, do nothing */}
+    } catch {/* The channel doesn't exist, do nothing */ }
 
     return channel;
 }
@@ -118,7 +126,7 @@ export async function fetchGuildRole(guild: Guild, id: Snowflake): Promise<Role 
     let role = null;
     try {
         role = await guild.roles.fetch(id);
-    } catch {/* The role doesn't exist, do nothing */}
+    } catch {/* The role doesn't exist, do nothing */ }
 
     return role;
 }
@@ -131,21 +139,21 @@ export async function fetchGuildRole(guild: Guild, id: Snowflake): Promise<Role 
  * 
  * This method is called to randomly assign the presence of the client (bot)
  */
-export function status_setter (client: Client, presence: PresencePreset, actList: PresencePresetKey[]) {
-    if(!client.user) throw new Error("The client doesn't have an user property")
-    if(actList.length === 0) throw new Error("The actList is empty!")
+export function status_setter(client: Client, presence: PresencePreset, actList: PresencePresetKey[]) {
+    if (!client.user) throw new Error("The client doesn't have an user property")
+    if (actList.length === 0) throw new Error("The actList is empty!")
 
     // selecting the active presence
-    const selectActivityType: PresencePresetKey = actList[random_number(actList.length)] ?? "Playing"; 
+    const selectActivityType: PresencePresetKey = actList[random_number(actList.length - 1)] ?? "Playing";
 
-    const selectActivityString = presence[ selectActivityType ][ random_number(presence[selectActivityType].length) ]
+    const selectActivityString = presence[selectActivityType][random_number(presence[selectActivityType].length - 1)]
         ?? "League of Legends";
 
-    
+
     client.user.setPresence({
         activities: [
             {
-                name: selectActivityString,
+                name: selectActivityType + " " + selectActivityString,
                 type: ActivityType[selectActivityType],
             },
         ],
@@ -171,7 +179,7 @@ export async function read_or_update_presence(
     const presenceFilePath = presenceConfig.type === 0 ?
         defaultPresetFile : customPresetFile;
 
-    if(!presenceFilePath) {
+    if (!presenceFilePath) {
         throw new Error("The presence configuration is set to type 1 (custom preset) but the preset file provided is null or doesn't exist");
     }
 
@@ -196,18 +204,18 @@ export async function bot_presence_setup(
     customPresetFile: string | null = null
 ) {
     const activityTypes: PresencePresetKey[] = ["Playing", "Listening", "Watching"];
-    let { presenceConfig, presetObject } = 
+    let { presenceConfig, presetObject } =
         await read_or_update_presence(presenceConfigFile, defaultPresetFile, customPresetFile);
     let autoUpdatePresence: NodeJS.Timeout; // this variable will act as the interval ID of auto-update presenc
 
-    if(presenceConfig.status === "enable") {
+    if (presenceConfig.status === "enable") {
         status_setter(client, presetObject, activityTypes);
-        if(presenceConfig.delay) {
+        if (presenceConfig.delay) {
             autoUpdatePresence = setInterval(async () => {
                 // refreshing the content of the config and preset
-                ({ presenceConfig, presetObject } = 
+                ({ presenceConfig, presetObject } =
                     await read_or_update_presence(presenceConfigFile, defaultPresetFile, customPresetFile));
-                if(presenceConfig.status !== "enable") {
+                if (presenceConfig.status !== "enable") {
                     clearInterval(autoUpdatePresence);
                 } else {
                     status_setter(client, presetObject, activityTypes);
@@ -215,7 +223,7 @@ export async function bot_presence_setup(
 
             }, presenceConfig.delay * 1000);
         }
-    } else if(presenceConfig.status !== "disable") {
+    } else if (presenceConfig.status !== "disable") {
         // if status is an invalid string, not enable, nor disable
         throw new Error("Presence config status is an invalid string format, it must be set to either enable or disable");
     }
@@ -226,7 +234,7 @@ export async function fetch_home_server_owner(client: Client) {
         const homeServer = await client.guilds.fetch(String(get_env_var("HOME_SERVER_ID")));
         const owner = await homeServer.members.fetch(String(get_env_var("OWNER")));
         return owner;
-    } catch(error) {
+    } catch (error) {
         await errorLogHandle(error);
         return null;
     }
@@ -235,17 +243,17 @@ export async function fetch_home_server_owner(client: Client) {
 export async function notifyOwnerDM(client: Client, message: string | EmbedBuilder) {
     try {
         const owner: User | null = await client.users.fetch(get_env_var("OWNER"));
-        if(!owner) {
+        if (!owner) {
             console.error(`Couldn't fetch the owner user object using the ID: ${get_env_var("OWNER")}`);
             return;
         }
 
-        if(typeof message === "string") {
+        if (typeof message === "string") {
             await owner.send(message);
         } else {
-            await owner.send({embeds: [ message ]});
+            await owner.send({ embeds: [message] });
         }
-    } catch(error) {
+    } catch (error) {
         console.error(error);
     }
 
@@ -257,24 +265,24 @@ export async function notifyOwnerDM(client: Client, message: string | EmbedBuild
  * @param event EventGuildLogs type string
  * @returns The channel of the event logs or null if something failed
  */
-export async function fetchLogsChannel(guild: Guild, event: string) {
+export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString) {
     let channelId: Snowflake | null = null;
     try { // fetching the channel id from the database
         channelId = await ServerLogsRepo.getGuildEventChannel(guild.id, event);
-    } catch(error) {
+    } catch (error) {
         await errorLogHandle(error, `Failed to get serverlogs channel id from ${guild.name}[${guild.id}]`);
     }
-            
-    if(channelId) {
+
+    if (channelId) {
         // if there is a channel set, fetch the channel object
         let channel: GuildTextBasedChannel | null = null;
-        try{
+        try {
             channel = await guild.channels.fetch(channelId) as GuildTextBasedChannel;
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error, `Failed to fetch the log channel[${channelId}] from ${guild.name}[${guild.id}]`);
         }
 
-        if(channel) {
+        if (channel) {
             // if fetching the channel succeeded, return the channel object
             return channel;
         }
@@ -282,4 +290,88 @@ export async function fetchLogsChannel(guild: Guild, event: string) {
     } else {
         return null;
     }
+}
+
+/**
+ * 
+ * @param client Client object
+ * @param guild Guild object or the guild id
+ * @returns The role object of the designated premium server role
+ */
+export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake) {
+    let guildObject: Guild | null = null;
+    if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
+        guildObject = await fetchGuild(client, guild);
+
+    }
+
+    if (!guildObject) return null; // invalid guild
+    const premiumGuildRoleId = await ServerRolesRepo.getGuildPremiumRole(guildObject.id);
+    if (!premiumGuildRoleId) return null; // invalid guild
+    const premiumRole = await fetchGuildRole(guildObject, premiumGuildRoleId);
+
+    return premiumRole;
+}
+
+/**
+ * 
+ * @param client Client object
+ * @param guild Guild object
+ * @param member Member object or member snowflake
+ * @returns The custom role if the member has premium status and a custom role
+ */
+export async function fetchMemberCustomRole(client: Client,
+    guild: Guild | Snowflake,
+    member: Snowflake | GuildMember
+) {
+    let guildObject: Guild | null = null;
+    if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
+        guildObject = await fetchGuild(client, guild);
+
+    }
+
+    if (!guildObject) return null; // invalid guild
+
+    const memberId = typeof member === "string" ? member : member.id;
+    const customRoleId = await PremiumMembersRepo.getMemberCustomRole(guildObject.id, memberId);
+    if(!customRoleId) return null; // the member doesn't have a customrole registered
+
+    const customRole = await fetchGuildRole(guildObject, customRoleId);
+    return customRole;
+
+}
+
+export async function remove_premium_from_member(
+    client: Client,
+    memberId: Snowflake,
+    guild: Guild
+) {
+    const premiumRole = await fetchPremiumRole(client, guild);
+    if(!premiumRole) {
+        throw new Error(
+            `remove_premium_membership was called, but failed to fetch ${guild.name}[${guild.id}] premium role.
+            Method called incorrectly or there are residual rows in the database for this guild.`
+        );
+    }
+    const member = await fetchGuildMember(guild, memberId);
+    const customRole = await fetchMemberCustomRole(client, guild, memberId);
+    // handling the case where the booster is still a guild member but no longer boosting
+    if (member) {
+        await member.roles.remove(premiumRole); // remove premium server role from the member
+    }
+
+    if (customRole) {
+        // Custom roles of members that no longer have premium must be deleted
+        try {
+            await customRole.delete();
+        } catch (error) {
+            errorLogHandle(error);
+        }
+    }
+
+    // cleaning the database
+    await PremiumMembersRepo.deletePremiumGuildMember(guild.id, memberId);
+    await PartyDraftRepo.deleteGuildMemberPremiumDrafts(guild.id, memberId);
+    await PartyDraftRepo.removeFreeSlotsColors(guild.id, memberId);
+
 }

@@ -1,4 +1,10 @@
-import {config} from 'dotenv';
+/**
+ * Main/Index source file, the Client object is initialized, all commands and events are loaded, readies the
+ * Discord API implementation before the bot goes online
+ */
+
+import { config } from 'dotenv';
+config();
 import {
     GatewayIntentBits, Routes, Partials, Collection,
 } from 'discord.js';
@@ -6,8 +12,6 @@ import {
 import { __init_client__, setClient } from './client_provider.js';
 
 import { REST } from "@discordjs/rest";
-
-config();
 
 import { get_env_var } from "./utility_modules/utility_methods.js";
 import { error_logger, errorLogHandle } from './utility_modules/error_logger.js';

@@ -1,13 +1,13 @@
 {
   "name": "justice",
-  "version": "2.0.0b",
+  "version": "2.1.1b",
   "description": "League of Legends Romania discord BOT",
   "main": "justice.js",
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "start": "node ./dist/justice.js",
-    "dev": "tsc --watch & nodemon --watch dist --ext js --exec \"node ./dist/justice.js\"",
+    "start": "node -r dotenv/config ./dist/justice.js",
+    "dev": "tsc --watch & nodemon --watch dist --ext js --exec \"node -r dotenv/config ./dist/justice.js\"",
     "clean": "rm -rf dist/*",
     "lint": "eslint source --ext .ts",
     "lint:fix": "eslint source --ext .ts --fix"

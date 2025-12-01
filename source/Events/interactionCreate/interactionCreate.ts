@@ -1,3 +1,12 @@
+/**
+ * This event source file can also be seen as a handler for the commands and other
+ * user-to-discord-api interactions that are executed.
+ * Every time an interaction is executed, the bot runs interactionCreate that in its turn runs the execute() method.
+ * 
+ * While other types of interactions other than ChatInputInteraction (SlashCommands) trigger this event
+ * the bot handles buttons, select menus, modals, etc through Discord Collectors.
+ */
+
 import { config } from "dotenv";
 import { 
     ChatInputCommandInteraction, 

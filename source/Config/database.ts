@@ -1,3 +1,10 @@
+/**
+ * Postgresql is used as the database using the automatic pool connection way of sending SQL requests.
+ * Could be replaced with any other database as long as database.js exports something that has the expected 
+ * behavior that Postgresql has. Meaning that something like
+ * database.query("SQL CODE", [array of elements to replace the $1, $2, ... $n inside the sql code], (error, result) => {})
+ * If that is not possible, then Repositories must be modified to the expected behavior of the database.
+ */
 import { Pool } from "pg";
 import { get_env_var } from "../utility_modules/utility_methods.js";
 

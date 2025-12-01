@@ -1,3 +1,7 @@
+/**
+ * Implementing shorter means to build repetitive embeds in other source files
+ */
+
 import { EmbedBuilder } from "discord.js";
 import type { Snowflake, ColorResolvable } from "discord.js";
 

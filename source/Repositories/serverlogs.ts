@@ -1,17 +1,6 @@
 import { Snowflake } from "discord.js";
 import database from "../Config/database.js";
-
-type EventGuildLogs =
-    | "moderation"
-    | "voice"
-    | "messages"
-    | "user-activity"
-    | "server-activity"
-    | "flagged-messages"
-    | "premium-activity"
-    | "justice-logs"
-    | "lfg-logs"
-    | "ticket-support"
+import type { EventGuildLogsString } from "../Interfaces/database_types.js";
 
 class ServerLogsRepository {
     /**
@@ -20,7 +9,7 @@ class ServerLogsRepository {
      * @param event EventGuildLogs type string, the event type log channel
      * @returns The specified channel snowflake or null if there is no row to match the guild and event
      */
-    async getGuildEventChannel(guildId: Snowflake, event: EventGuildLogs | string) {
+    async getGuildEventChannel(guildId: Snowflake, event: EventGuildLogsString): Promise<Snowflake | null> {
         const {rows: logsData} = await database.query(
             `SELECT channel FROM serverlogs WHERE guild=$1 AND eventtype=$2`, [guildId, event]
         );

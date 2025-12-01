@@ -1,5 +1,7 @@
 // Interfaces and types to respect the database tables
 
+import { Snowflake } from "discord.js"
+
 interface GuildTable {
     id: number,
     guild: bigint
@@ -7,6 +9,11 @@ interface GuildTable {
 
 interface GuildChannelTable extends GuildTable{
     channel: bigint
+}
+
+interface GuildRolePair {
+    guild: Snowflake,
+    role: Snowflake
 }
 
 type GuildMessageTable = 
@@ -176,12 +183,42 @@ interface CustomReact extends GuildTable {
     reply: string
 }
 
+export type GuildRoleTypeString = 
+    | "staff"
+    | "premium"
+    | "probation"
+    | "bot"
+    | "lfg-eune"
+    | "lfg-euw"
+    | "ticket-support"
+
+export type EventGuildLogsString =
+    | "moderation"
+    | "voice"
+    | "messages"
+    | "user-activity"
+    | "server-activity"
+    | "flagged-messages"
+    | "premium-activity"
+    | "justice-logs"
+    | "lfg-logs"
+    | "ticket-support"
+
+interface GuildMemberCustomRole {
+    guild: Snowflake,
+    member: Snowflake,
+    customrole: Snowflake | null
+};
+
 export type {
     GuildTable,
     GuildChannelTable,
     GuildMessageTable,
     GuildChannelWithType,
+    GuildRolePair,
+    GuildMemberCustomRole,
 
+    // database tables
     WelcomeScheme,
     PanelScheme,
     PanelHeaders,

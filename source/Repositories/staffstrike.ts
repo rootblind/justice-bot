@@ -1,7 +1,10 @@
 import database from "../Config/database.js";
 
 class StaffStrikeRepository {
-    async deleteExpiredEntries() {
+    /**
+     * Delete rows that have the expiration timestamp already passed
+     */
+    async deleteExpiredEntries(): Promise<void> {
         await database.query(`DELETE FROM staffstrike WHERE expires <= $1`,
             [Math.floor(Date.now() / 1000)]
         );

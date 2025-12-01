@@ -1,12 +1,20 @@
+/**
+ * In this source file will be implemented cron tasks.
+ * Cron tasks are recurring executions of blocks of code at the designated schedule.
+ * Useful when the program needs to perform periodics checks and take actions accordingly
+ */
+
 import { CronTaskBuilder } from "../Interfaces/helper_types.js";
-import { check_api_status, formatDate, formatTime, get_env_var } from "./utility_methods.js";
+import { check_api_status, formatDate, formatTime, generate_unique_code, get_env_var } from "./utility_methods.js";
 import StaffStrikeRepo from "../Repositories/staffstrike.js";
 import BanListRepo from "../Repositories/banlist.js";
-import { getClient } from "../client_provider.js";
 import { errorLogHandle } from "./error_logger.js";
 import type { Guild } from "discord.js";
-import { fetchLogsChannel } from "./discord_helpers.js";
+import { fetchGuild, fetchGuildMember, fetchLogsChannel, remove_premium_from_member } from "./discord_helpers.js";
 import { embed_unban } from "./embed_builders.js";
+import { getClient } from "../client_provider.js";
+import PremiumMembersRepo from "../Repositories/premiummembers.js";
+import PremiumKeyRepo from "../Repositories/premiumkey.js";
 
 // checking if the mod model api is responsive
 export const report_modapi_downtime: CronTaskBuilder = {
@@ -35,22 +43,21 @@ export const clear_expired_staff_strikes: CronTaskBuilder = {
 }
 
 // temporary bans that expired must be removed
-export const tempban_expired_clear = {
+export const tempban_expired_clear: CronTaskBuilder = {
     name: "Tempban Expired Clear",
     schedule: "0 * * * *",
     job: async () => {
         const banListData = await BanListRepo.getExpiredTempBans();
         if(!banListData) return; // if there is no tempban to clear, do nothing
-
         const client = getClient();
         for(const banData of banListData) {
             let guild: Guild | null = null;
 
             try {
-                guild = await client.guilds.fetch(banData.guild);
+                guild = await client.guilds.fetch(String(banData.guild));
 
                 try { // unbanning the users whom their ban expired
-                    await guild.bans.remove(banData.target, "Temporary ban expired.");
+                    await guild.bans.remove(String(banData.target), "Temporary ban expired.");
                 } catch(error) {
                     await errorLogHandle(error, `Failed to unban user[${banData.target}] from ${guild.name}[${banData.guild}]`);
                 }
@@ -65,7 +72,7 @@ export const tempban_expired_clear = {
                 // if everything succeeded, log the event
                 await channel.send({
                     embeds: [
-                        embed_unban(banData.target, client.user!.username, "Temporary ban expired")
+                        embed_unban(String(banData.target), client.user!.username, "Temporary ban expired")
                     ]
                 });
             }
@@ -73,6 +80,45 @@ export const tempban_expired_clear = {
 
         // after all the expired raws have been handled
         await BanListRepo.deleteExpiredTempBans();
-    }
+    },
+    runCondition: async () => true
 }
 
+// Handling premium membership expiration
+export const expiredPremium: CronTaskBuilder = {
+    name: "Expired premium handle",
+    schedule: "0 * * * *",
+    job: async () => {
+        const expiredMembers = await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
+        if(!expiredMembers) return; // if no membership is expired, there is nothing to execute
+
+        const client = getClient();
+        for(const expiredUser of expiredMembers) { // handling members whom codes expired
+            const guild = await fetchGuild(client, expiredUser.guild);
+            if(!guild) continue; // invalid guild
+
+            const member = await fetchGuildMember(guild, expiredUser.member);
+            if(member && member.premiumSince) {
+                // if the member is boosting the server while premium expired
+                // replace its code with a from_boosting one
+
+                const code = await generate_unique_code(guild.id);
+
+                try { // register the new key
+                    await PremiumKeyRepo.newKey(code, guild.id, client.user!.id, 0, 0, member.id);
+                    await PremiumMembersRepo.updateMemberCode(guild.id, member.id, code, true);
+                    continue;
+                } catch(error) {
+                    await errorLogHandle(error, "There was a problem while trying to insert a new premium key");
+                }
+            }
+
+            // remove membership from expired memberships
+            await remove_premium_from_member(client, expiredUser.member, guild);
+        }
+
+        // clear the rest of the codes
+        await PremiumKeyRepo.clearExpiredKeys();
+    },
+    runCondition: async () => true
+}

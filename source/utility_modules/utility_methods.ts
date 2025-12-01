@@ -1,17 +1,23 @@
+/**
+ * General purpose methods as a toolkit
+ */
+
 import type { Collection, Snowflake } from "discord.js";
 import fs from "graceful-fs";
 import { errorLogHandle } from "./error_logger.js";
 import axios from "axios";
+import crypto from "crypto";
+import PremiumKeyRepo from "../Repositories/premiumkey.js";
 
 /**
  * 
  * @param name The name of the environment variable as a string
  * @returns The value of the variable as a string of undefined if the variable doesn't exist in .env
  */
-export function get_env_var(name: string){
+export function get_env_var(name: string) {
     const value = process.env[name];
 
-    if(!value) throw new Error(`Missing environment variable: ${name}`);
+    if (!value) throw new Error(`Missing environment variable: ${name}`);
     return value;
 }
 
@@ -27,9 +33,9 @@ export function has_cooldown(
     // returns true if the user has a cooldown, false otherwise
     const now = Math.floor(Date.now() / 1000);
     const last = cooldowns.get(userId);
-    if(last) {
+    if (last) {
         const expires = last + cd;
-        if(now < expires)
+        if (now < expires)
             return expires
     }
     return false;
@@ -44,7 +50,7 @@ export function set_cooldown(
     cooldowns: Collection<Snowflake, number>,
     cd: number
 ) {
-    if(!has_cooldown(userId, cooldowns, cd)) {
+    if (!has_cooldown(userId, cooldowns, cd)) {
         const now = Math.floor(Date.now() / 1000)
         cooldowns.set(userId, now);
         setTimeout(() => cooldowns.delete(userId), cd)
@@ -56,8 +62,8 @@ export function set_cooldown(
 * Might be bad practice, but it's used to translate color hexcodes between embeds and database
 * since colore codes in database are declared as strings (varchar) and in this code as numbers.
 */
-export function hexToString(num: number){
-    const str = '0x' + num.toString(16).padStart(6,'0');
+export function hexToString(num: number) {
+    const str = '0x' + num.toString(16).padStart(6, '0');
     return str;
 }
 
@@ -86,9 +92,9 @@ export function formatTime(date: Date) {
 export function directoryCheck(dirPath: string) {
     let itExists = true;
     fs.access(dirPath, fs.constants.F_OK, (error: Error) => {
-        if(error) { // throwing an error here means the directory doesn't exist
-            fs.mkdir(dirPath, {recursive: true}, (error: Error) => {
-                if(error) {
+        if (error) { // throwing an error here means the directory doesn't exist
+            fs.mkdir(dirPath, { recursive: true }, (error: Error) => {
+                if (error) {
                     console.error(error);
                     itExists = false;
                 }
@@ -107,10 +113,10 @@ export function directoryCheck(dirPath: string) {
  * Throws error if one of the directories does not exist and couldn't be created
  */
 export function directory_array_check(dirArray: string[], root: string = "./") {
-    for(const dir of dirArray) {
+    for (const dir of dirArray) {
         const dirPath = root + dir;
         const dirExists = directoryCheck(dirPath);
-        if(!dirExists) {
+        if (!dirExists) {
             throw new Error(`${dirPath} failed to get checked`);
         }
     }
@@ -124,19 +130,26 @@ export function directory_array_check(dirArray: string[], root: string = "./") {
  * @throws Error if the file is not a json file or a valid JSON object
  */
 export function read_json_async(filePath: string, encoding: string = "utf-8") {
-    if(!filePath.endsWith(".json")) throw new Error("read_json_async reads only JSON files.");
+    if (!filePath.endsWith(".json")) throw new Error("read_json_async reads only JSON files.");
     const data = fs.readFileSync(filePath, encoding);
     return JSON.parse(data);
 }
 
 /**
+ * Pseudo random number from minimum (default 0) to maximum
  * 
- * @param maximum The highest possible random number to be generated (-1)
+ * Swaps maximum and minimum if minimum > maximum so order doesn't matter
+ * @param maximum The highest possible random number to be generated
  * @param minimum The minimum possible random number to be generated, defaults to 0
  * @returns number
  */
 export function random_number(maximum: number, minimum: number = 0) {
-    return Math.floor(Math.random() * maximum) + minimum;
+    // swap if minimum > maximum
+    const min = minimum < maximum ? minimum : maximum;
+    const max = maximum > minimum ? maximum : minimum;
+    const factor = max - min;
+
+    return Math.floor(Math.random() * factor) + min;
 }
 
 /**
@@ -147,13 +160,13 @@ export function random_number(maximum: number, minimum: number = 0) {
 export async function get_current_version() {
     try {
         const packageObject = await read_json_async("package.json");
-        if(typeof packageObject === "object" && "version" in packageObject) {
+        if (typeof packageObject === "object" && "version" in packageObject) {
             return packageObject.version;
         }
-    } catch(error) {
+    } catch (error) {
         await errorLogHandle(error);
     }
-    
+
     return null;
 }
 
@@ -168,8 +181,8 @@ export async function get_current_version() {
 export async function isFileOk(filePath: string): Promise<boolean> {
     try {
         await fs.promises.access(filePath, fs.constants.R_OK);
-    } catch(error) {
-        if(error) return false; 
+    } catch (error) {
+        if (error) return false;
     }
 
     return true;
@@ -186,13 +199,89 @@ export async function check_api_status(api: string) {
     try {
         const response = await axios.get(api);
 
-        if(response.status === 200) {
+        if (response.status === 200) {
             return true;
         } else {
             console.log(`Unexpected status code from ${api} : ${response.status}`);
             return false;
         }
-    } catch(error) {
-        if(error) return false;
+    } catch (error) {
+        if (error) return false;
     }
+}
+
+/**
+ * @param minLength Minimum length of the string
+ * @param maxLength Maximum length of the string
+ * @returns Random string of random length using characters from "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?"
+ */
+export function random_code_generation(minLength: number, maxLength: number) {
+    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?";
+    const length = random_number(maxLength, minLength);
+
+    let randomString = "";
+
+    while (randomString.length < length) {
+        const idx = random_number(characters.length - 1);
+        randomString += characters[idx];
+    }
+
+    return randomString;
+}
+
+const key = Buffer.from(get_env_var("ENCRYPT_KEY"), 'hex'); // encryption key
+const iv = Buffer.from(get_env_var("IV"), 'hex'); // initializator vector
+const algorithm = get_env_var("ALGORITHM"); // the algorithm used to encrypt
+
+/**
+ * Encrypts a UTF-8 string using the configured symmetric encryption
+ * algorithm, key, and IV, returning the encrypted value as a hex string.
+ *
+ * @param data The plaintext string to encrypt.
+ * @returns The encrypted data encoded as a hex string.
+ */
+export function encryptor(data: string): string {
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let encrypted = cipher.update(data, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return encrypted;
+}
+
+/**
+ * Decrypts a hex-encoded encrypted string using the configured symmetric
+ * encryption algorithm, key, and IV, returning the original UTF-8 plaintext.
+ *
+ * @param data The encrypted data encoded as a hex string.
+ * @returns The decrypted plaintext string.
+ */
+export function decryptor(data: string): string {
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    let decrypted = decipher.update(data, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+/**
+ * Generates a unique encrypted code for a specific guild. The function creates
+ * a random plaintext code of length `min` to `max`, encrypts it, and checks
+ * against existing encrypted codes for the guild to ensure uniqueness.
+ * Repeats generation until a unique encrypted code is produced.
+ *
+ * @param guildId The ID of the guild for which the code is being generated.
+ * @param min The minimum length of the plaintext code before encryption (default: 5).
+ * @param max The maximum length of the plaintext code before encryption (default: 10).
+ * @returns A unique encrypted code as a hex string.
+ */
+export async function generate_unique_code(
+    guildId: Snowflake,
+    min: number = 5,
+    max: number = 10
+): Promise<string> {
+    let code = encryptor(random_code_generation(min, max)); // generate a code between 5-10 characters
+    const codes = await PremiumKeyRepo.getAllGuildCodes(guildId);
+
+    // while the code already exists in the database for this guild, continue generating
+    while (codes.includes(code)) code = encryptor(random_code_generation(min, max));
+
+    return code;
 }

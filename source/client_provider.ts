@@ -1,3 +1,8 @@
+/**
+ * Factory, getter and setter methods for the Client object.
+ * The client can be imported in other sources without circular importing from the main file (justice.js)
+ */
+
 import { Client, Options, Partials } from "discord.js";
 
 let botClient: Client | null = null; // the global client object

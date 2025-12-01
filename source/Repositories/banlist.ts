@@ -1,4 +1,4 @@
-import { Snowflake } from "discord.js";
+import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import type { BanList } from "../Interfaces/database_types.js";
 
@@ -29,7 +29,7 @@ class BanListRepository {
     /**
      * @returns Array of rows of BanList data about expired tempbans or null if there is no expired tempban
      */
-    async getExpiredTempBans() {
+    async getExpiredTempBans(): Promise<BanList[] | null> {
         const {rows: banListData} = await database.query(
             `SELECT * FROM banlist WHERE expires > 0 AND expires <= $1`,
             [Math.floor(Date.now() / 1000)]
@@ -42,7 +42,12 @@ class BanListRepository {
         }
     }
 
-    async deleteExpiredTempBans() {
+    /**
+     * Deletes all rows that have their expiration timestamp passed.
+     * 
+     * Rows with expires = 0 are avoided since those are marked permanent bans.
+     */
+    async deleteExpiredTempBans(): Promise<void> {
         await database.query(
             `DELETE FROM banlist WHERE expires > 0 AND expires <= $1`,
             [Math.floor(Date.now() / 1000)]

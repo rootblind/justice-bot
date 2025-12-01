@@ -1,3 +1,7 @@
+/**
+ * Loaders, builders and handlers to put cron_tasks into activity.
+ * This source has the tools to load cron_tasks.js and safely handle each cron task
+ */
 import type { CronTaskBuilder } from "../Interfaces/helper_types.js";
 import AsciiTable from "ascii-table";
 import cron, { ScheduledTask } from "node-cron";
@@ -19,6 +23,7 @@ export async function load_cron_source(sourceFile: string) {
         (exported): exported is CronTaskBuilder =>
             exported !== null &&
             typeof exported === "object" &&
+            "name" in exported &&
             "schedule" in exported &&
             "job" in exported &&
             "runCondition" in exported
@@ -29,26 +34,26 @@ export async function load_cron_source(sourceFile: string) {
 
 /**
  * 
- * @param taskBulder 
+ * @param taskBuilder 
  * @returns NodeCron.ScheduledTask object
  * 
  * Create a new cron task.
  */
-export function build_cron(taskBulder: CronTaskBuilder) {
-    return cron.createTask(taskBulder.schedule, async () => {
+export function build_cron(taskBuilder: CronTaskBuilder) {
+    return cron.createTask(taskBuilder.schedule, async () => {
         try {
-            const runCondition: boolean = await taskBulder.runCondition() ?? false;
+            const runCondition: boolean = await taskBuilder.runCondition() ?? false;
             if(runCondition) {
-                await taskBulder.job();
+                await taskBuilder.job();
             }
 
         } catch(error) {
-            await errorLogHandle(error, `${taskBulder.name} cron task failed:`);
+            await errorLogHandle(error, `${taskBuilder.name} cron task failed:`);
             throw error;
         }
     }, {
         noOverlap: true,
-        name: taskBulder.name
+        name: taskBuilder.name
     });
 }
 
@@ -92,6 +97,7 @@ export async function init_cron_jobs(cronTaskBuilders: CronTaskBuilder[]){
         console.log(
             "The cron task initializer was called on an empty array, the execution is interrupted."
         );
+        return;
     }
 
     const table = new AsciiTable().setHeading("Cron Jobs", "Status");
