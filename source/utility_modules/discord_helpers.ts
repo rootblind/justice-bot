@@ -140,7 +140,7 @@ export async function fetchGuildRole(guild: Guild, id: Snowflake): Promise<Role 
  * This method is called to randomly assign the presence of the client (bot)
  */
 export function status_setter(client: Client, presence: PresencePreset, actList: PresencePresetKey[]) {
-    if (!client.user) throw new Error("The client doesn't have an user property")
+    if (!client.user) throw new Error("The client doesn't have a user property")
     if (actList.length === 0) throw new Error("The actList is empty!")
 
     // selecting the active presence
@@ -229,6 +229,9 @@ export async function bot_presence_setup(
     }
 }
 
+/**
+ * @returns The owner GuildMember from the home server 
+ */
 export async function fetch_home_server_owner(client: Client) {
     try {
         const homeServer = await client.guilds.fetch(String(get_env_var("HOME_SERVER_ID")));
@@ -240,7 +243,11 @@ export async function fetch_home_server_owner(client: Client) {
     }
 }
 
-export async function notifyOwnerDM(client: Client, message: string | EmbedBuilder) {
+/**
+ * The bot will DM the bot owner. Used in error handling, but it can be used for any purpose of DM'ing the owner
+ * @param message The message to be sent as a string or as an embed
+ */
+export async function notifyOwnerDM(client: Client, message: string | EmbedBuilder): Promise<void> {
     try {
         const owner: User | null = await client.users.fetch(get_env_var("OWNER"));
         if (!owner) {
@@ -265,7 +272,8 @@ export async function notifyOwnerDM(client: Client, message: string | EmbedBuild
  * @param event EventGuildLogs type string
  * @returns The channel of the event logs or null if something failed
  */
-export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString) {
+export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString):
+    Promise<GuildTextBasedChannel | null> {
     let channelId: Snowflake | null = null;
     try { // fetching the channel id from the database
         channelId = await ServerLogsRepo.getGuildEventChannel(guild.id, event);
@@ -273,23 +281,10 @@ export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString
         await errorLogHandle(error, `Failed to get serverlogs channel id from ${guild.name}[${guild.id}]`);
     }
 
-    if (channelId) {
-        // if there is a channel set, fetch the channel object
-        let channel: GuildTextBasedChannel | null = null;
-        try {
-            channel = await guild.channels.fetch(channelId) as GuildTextBasedChannel;
-        } catch (error) {
-            await errorLogHandle(error, `Failed to fetch the log channel[${channelId}] from ${guild.name}[${guild.id}]`);
-        }
+    if(!channelId) return null;
 
-        if (channel) {
-            // if fetching the channel succeeded, return the channel object
-            return channel;
-        }
-
-    } else {
-        return null;
-    }
+    const channel = await fetchGuildChannel(guild, channelId) as GuildTextBasedChannel | null;
+    return channel;
 }
 
 /**
@@ -341,6 +336,14 @@ export async function fetchMemberCustomRole(client: Client,
 
 }
 
+/**
+ * Remove the membership of the member and handle the follow up actions.
+ * 
+ * Works on non members
+ * @param client 
+ * @param memberId 
+ * @param guild 
+ */
 export async function remove_premium_from_member(
     client: Client,
     memberId: Snowflake,
@@ -375,3 +378,4 @@ export async function remove_premium_from_member(
     await PartyDraftRepo.removeFreeSlotsColors(guild.id, memberId);
 
 }
+

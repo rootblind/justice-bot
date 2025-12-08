@@ -25,6 +25,11 @@ type GuildChannelWithType =
     | (GuildChannelTable & { type: string })
     | (GuildChannelTable & { eventtype: string })
 
+interface ColumnValuePair {
+    column: string,
+    value: unknown
+}
+
 interface WelcomeScheme {
   id: bigint,
   guild: string | null,
@@ -217,6 +222,7 @@ export type {
     GuildChannelWithType,
     GuildRolePair,
     GuildMemberCustomRole,
+    ColumnValuePair,
 
     // database tables
     WelcomeScheme,

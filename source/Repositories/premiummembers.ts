@@ -20,6 +20,25 @@ class PremiumMembersRepository {
     }
 
     /**
+     * @param guildId Guild Snowflake
+     * @param memberId Member/User Snowflake
+     * @returns Boolean true if the member has premium membership from boosting the guild
+     */
+    async isPremiumFromBoosting(
+        guildId: Snowflake,
+        memberId: Snowflake
+    ): Promise<boolean> {
+        const {rows: isBooster} = await database.query(
+            `SELECT EXISTS(
+                SELECT 1 FROM premiummembers WHERE guild=$1 AND member=$2 AND from_boosting=true
+            )`,
+            [guildId, memberId]
+        );
+
+        return isBooster[0].exist;
+    }
+
+    /**
      * 
      * @returns Array of all premium members from all guilds that aquired premium through boosting
      */

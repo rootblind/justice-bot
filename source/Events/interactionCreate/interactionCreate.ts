@@ -7,7 +7,6 @@
  * the bot handles buttons, select menus, modals, etc through Discord Collectors.
  */
 
-import { config } from "dotenv";
 import { 
     ChatInputCommandInteraction, 
     Client, 
@@ -22,8 +21,6 @@ import  { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/
 import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
-
-config();
 
 const interactonCreate: Event = {
     name: "interactionCreate",
