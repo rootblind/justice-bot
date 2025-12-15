@@ -5,7 +5,7 @@
  */
 
 import type { CronTaskBuilder, OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
-import { fetchGuildMember, fetchGuild, remove_premium_from_member } from "./discord_helpers.js";
+import { fetchGuildMember, fetchGuild } from "./discord_helpers.js";
 import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import { getClient } from "../client_provider.js";
 import BotConfigRepo from "../Repositories/botconfig.js";
@@ -15,6 +15,7 @@ import path from "path";
 import { exec } from "child_process";
 import { errorLogHandle } from "./error_logger.js";
 import cron from "node-cron";
+import { remove_premium_from_member } from "../Systems/premium/premium_system.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting

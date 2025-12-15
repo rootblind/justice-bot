@@ -135,6 +135,28 @@ class PremiumMembersRepository {
         await database.query(query, parameters);
 
     }
+
+    /**
+     * Insert row
+     * @param memberId Member Snowflake
+     * @param guildId Guild Snowflake
+     * @param code Encrypted code
+     * @param customrole Custom role if it exists
+     * @param from_boosting If the membership comes from boosting the guild
+     */
+    async newMember(
+        memberId: Snowflake,
+        guildId: Snowflake,
+        code: string,
+        customrole: Snowflake | null,
+        from_boosting: boolean
+    ): Promise<void> {
+        await database.query(
+            `INSERT INTO premiummembers(member, guild, code, customrole, from_boosting)
+                VALUES($1, $2, $3, $4, $5)`,
+            [memberId, guildId, code, customrole, from_boosting]
+        );
+    }
  }
 
 const PremiumMembersRepo = new PremiumMembersRepository();

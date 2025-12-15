@@ -3,19 +3,32 @@
  */
 
 import type {
+    CacheType,
     Client, Guild, GuildBan, GuildBasedChannel, GuildMember, GuildTextBasedChannel,
+    InteractionCollector,
+    MappedInteractionTypes,
+    Message,
+    MessageComponentInteraction,
+    MessageComponentType,
     PermissionResolvable, Role, Snowflake,
     User,
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
 import { get_env_var, random_number, read_json_async } from "./utility_methods.js";
-import { PresenceConfig, PresencePreset, PresencePresetKey } from "../Interfaces/helper_types.js";
+import { 
+    CollectorCollectHandler, 
+    CollectorFilterCustom, 
+    CollectorStopHandler, 
+    PresenceConfig, 
+    PresencePreset, 
+    PresencePresetKey 
+} from "../Interfaces/helper_types.js";
 import { errorLogHandle } from "./error_logger.js";
 import ServerLogsRepo from "../Repositories/serverlogs.js";
 import type { EventGuildLogsString } from "../Interfaces/database_types.js";
 import ServerRolesRepo from "../Repositories/serverroles.js";
 import PremiumMembersRepo from "../Repositories/premiummembers.js";
-import PartyDraftRepo from "../Repositories/partydraft.js";
+import fs from "graceful-fs";
 
 /**
  * 
@@ -293,7 +306,7 @@ export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString
  * @param guild Guild object or the guild id
  * @returns The role object of the designated premium server role
  */
-export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake) {
+export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake): Promise<Role | null> {
     let guildObject: Guild | null = null;
     if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
         guildObject = await fetchGuild(client, guild);
@@ -306,6 +319,27 @@ export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake)
     const premiumRole = await fetchGuildRole(guildObject, premiumGuildRoleId);
 
     return premiumRole;
+}
+
+/**
+ * 
+ * @param client Client object
+ * @param guild Guild object or the guild id
+ * @returns The role object of the designated staff server role
+ */
+export async function fetchStaffRole(client: Client, guild: Guild | Snowflake): Promise<Role | null> {
+    let guildObject: Guild | null = null;
+    if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
+        guildObject = await fetchGuild(client, guild);
+
+    }
+
+    if (!guildObject) return null; // invalid guild
+    const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guildObject.id);
+    if(!staffRoleId) return null; // invalid guild
+    const staffRole = await fetchGuildRole(guildObject, staffRoleId);
+
+    return staffRole;
 }
 
 /**
@@ -337,45 +371,68 @@ export async function fetchMemberCustomRole(client: Client,
 }
 
 /**
- * Remove the membership of the member and handle the follow up actions.
- * 
- * Works on non members
- * @param client 
- * @param memberId 
- * @param guild 
+ * Prints the content of the message inside a .txt and sends it to logChannel
+ * @param message Message object
+ * @param logChannel The channel where the file will be dumped
+ * @param filePath The path to temp directory
+ * @returns The url of the dump as string
  */
-export async function remove_premium_from_member(
-    client: Client,
-    memberId: Snowflake,
-    guild: Guild
-) {
-    const premiumRole = await fetchPremiumRole(client, guild);
-    if(!premiumRole) {
-        throw new Error(
-            `remove_premium_membership was called, but failed to fetch ${guild.name}[${guild.id}] premium role.
-            Method called incorrectly or there are residual rows in the database for this guild.`
-        );
-    }
-    const member = await fetchGuildMember(guild, memberId);
-    const customRole = await fetchMemberCustomRole(client, guild, memberId);
-    // handling the case where the booster is still a guild member but no longer boosting
-    if (member) {
-        await member.roles.remove(premiumRole); // remove premium server role from the member
-    }
+export async function dumpMessageFile(
+    message: Message,
+    logChannel: GuildTextBasedChannel,
+    filePath: string = `./temp/${message.id}.txt`
+): Promise<string> {
 
-    if (customRole) {
-        // Custom roles of members that no longer have premium must be deleted
-        try {
-            await customRole.delete();
-        } catch (error) {
-            errorLogHandle(error);
-        }
-    }
+    fs.writeFile(filePath, message.content, (error: Error) => {
+        console.error(error);
+    });
 
-    // cleaning the database
-    await PremiumMembersRepo.deletePremiumGuildMember(guild.id, memberId);
-    await PartyDraftRepo.deleteGuildMemberPremiumDrafts(guild.id, memberId);
-    await PartyDraftRepo.removeFreeSlotsColors(guild.id, memberId);
+    const sendFile = await logChannel.send({files: [filePath]});
+    fs.unlink(filePath, (error: Error) => {
+        if(error) throw error;
+    });
 
+    return sendFile.url;
 }
 
+/**
+ * Create a message component collector for the given message using the handlers,
+ * @param message The message object to have components collected from
+ * @param componentType The type of the components interactions to be collected
+ * @param filter The filter method called by the collector based on interaction
+ * @param onStart The "collect" event handler
+ * @param onStop The "end" event handler
+ */
+export async function message_collector<T extends MessageComponentType> (
+    message: Message,
+    options: {
+        componentType: T,
+        filter?: CollectorFilterCustom,
+        lifetime?: number
+    },
+    onStart: CollectorCollectHandler<MappedInteractionTypes[T]>,
+    onStop: CollectorStopHandler<MappedInteractionTypes[T]>,
+): Promise<InteractionCollector<MappedInteractionTypes<boolean>[T]>> {
+    const collector = message.createMessageComponentCollector(options);
+
+    collector.on("collect", async (interaction) => {
+        // collect only the defined component type interactions
+        if(interaction.componentType !== options.componentType) return;
+        // call the handler
+        await onStart(interaction as MappedInteractionTypes[T]);
+    });
+
+    collector.on("end", async (collected) => {
+        // type predicate to narrow the interaction
+        const isTargetType = (
+            i: MessageComponentInteraction<CacheType>
+        ): i is MappedInteractionTypes[T] =>
+            i.componentType === options.componentType;
+
+        // filter for the predicate
+        const typedCollected = collected.filter(isTargetType);
+        await onStop(typedCollected);
+    });
+
+    return collector;
+}

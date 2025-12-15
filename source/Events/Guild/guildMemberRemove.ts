@@ -1,9 +1,10 @@
 import { Event } from "../../Interfaces/event.js";
 import type { GuildMember } from "discord.js";
-import { fetchLogsChannel, remove_premium_from_member } from "../../utility_modules/discord_helpers.js";
+import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { embed_member_left } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
+import { remove_premium_from_member } from "../../Systems/premium/premium_system.js";
 
 const guildMemberRemove: Event = {
     name: "guildMemberRemove",

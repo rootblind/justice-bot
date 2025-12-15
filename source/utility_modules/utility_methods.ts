@@ -4,10 +4,12 @@
 
 import type { Collection, Snowflake } from "discord.js";
 import fs from "graceful-fs";
-import { errorLogHandle } from "./error_logger.js";
-import axios from "axios";
+import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
 import PremiumKeyRepo from "../Repositories/premiumkey.js";
+import { LabelsClassification } from "../Interfaces/helper_types.js";
+import csvWriter from "csv-write-stream";
+import csvParse from "csv-parser";
 
 /**
  * 
@@ -189,28 +191,6 @@ export async function isFileOk(filePath: string): Promise<boolean> {
 }
 
 /**
- * 
- * @param api string to the api
- * @returns boolean
- * 
- * Used mainly to check on moderation model api's status.
- */
-export async function check_api_status(api: string) {
-    try {
-        const response = await axios.get(api);
-
-        if (response.status === 200) {
-            return true;
-        } else {
-            console.log(`Unexpected status code from ${api} : ${response.status}`);
-            return false;
-        }
-    } catch (error) {
-        if (error) return false;
-    }
-}
-
-/**
  * @param minLength Minimum length of the string
  * @param maxLength Maximum length of the string
  * @returns Random string of random length using characters from "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*_+-?"
@@ -284,4 +264,42 @@ export async function generate_unique_code(
     while (codes.includes(code)) code = encryptor(random_code_generation(min, max));
 
     return code;
+}
+
+/**
+ * Reads csv file (unknown)
+ */
+export async function csv_read(path: string) {
+    const data: unknown[] = [];
+    await fs.createReadStream(path)
+        .pipe(csvParse({separator: ","}))
+        .on("data", (row: unknown) => {
+            data.push(row);
+        })
+        .on("error", (error: Error) => {
+            console.error(error);
+        });
+    return data;
+}
+
+/**
+ * Appends to csv without headers (as default behavior)
+ * @param data The message column of the csv dataset
+ * @param flags The labels of the message
+ * @param path The path to flag_data.csv
+ */
+export function csv_append(data: string, flags: LabelsClassification, path: string, send_headers: boolean = false) {
+    const writer = csvWriter({sendHeaders: send_headers});
+    const stream = fs.createWriteStream(path, {flags: "a"});
+    writer.pipe(stream);
+    writer.write({
+        Message: data,
+        OK: flags["OK"],
+        Aggro: flags["Aggro"],
+        Violence: flags["Violence"],
+        Sexual: flags["Sexual"],
+        Hateful: flags["Hateful"]
+    });
+
+    writer.end();
 }

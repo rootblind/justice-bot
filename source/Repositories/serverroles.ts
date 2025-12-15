@@ -38,6 +38,24 @@ class ServerRolesRepository {
             return null;
         }
     }
+
+    /**
+     * 
+     * @param guildId Guild Snowflake
+     * @returns The snowflake of the staff role if it exists in the database
+     */
+    async getGuildStaffRole(guildId: Snowflake): Promise<Snowflake | null> {
+        const {rows: response} = await database.query(
+            `SELECT role FROM serverroles WHERE guild=$1 AND roletype='staff'`,
+            [guildId]
+        );
+
+        if(response.length) {
+            return String(response[0].role);
+        } else {
+            return null;
+        }
+    }
 }
 
 const ServerRolesRepo = new ServerRolesRepository();

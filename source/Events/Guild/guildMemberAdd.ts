@@ -3,9 +3,10 @@ import type { Guild, GuildMember } from "discord.js";
 import BanListRepo from "../../Repositories/banlist.js";
 import { welcome_handler } from "../../Systems/welcome/welcome_system.js";
 import { ban_handler } from "../../Systems/ban/ban_system.js";
-import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
+import { fetchLogsChannel, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_member_joined } from "../../utility_modules/embed_builders.js";
+import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 
 const guildMemberAdd: Event = {
     name: "guildMemberAdd",
@@ -54,6 +55,19 @@ const guildMemberAdd: Event = {
                 });
             } catch(error) {
                 await errorLogHandle(error);
+            }
+        }
+
+        // check if the member has active premium membership
+        const premiumRole = await fetchPremiumRole(guild.client, guild);
+        if(premiumRole) {
+            const hasPremium = await PremiumMembersRepo.checkUserMembership(guild.id, member.id);
+            if(hasPremium) {
+                try {
+                    await member.roles.add(premiumRole);
+                } catch(error) {
+                    await errorLogHandle(error);
+                }
             }
         }
     }

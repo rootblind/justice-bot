@@ -2,8 +2,18 @@
  * Implementing shorter means to build repetitive embeds in other source files
  */
 import { ChannelType, EmbedBuilder } from "discord.js";
-import type { Snowflake, ColorResolvable, User, GuildChannel, GuildMember, Guild } from "discord.js";
-import { formatDate, formatTime } from "./utility_methods";
+import type {
+    Snowflake,
+    ColorResolvable,
+    User,
+    GuildChannel,
+    GuildMember,
+    Guild,
+    Invite,
+    Message
+} from "discord.js";
+import { decryptor, formatDate, formatTime } from "./utility_methods.js";
+import { ClassifierResponse } from "../Interfaces/helper_types.js";
 
 /**
  * Embed for errors while a response is awaited
@@ -160,7 +170,7 @@ export function embed_ban_dm(
         )
         .setTimestamp()
 
-    if(expires) {
+    if (expires) {
         embed.addFields({
             name: "Expires",
             value: `<t:${expires}:R>`
@@ -339,7 +349,7 @@ export function embed_member_joined(
     return new EmbedBuilder()
         .setAuthor({
             name: member.user.username,
-            iconURL: member.displayAvatarURL({extension: "jpg"})
+            iconURL: member.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setTitle("Member joined")
@@ -349,7 +359,7 @@ export function embed_member_joined(
             value: `${formatDate(member.user.createdAt)} | [${formatTime(member.user.createdAt)}]`
         })
         .setTimestamp()
-        .setFooter({text: `Member ID: ${member.id}`});
+        .setFooter({ text: `Member ID: ${member.id}` });
 }
 
 /**
@@ -365,7 +375,7 @@ export function embed_member_left(
     return new EmbedBuilder()
         .setAuthor({
             name: member.user.username,
-            iconURL: member.displayAvatarURL({extension: "jpg"})
+            iconURL: member.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setTitle("Member left")
@@ -375,5 +385,325 @@ export function embed_member_left(
             value: member.joinedAt ? `${formatDate(member.joinedAt)} | [${formatTime(member.joinedAt)}]` : "Unknown"
         })
         .setTimestamp()
-        .setFooter({text: `Member ID: ${member.id}`});
+        .setFooter({ text: `Member ID: ${member.id}` });
+}
+
+/**
+ * Embed for name changes in guild member
+ * @param oldMember GuildMember object
+ * @param newMember GuildMember object
+ * @param nameType Whether the change is in displayname or username
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_member_update_name(
+    oldMember: GuildMember,
+    newMember: GuildMember,
+    nameType: "displayname" | "username",
+    color: ColorResolvable = 0x2596be
+): EmbedBuilder {
+    const formattedNameType = `${nameType === "displayname" ? "Display Name" : "Username"}`;
+    return new EmbedBuilder()
+        .setAuthor({
+            name: `${oldMember.user.username}`,
+            iconURL: `${oldMember.displayAvatarURL({ extension: "jpg" })}`
+        })
+        .setColor(color)
+        .setFields(
+            {
+                name: `Old ${formattedNameType}`,
+                value: `${nameType === "displayname" ? oldMember.displayName : oldMember.user.username}`
+            },
+            {
+                name: `New ${formattedNameType}`,
+                value: `${nameType === "displayname" ? newMember.displayName : newMember.user.username}`
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Member ID: ${newMember.id}` });
+}
+
+/**
+ * @param member The premium member
+ * @param encrypted_code The premium code redeemed in its encrypted form
+ * @param duration The duration of the code. 0 if permanent or from boosting
+ * @param usesnumber The number of uses left
+ * @param from_boosting Whether the premium came from boosting the guild
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_new_premium_membership(
+    member: GuildMember,
+    encrypted_code: string,
+    duration: number | string,
+    usesnumber: number,
+    from_boosting: boolean = false,
+    color: ColorResolvable = 0xd214c7
+): EmbedBuilder {
+    const code = decryptor(encrypted_code);
+    const expires = duration === 0 ? "Permanent" : `<t:${duration}:R>`;
+
+    return new EmbedBuilder()
+        .setAuthor({
+            name: `${member.user.username} is now a premium member`,
+            iconURL: member.displayAvatarURL({ extension: "jpg" })
+        })
+        .setColor(color)
+        .setFields(
+            {
+                name: "Member",
+                value: `${member}`,
+                inline: true
+            },
+            {
+                name: "Code",
+                value: `||${code}||`,
+                inline: true
+            },
+            {
+                name: "Expires",
+                value: expires,
+                inline: true
+            },
+            {
+                name: "Uses left",
+                value: `${usesnumber}`,
+            },
+            {
+                name: "From boosting",
+                value: `${String(from_boosting)}`
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Member ID: ${member.id}` });
+}
+
+/**
+ * 
+ * @param guild The guild object
+ * @param member The premium member
+ * @param encrypted_code The premium key code in encrypted form
+ * @param duration The duration of membership. 0 = permanent
+ * @param from_boosting Whether the membership comes from boosting or not
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_premium_member_notification(
+    guild: Guild,
+    member: GuildMember,
+    encrypted_code: string,
+    duration: string | number,
+    from_boosting: boolean = false,
+    color: ColorResolvable = 0xd214c7
+): EmbedBuilder {
+    const code = decryptor(encrypted_code);
+    const booster_description =
+        `Thank you **${member.user.username}** for boosting the server!
+        Your premium membership will last as long as you are boosting the server.\n`;
+    const description = "You can access your premium perks using `/premium dashboard` on the server.";
+    const expiresAt = duration === 0 ? "Permanent" : `<t:${duration}:R>`;
+
+    return new EmbedBuilder()
+        .setTitle("You are now a premium member")
+        .setAuthor({
+            name: `${guild.name} premium member`,
+            iconURL: String(guild.iconURL({ extension: "png" }))
+        })
+        .setColor(color)
+        .setImage(guild.bannerURL({ size: 1024 }))
+        .setThumbnail(guild.iconURL({ extension: "png" }))
+        .setDescription(from_boosting ? booster_description + description : description)
+        .setFields(
+            {
+                name: "Code",
+                value: `${code}`
+            },
+            {
+                name: "Expires",
+                value: expiresAt
+            },
+            {
+                name: "From boosting",
+                value: String(from_boosting)
+            }
+        )
+}
+
+/**
+ * @param inviter The user that generated the invite
+ * @param invite Invite object
+ * @param color The color of the embed
+ * @returns Embed
+ */
+export function embed_invite_create(
+    inviter: User,
+    invite: Invite,
+    color: ColorResolvable = 0xfdf32f
+): EmbedBuilder {
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: `${inviter.username} created an invite`,
+            iconURL: inviter.displayAvatarURL({ extension: "jpg" })
+        })
+        .setTitle(`Invite code: ${invite.code}`)
+        .setColor(color)
+        .setDescription(`Invite url: ${invite.url}`)
+        .setFields(
+            {
+                name: "Channel",
+                value: `${invite.channel}`
+            },
+            {
+                name: "Expires at",
+                value: invite.maxAge ? `<t:${invite.expiresTimestamp}:R>` : "Permanent"
+            },
+            {
+                name: "Max uses",
+                value: invite.maxUses ? `${invite.maxUses}` : "Unlimited"
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Inviter ID: ${inviter.id}` });
+
+    if (invite.targetUser) {
+        embed.addFields(
+            {
+                name: "Target user",
+                value: `${invite.targetUser.username}`
+            },
+            {
+                name: "Target ID",
+                value: `${invite.targetUser.id}`
+            }
+        )
+    }
+
+    return embed;
+}
+
+export function embed_flagged_message(
+    message: Message,
+    response: ClassifierResponse,
+    color: ColorResolvable = 0xff0005
+): EmbedBuilder {
+    // if there are regex matches, it will show the first five, otherwise defaults to "No patterns"
+    // if there are more than 5 matches, also add the number of the remaining matches
+    // ex: word1, word2, word3, word4, word5... and 9 more
+    const matchingKeywords =
+        `${response.matches.length ?
+            response.matches.slice(0, 5).join(", ") :
+            "No patterns"
+        }${response.matches.length > 5 ?
+            `... and ${response.matches.length - 5} more` :
+            ""}`;
+
+    const author = message.author;
+    const channel = message.channel;
+    const embed = new EmbedBuilder()
+        .setTitle("Flagged Message")
+        .setAuthor({
+            name: author.username,
+            iconURL: author.displayAvatarURL({ extension: "jpg" })
+        })
+        .setColor(color)
+        .setFields(
+            {
+                name: "Channel",
+                value: `${channel}`
+            },
+            {
+                name: "Score",
+                value: `**${response.score}**`
+            },
+            {
+                name: "Flags",
+                value: `${response.labels.join(", ")}`
+            },
+            {
+                name: "Matching keywords",
+                value: matchingKeywords
+            },
+            {
+                name: "Context",
+                value: `[reference](${message.url})`
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Author ID: ${author.id}` });
+
+    return embed;
+}
+
+/**
+ * 
+ * @param message Message object of the flagged message
+ * @param user The user that took action
+ * @param labels The labels of the flagged message
+ * @param action What action the user took
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_justicelogs_flagged_message(
+    message: Message,
+    user: User,
+    labels: string[],
+    action: "confirm" | "adjust" | "false-positive",
+    color: ColorResolvable = "Green"
+): EmbedBuilder {
+    let text: string;
+    switch (action) {
+        case "confirm":
+            text = "confirmed the flags of a message";
+            break;
+        case "adjust":
+            text = "adjusted the flags of a message"
+            break;
+        case "false-positive":
+            text = "marked the flags as false positive."
+            break;
+    }
+
+    return new EmbedBuilder()
+        .setAuthor({
+            name: `${user.username} ${text}`,
+            iconURL: user.displayAvatarURL({ extension: "jpg" })
+        })
+        .setColor(color)
+        .addFields(
+            {
+                name: "Flags",
+                value: labels.join(", "),
+                inline: true
+            },
+            {
+                name: "Message",
+                value: `[context](${message.url})`,
+                inline: true
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `User ID: ${user.id}` });
+}
+
+export function embed_adjust_flags() {
+    return new EmbedBuilder()
+        .setDescription('Please select all the appropiate flags for the message.')
+        .addFields(
+            {
+                name: 'Aggro',
+                value: 'Provoking someone else into an argument.'
+            },
+            {
+                name: 'Violence',
+                value: 'Threats or encouraging violence against another person.'
+            },
+            {
+                name: 'Sexual',
+                value: 'Usage of sexual words to insult or to describe a sexual activity.'
+            },
+            {
+                name: 'Hateful',
+                value: 'Hateful messages and slurs against minorities and other people.'
+            }
+        )
 }

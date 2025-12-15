@@ -1,5 +1,13 @@
 // Interfaces and types to help across the code-base wuth specific object formats
 
+import {
+  CacheType,
+  MessageComponentInteraction, 
+  ReadonlyCollection,
+
+} from "discord.js";
+
+
 interface PresenceConfig {
     status: string,
     delay: number, // in seconds
@@ -50,11 +58,39 @@ interface OnReadyTaskBuilder {
 
 }
 
+interface TriggerWordsObject {
+  [key: string]: string[]
+}
+export type TriggerWordsKey = keyof TriggerWordsObject;
+
+interface LabelsClassification {
+  [key: string]: number
+}
+
+export type LabelKey = keyof LabelsClassification;
+
+interface ClassifierResponse {
+  text: string,
+  matches: string[],
+  score: number,
+  labels: string[]
+}
+
+export type CollectorCollectHandler<T extends MessageComponentInteraction<CacheType>> = 
+  (interaction: T) => Promise<void>;
+export type CollectorStopHandler<T extends MessageComponentInteraction<CacheType>> = 
+  (collected: ReadonlyCollection<string, T>) => Promise<void> | void;
+
+export type CollectorFilterCustom = (interaction: MessageComponentInteraction<CacheType>) => boolean;
+
 export type {
     PresenceConfig,
     PresencePreset,
     PresencePresetKey,
     CronString,
     CronTaskBuilder,
-    OnReadyTaskBuilder
+    OnReadyTaskBuilder,
+    TriggerWordsObject,
+    LabelsClassification,
+    ClassifierResponse
 };
