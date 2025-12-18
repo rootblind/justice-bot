@@ -4,10 +4,28 @@ import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { embed_channel_event } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 
+export type channelUpdateHook = (oldChannel: GuildChannel, newChannel: GuildChannel) => Promise<void>;
+const hooks: channelUpdateHook[] = [];
+export function extend_channelUpdate(hook: channelUpdateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(oldChannel: GuildChannel, newChannel: GuildChannel) {
+    for(const hook of hooks) {
+        try {
+            await hook(oldChannel, newChannel);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const channelUpdate: Event = {
     name: "channelUpdate",
     async execute(oldChannel: GuildChannel, newChannel: GuildChannel) {
         const guild: Guild = newChannel.guild;
+
+        await runHooks(oldChannel, newChannel);
 
         const logChannel = await fetchLogsChannel(guild, "server-activity");
         if(!logChannel) return;

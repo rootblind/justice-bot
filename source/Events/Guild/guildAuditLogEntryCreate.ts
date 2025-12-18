@@ -5,9 +5,27 @@ import { embed_member_timeout, embed_message_moderated, embed_timeout_removed } 
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PunishLogsRepo from "../../Repositories/punishlogs.js";
 
+export type guildAuditLogEntryCreateHook = (auditLogEntry: GuildAuditLogsEntry, guild: Guild) => Promise<void>;
+const hooks: guildAuditLogEntryCreateHook[] = [];
+export function extend_guildAuditLogEntryCreate(hook: guildAuditLogEntryCreateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(auditLogEntry: GuildAuditLogsEntry, guild: Guild) {
+    for(const hook of hooks) {
+        try {
+            await hook(auditLogEntry, guild);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const guildAuditLogEntryCreate: Event = {
     name: "guildAuditLogEntryCreate",
     async execute(auditLogEntry: GuildAuditLogsEntry, guild: Guild) {
+
+        await runHooks(auditLogEntry, guild);
 
         const moderationLogsChannel = await fetchLogsChannel(guild, "moderation");
         if(!moderationLogsChannel) return; // this line must be changed if other types of logs are handled by this event

@@ -1,12 +1,21 @@
 import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
+import { SelfCache } from "../Config/SelfCache.js";
+import { PremiumKey } from "../Interfaces/database_types.js";
+
+const premiumKeyCache = new SelfCache<string, PremiumKey>(60 * 60_000);
 
 class PremiumKeyRepository {
     /**
      * @param guildId Guild snowflake
-     * @returns Array of all codes as hex strings from the specified guild (codes are scored encrypted)
+     * @returns Array of all codes as hex strings from the specified guild (codes are stored encrypted)
      */
     async getAllGuildCodes(guildId: Snowflake): Promise<string[]> {
+        const cache = premiumKeyCache.getByValue((_, key) => key.startsWith(`${guildId}`));
+        if(cache !== undefined) {
+            return cache.map(key => key.code.toString("hex"));
+        }
+
         const {rows: codes} = await database.query(
             `SELECT code FROM premiumkey WHERE guild=$1`,
             [guildId]
@@ -33,10 +42,25 @@ class PremiumKeyRepository {
         usesnumber: number,
         dedicateduser: Snowflake | null = null
     ): Promise<void> {
+        const now = Math.floor(Date.now() / 1000);
+        const premiumKey: PremiumKey = {
+            id: 0,
+            guild: BigInt(guildId),
+            code: Buffer.from(code, "hex"),
+            generatedby: BigInt(generatedBy),
+            expiresat: BigInt(expiresAt),
+            createdat: BigInt(now),
+            usesnumber: usesnumber,
+            dedicateduser: dedicateduser ? BigInt(dedicateduser) : null
+        }
+
+        const cacheKey = `${guildId}:${code}`;
+        premiumKeyCache.set(cacheKey, premiumKey);
+
         await database.query(
             `INSERT INTO premiumkey(code, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
                 VALUES($1, $2, $3, $4, $5, $6, $7)`,
-            [code, guildId, generatedBy, Math.floor(Date.now() / 1000), expiresAt, usesnumber, dedicateduser]
+            [code, guildId, generatedBy, now, expiresAt, usesnumber, dedicateduser]
         );
     }
 
@@ -44,9 +68,11 @@ class PremiumKeyRepository {
      * Deletes all entries of expired keys
      */
     async clearExpiredKeys() {
+        const now = Math.floor(Date.now() / 1000);
+        premiumKeyCache.deleteByValue((v) => v.expiresat <= now && v.expiresat > 0)
         await database.query(
             `DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`,
-            [Math.floor(Date.now() / 1000)]
+            [now]
         );
     }
 }

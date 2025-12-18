@@ -23,4 +23,9 @@ There are systems and other features that need to perform actions upon specific 
 - guildBanAdd: Triggers when a member is banned
 - guildBanRemove: Triggers when a user gets unbanned. Illegal removal of permaban is handled
 - guildDelete: Triggers when a guild is either deleted or the bot gets kicked out of it
-- guildMemberAdd: Triggers when a member joins the guild.
+- guildMemberAdd: Triggers when a member joins the guild
+- guildMemberRemove: Triggers when a member leaves the guild
+- guildMemberUpdate: Handles name changes and premium from boosting
+- inviteCreate: Logs invites
+- messageCreate: Handles /custom-reaction and flagged messages
+- messageDelete: Logging deleted messages and handles the removal of role reaction messages

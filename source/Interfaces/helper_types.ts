@@ -55,7 +55,6 @@ interface OnReadyTaskBuilder {
   task: () => Promise<void>,
   runCondition: () => Promise<boolean>,
   fatal?: boolean
-
 }
 
 interface TriggerWordsObject {
@@ -83,6 +82,28 @@ export type CollectorStopHandler<T extends MessageComponentInteraction<CacheType
 
 export type CollectorFilterCustom = (interaction: MessageComponentInteraction<CacheType>) => boolean;
 
+export type CacheEntry<T> = {
+  value: T,
+  expiresAt: number
+}
+
+interface ConfigSourcesJSON {
+  system_directories: string[],
+  cron_tasks: string,
+  on_ready_tasks: string,
+  presence_config: string,
+  default_presence_presets: string,
+  custom_presence_presets: string,
+  flag_data: string,
+  erro_dumps: string,
+  event_hooks: string
+}
+
+interface AutomodResponse {
+    labels: string[],
+    text: string
+}
+
 export type {
     PresenceConfig,
     PresencePreset,
@@ -92,5 +113,7 @@ export type {
     OnReadyTaskBuilder,
     TriggerWordsObject,
     LabelsClassification,
-    ClassifierResponse
+    ClassifierResponse,
+    ConfigSourcesJSON,
+    AutomodResponse
 };

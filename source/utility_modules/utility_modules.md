@@ -10,3 +10,4 @@ Toolkits of methods for repetitive code
 - on_ready_tasks: OnReadyTaskBuilders to be imported by onReadyTasksHandler. On ready tasks are executed once at clientReady event
 - onReadyTasksHandler: Contains the loader, builder and initializer for OnReadyTaskBuilders
 - utility_methods: General scope methods that are not specific to Discord API
+- event_hooks: Where event hooks can be defined to be loaded at clientReady

@@ -22,6 +22,22 @@ import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
 
+export type interactionCreateHook = (interaction: ChatInputCommandInteraction, client: Client) => Promise<void>;
+const hooks: interactionCreateHook[] = [];
+export function extend_interactionCreate(hook: interactionCreateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(interaction: ChatInputCommandInteraction, client: Client) {
+    for(const hook of hooks) {
+        try {
+            await hook(interaction, client);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const interactonCreate: Event = {
     name: "interactionCreate",
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
@@ -128,6 +144,7 @@ const interactonCreate: Event = {
                 });
             }
             
+            await runHooks(interaction, client);
             command.execute(interaction, client);
         }
 

@@ -7,10 +7,29 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_unban } from "../../utility_modules/embed_builders.js";
 import { ban_handler } from "../../Systems/ban/ban_system.js";
 
+export type guildBanRemoveHook = (ban: GuildBan) => Promise<void>;
+const hooks: guildBanRemoveHook[] = [];
+export function extend_guildBanRemove(hook: guildBanRemoveHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(ban: GuildBan) {
+    for(const hook of hooks) {
+        try {
+            await hook(ban);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const guildBanRemove: Event = {
     name: "guildBanRemove",
     async execute(ban: GuildBan) {
         const guild: Guild = ban.guild;
+
+        await runHooks(ban);
+        
         const logChannel = await fetchLogsChannel(guild, "moderation");
         if (!logChannel) return;
 

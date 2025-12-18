@@ -14,14 +14,7 @@ interface MemberInfo {
     premium: boolean
 }
 
-interface AutomodResponse {
-    labels: string[],
-    text: string
-}
-
 export type { 
     BanInfo, 
     MemberInfo, 
-    AutomodResponse
-
  };

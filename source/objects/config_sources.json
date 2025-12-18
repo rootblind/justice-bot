@@ -1,0 +1,11 @@
+{
+    "system_directories": ["error_dumps", "temp", "backup-db", "assets", "assets/avatar"],
+    "cron_tasks": "./cron_tasks.js",
+    "on_ready_tasks": "./on_ready_tasks.js",
+    "presence_config": "./source/objects/presence-config.json",
+    "default_presence_presets": "./source/objects/default-presence-presets.json",
+    "custom_presence_presets": "./source/objects/custom-presence-presets.json",
+    "flag_data": "./flag_data.csv",
+    "error_dumps": "./error_dumps",
+    "event_hooks": "./event_hooks.js"
+}

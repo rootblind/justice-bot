@@ -707,3 +707,55 @@ export function embed_adjust_flags() {
             }
         )
 }
+
+/**
+ * 
+ * @param author The user object of the author
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_message_delete(
+    author: User,
+    color: ColorResolvable = 0xfb0003
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setAuthor({
+            name: `${author.username}`,
+            iconURL: author.displayAvatarURL({extension: "jpg"})
+        })
+        .setColor(color)
+        .setTitle("🧹Message deleted")
+        .setTimestamp()
+        .setFooter({text: `Author ID: ${author.id}`})
+}
+
+export function embed_message_action_context(
+    moderator: User,
+    messageUrl: string,
+    logsUrl: string,
+    logID: Snowflake,
+    color: ColorResolvable = 0xff0005
+) {
+    return new EmbedBuilder()
+        .setTitle("Action context")
+        .setColor(color)
+        .setFields(
+            {
+                name: "Moderator",
+                value: `${moderator}`,
+                inline: true
+            },
+            {
+                name: "Message",
+                value: `[context](${messageUrl})`,
+                inline: true
+            },
+            {
+                name: "Logs",
+                value: `[context](${logsUrl})`,
+                inline: true
+            }
+        )
+        .setTimestamp()
+        .setFooter({text: `Message Log ID: ${logID}`});
+}

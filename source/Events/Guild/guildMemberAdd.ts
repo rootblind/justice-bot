@@ -8,10 +8,30 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_member_joined } from "../../utility_modules/embed_builders.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 
+export type guildMemberAddHook = (member: GuildMember) => Promise<void>;
+const hooks: guildMemberAddHook[] = [];
+export function extend_guildMemberAdd(hook: guildMemberAddHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(member: GuildMember) {
+    for(const hook of hooks) {
+        try {
+            await hook(member);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const guildMemberAdd: Event = {
     name: "guildMemberAdd",
     async execute(member: GuildMember) {
         const guild: Guild = member.guild;
+        if(member.user.bot) return;
+        
+        await runHooks(member);
+
         // enforcing perma bans
         const isPermabanned = await BanListRepo.isUserPermabanned(guild.id, member.id);
         if (isPermabanned) { // if the user is permabanned in banlist, but somehow unbanned on discord and able to join

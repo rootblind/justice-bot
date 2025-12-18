@@ -1,5 +1,5 @@
 import { TriggerWordsObject, LabelsClassification, ClassifierResponse } from "../../Interfaces/helper_types.js";
-import { AutomodResponse } from "../../Interfaces/server_types.js";
+import { AutomodResponse } from "../../Interfaces/helper_types.js";
 import { get_env_var, read_json_async } from "../../utility_modules/utility_methods.js";
 import { text_classification } from "./automod_model_methods.js";
 import { curate_text } from "./curate_data.js";

@@ -1,6 +1,9 @@
 import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import type { PunishLogs } from "../Interfaces/database_types.js";
+import { SelfCache } from "../Config/SelfCache.js";
+
+const punishLogsCache = new SelfCache<string, PunishLogs[]>();
 
 class PunishLogsRepository {
     /**
@@ -11,6 +14,16 @@ class PunishLogsRepository {
      * @returns Array (possibly empty) of all punishlogs of a user
      */
     async getUserLogsOrder(order: string, guildId: Snowflake, userId: Snowflake): Promise<PunishLogs[]> {
+        const key = `${guildId}:${userId}`;
+        const cache = punishLogsCache.get(key);
+        if(cache !== undefined) {
+            if(order.toUpperCase() === "DESC") {
+                return cache.sort((a, b) => Number(b.timestamp - a.timestamp));
+            } else {
+                return cache.sort((a, b) => Number(a.timestamp - b.timestamp));
+            }
+        }
+
         const {rows: punishLogsData} = await database.query(
             `SELECT timestamp FROM punishlogs
                 WHERE guild=$1
@@ -20,6 +33,7 @@ class PunishLogsRepository {
             [guildId, userId]
         ); // default to  ASC if the programmer messes up
 
+        punishLogsCache.set(key, punishLogsData);
         return punishLogsData;
     }
 
@@ -40,6 +54,24 @@ class PunishLogsRepository {
         reason: string,
         timestamp: string
     ): Promise<void> {
+        const key = `${guildId}:${targetId}`;
+        const log: PunishLogs = {
+            id: 0,
+            guild: BigInt(guildId),
+            target: BigInt(targetId),
+            moderator: BigInt(moderatorId),
+            punishment_type: punishment_type,
+            reason: reason,
+            timestamp: BigInt(timestamp)
+        }
+
+        const cache = punishLogsCache.get(key);
+        if(cache !== undefined) {
+            punishLogsCache.set(key, cache);
+        } else {
+            punishLogsCache.set(key, [ log ]);
+        }
+
         await database.query(
             `INSERT INTO punishlogs (guild, target, moderator, punishment_type, reason, timestamp)
                 VALUES($1, $2, $3, $4, $5, $6)`,

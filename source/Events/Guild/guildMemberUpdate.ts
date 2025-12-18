@@ -6,6 +6,22 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import { assign_premium_to_member, remove_premium_from_member } from "../../Systems/premium/premium_system.js";
 
+export type guildMemberUpdateHook = (oldMember: GuildMember, newMember: GuildMember) => Promise<void>;
+const hooks: guildMemberUpdateHook[] = [];
+export function extend_guildMemberUpdate(hook: guildMemberUpdateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(oldMember: GuildMember, newMember: GuildMember) {
+    for(const hook of hooks) {
+        try {
+            await hook(oldMember, newMember);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const guildMemberUpdate: Event = {
     name: "guildMemberUpdate",
     async execute(oldMember: GuildMember, newMember: GuildMember) {
@@ -13,6 +29,7 @@ const guildMemberUpdate: Event = {
         const clientMember = await guild.members.fetchMe();
         if (newMember.user.bot) return; // ignore bots
 
+        await runHooks(oldMember, newMember);
         // log name changes
         const userActivityLogs = await fetchLogsChannel(guild, "user-activity");
         if (userActivityLogs) {

@@ -14,10 +14,12 @@ import { errorLogHandle } from "./error_logger.js";
  * 
  * Throws an error if the array is empty
  */
-export async function load_cron_source(sourceFile: string) {
+export async function load_cron_source(sourceFile: string): Promise<CronTaskBuilder[] | null> {
     const module = await import(sourceFile);
 
-    if(!module) throw new Error("Load cron source failed to load the source module.");
+    if(!module) {
+        console.log(`No cron task was imported from ${sourceFile}. No module found.`)
+    }
 
     const tasks: CronTaskBuilder[] = Object.values(module).filter(
         (exported): exported is CronTaskBuilder =>

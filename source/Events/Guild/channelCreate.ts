@@ -1,12 +1,31 @@
 import type { Event } from "../../Interfaces/event.js";
-import { AuditLogEvent, type User, type Guild, type GuildChannel } from "discord.js";
+import { AuditLogEvent, GuildChannel, type User, type Guild } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { embed_channel_event } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 
+export type channelCreateHook = (channel: GuildChannel) => Promise<void>;
+const hooks: channelCreateHook[] = [];
+export function extend_channelCreate(hook: channelCreateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(channel: GuildChannel) {
+    for(const hook of hooks) {
+        try {
+            await hook(channel);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const channelCreate: Event = {
     name: "channelCreate",
     async execute(channel: GuildChannel) {
+        // running the hooks
+        await runHooks(channel);
+
         const guild: Guild = channel.guild;
         const logChannel = await fetchLogsChannel(guild, "server-activity");
 

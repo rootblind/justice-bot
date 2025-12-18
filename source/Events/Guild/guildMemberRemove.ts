@@ -6,9 +6,29 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import { remove_premium_from_member } from "../../Systems/premium/premium_system.js";
 
+export type guildMemberRemoveHook = (member: GuildMember) => Promise<void>;
+const hooks: guildMemberRemoveHook[] = [];
+export function extend_guildMemberRemove(hook: guildMemberRemoveHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(member: GuildMember) {
+    for(const hook of hooks) {
+        try {
+            await hook(member);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const guildMemberRemove: Event = {
     name: "guildMemberRemove",
     async execute(member: GuildMember) {
+        if(member.user.bot) return;
+        
+        await runHooks(member);
+        
         const guild = member.guild;
         const userActivityLogs = await fetchLogsChannel(guild, "user-activity");
         if(userActivityLogs) {

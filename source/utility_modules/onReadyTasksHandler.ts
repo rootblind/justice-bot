@@ -14,13 +14,13 @@ import { errorLogHandle } from "./error_logger.js";
  * 
  * Throws an error if sourceFile is invalid
  */
-export async function load_onReady_tasks(sourceFile: string) {
+export async function load_onReady_tasks(sourceFile: string): Promise<OnReadyTaskBuilder[] | null> {
     const module = await import(sourceFile);
 
-    if (!module) throw new Error(
-        `load_onReady_tasks failed to import ${sourceFile}.
-        Make sure sourceFile is a valid path to on_ready_tasks or a source that respects that format.`
-    );
+    if (!module) {
+        console.log(`No on ready task was imported from ${sourceFile}. No module found.`);
+        return null;
+    }
 
     const tasks: OnReadyTaskBuilder[] = Object.values(module).filter(
         (exported): exported is OnReadyTaskBuilder =>

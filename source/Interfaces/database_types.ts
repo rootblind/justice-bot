@@ -215,6 +215,8 @@ interface GuildMemberCustomRole {
     customrole: Snowflake | null
 };
 
+export type DbCacheKey = string;
+
 export type {
     GuildTable,
     GuildChannelTable,

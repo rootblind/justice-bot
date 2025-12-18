@@ -2,10 +2,33 @@ import type { Client, Guild, GuildMember, GuildTextBasedChannel, Role, Snowflake
 import { fetchGuildMember, fetchMemberCustomRole, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
-import PartyDraftRepo from "../../Repositories/partydraft.js";
 import { generate_unique_code } from "../../utility_modules/utility_methods.js";
 import PremiumKeyRepo from "../../Repositories/premiumkey.js";
 import { embed_new_premium_membership, embed_premium_member_notification } from "../../utility_modules/embed_builders.js";
+
+export type removePremiumFromMemberHook = (
+    client: Client,
+    memberId: Snowflake,
+    guild: Guild
+) => Promise<void>
+const removePremiumFromMemberHooks: removePremiumFromMemberHook[] = [];
+export function extend_remove_premium_from_member(hook: removePremiumFromMemberHook) {
+    removePremiumFromMemberHooks.push(hook);
+}
+
+async function run_remove_premium_from_member_hooks(
+    client: Client,
+    memberId: Snowflake,
+    guild: Guild
+) {
+    for(const hook of removePremiumFromMemberHooks) {
+        try {
+            await hook(client, memberId, guild);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
 
 /**
  * Remove the membership of the member and handle the follow up actions.
@@ -45,8 +68,7 @@ export async function remove_premium_from_member(
 
     // cleaning the database
     await PremiumMembersRepo.deletePremiumGuildMember(guild.id, memberId);
-    await PartyDraftRepo.deleteGuildMemberPremiumDrafts(guild.id, memberId);
-    await PartyDraftRepo.removeFreeSlotsColors(guild.id, memberId);
+    await run_remove_premium_from_member_hooks(client, memberId, guild);
 }
 
 /**

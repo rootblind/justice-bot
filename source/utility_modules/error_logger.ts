@@ -47,7 +47,12 @@ export const error_logger = winston.createLogger({
     ],
 });
 
-export async function errorLogHandle(error: unknown, message?: string, embedTitle?: string) {
+export async function errorLogHandle(
+  error: unknown,
+  message?: string,
+  embedTitle?: string,
+  notifyOwner: boolean = true
+) {
   const embedMessage: EmbedBuilder = new EmbedBuilder()
     .setColor("Red")
     .setTitle(embedTitle ?? "Error")
@@ -63,5 +68,5 @@ export async function errorLogHandle(error: unknown, message?: string, embedTitl
   }
 
   const client = getClient();
-  await notifyOwnerDM(client, embedMessage);
+  if(notifyOwner) await notifyOwnerDM(client, embedMessage);
 }

@@ -6,10 +6,27 @@ import DatabaseRepo from "../../Repositories/database_repository.js";
 import type { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 
+export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
+const hooks: channelDeleteHook[] = [];
+export function extend_channelDelete(hook: channelDeleteHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(channel: GuildChannel) {
+    for(const hook of hooks) {
+        try {
+            await hook(channel);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
 const channelDelete: Event = {
     name: "channelDelete",
     async execute(channel: GuildChannel) {
         const guild: Guild = channel.guild;
+        
         /**
          * Deleting a channel used or registered by one or more database tables must be curated
          */
@@ -20,6 +37,7 @@ const channelDelete: Event = {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
 
+        await runHooks(channel);
         // logging
         const logChannel = await fetchLogsChannel(guild, "server-activity");
         if(!logChannel) return;
