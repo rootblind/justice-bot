@@ -2,9 +2,9 @@ import express from "express";
 import cors from "cors";
 //import session from "express-session";
 import { config } from "dotenv";
-import { authenticate } from "./middleware/auth";
-import banRoutes from "./routes/banRoutes";
-import memberRoutes from "./routes/memberRoutes";
+import { authenticate } from "./middleware/auth.js";
+import banRoutes from "./routes/banRoutes.js";
+import memberRoutes from "./routes/memberRoutes.js";
 config();
 
 import type { Client } from "discord.js";

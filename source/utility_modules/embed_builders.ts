@@ -10,7 +10,8 @@ import type {
     GuildMember,
     Guild,
     Invite,
-    Message
+    Message,
+    GuildTextBasedChannel
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
@@ -758,4 +759,38 @@ export function embed_message_action_context(
         )
         .setTimestamp()
         .setFooter({text: `Message Log ID: ${logID}`});
+}
+
+/**
+ * 
+ * @param channel The channel from where the bulk delete happened 
+ * @param file The url to the log file
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_message_delete_bulk(
+    channel: GuildTextBasedChannel,
+    file: string,
+    color: ColorResolvable = "Red",
+): EmbedBuilder {
+
+    const embed = new EmbedBuilder()
+        .setTitle("🧹🧹Message bulk deletion")
+        .setColor(color)
+        .addFields(
+            {
+                name: "In channel",
+                value: `${channel}`,
+                inline: true
+            },
+            {
+                name: "Channel ID",
+                value: `${channel.id}`,
+                inline: true
+            }
+        )
+        .setDescription(`Logged message bulk: [click](${file})`)
+        .setTimestamp()
+
+    return embed;
 }

@@ -48,7 +48,7 @@ const messageDelete: Event = {
             if (message.content.length <= 3000) {
                 embed.setDescription(`**Content**:\n${message.content}`);
             } else {
-                const dumpUrl = dumpMessageFile(message, messagesLogs);
+                const dumpUrl = dumpMessageFile(message, messagesLogs, message.id);
                 embed.setDescription(`[[Content]](${dumpUrl})`);
             }
 

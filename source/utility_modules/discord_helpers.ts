@@ -2,15 +2,16 @@
  * Toolkit implementing helpful methods revolving around the Discord API
  */
 
-import type {
+import {
     CacheType,
-    Client, Guild, GuildBan, GuildBasedChannel, GuildMember, GuildTextBasedChannel,
+    Client, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
     MappedInteractionTypes,
     Message,
     MessageComponentInteraction,
     MessageComponentType,
     PermissionResolvable, Role, Snowflake,
+    TextChannel,
     User,
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
@@ -219,7 +220,7 @@ export async function bot_presence_setup(
     const activityTypes: PresencePresetKey[] = ["Playing", "Listening", "Watching"];
     let { presenceConfig, presetObject } =
         await read_or_update_presence(presenceConfigFile, defaultPresetFile, customPresetFile);
-    let autoUpdatePresence: NodeJS.Timeout; // this variable will act as the interval ID of auto-update presenc
+    let autoUpdatePresence: NodeJS.Timeout; // this variable will act as the interval ID of auto-update presence
 
     if (presenceConfig.status === "enable") {
         status_setter(client, presetObject, activityTypes);
@@ -286,7 +287,7 @@ export async function notifyOwnerDM(client: Client, message: string | EmbedBuild
  * @returns The channel of the event logs or null if something failed
  */
 export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString):
-    Promise<GuildTextBasedChannel | null> {
+    Promise<TextChannel | null> {
     let channelId: Snowflake | null = null;
     try { // fetching the channel id from the database
         channelId = await ServerLogsRepo.getGuildEventChannel(guild.id, event);
@@ -295,8 +296,13 @@ export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString
     }
 
     if(!channelId) return null;
+    const channel = await fetchGuildChannel(guild, channelId) as TextChannel | null;
 
-    const channel = await fetchGuildChannel(guild, channelId) as GuildTextBasedChannel | null;
+    if(channel === null) {
+        // if the channel is still null after the fetch, then there must be a faulty row
+        await ServerLogsRepo.deleteGuildEventChannel(guild.id, event);
+    }
+
     return channel;
 }
 
@@ -318,6 +324,10 @@ export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake)
     if (!premiumGuildRoleId) return null; // invalid guild
     const premiumRole = await fetchGuildRole(guildObject, premiumGuildRoleId);
 
+    if(premiumRole === null) {
+        // if premiumRole is null even after fetching, there must be a faulty row
+        await ServerRolesRepo.deleteGuildRole(guildObject.id, "premium");
+    }
     return premiumRole;
 }
 
@@ -339,6 +349,10 @@ export async function fetchStaffRole(client: Client, guild: Guild | Snowflake): 
     if(!staffRoleId) return null; // invalid guild
     const staffRole = await fetchGuildRole(guildObject, staffRoleId);
 
+    if(staffRole === null) {
+        // if staff role is still null, must be a faulty row
+        await ServerRolesRepo.deleteGuildRole(guildObject.id, "staff");
+    }
     return staffRole;
 }
 
@@ -372,18 +386,21 @@ export async function fetchMemberCustomRole(client: Client,
 
 /**
  * Prints the content of the message inside a .txt and sends it to logChannel
- * @param message Message object
+ * @param message Message object or a string
  * @param logChannel The channel where the file will be dumped
+ * @param fileId The name of the file inside /temp
  * @param filePath The path to temp directory
  * @returns The url of the dump as string
  */
 export async function dumpMessageFile(
-    message: Message,
-    logChannel: GuildTextBasedChannel,
-    filePath: string = `./temp/${message.id}.txt`
+    message: Message | string,
+    logChannel: TextChannel,
+    fileId: string,
+    filePath: string = `./temp/${fileId}.txt`
 ): Promise<string> {
 
-    fs.writeFile(filePath, message.content, (error: Error) => {
+    const content = message instanceof Message ? message.content : message;
+    fs.writeFile(filePath, content, (error: Error) => {
         console.error(error);
     });
 

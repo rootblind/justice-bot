@@ -71,6 +71,20 @@ class ServerRolesRepository {
             return null;
         }
     }
+
+    /**
+     * Delete the registry of the specific role type from the guild
+     * @param guildId Guild Snowflake
+     * @param type Server role type
+     */
+    async deleteGuildRole(guildId: Snowflake, type: GuildRoleTypeString) {
+        const key = `${guildId}:${type}`;
+        serverRolesCache.delete(key);
+
+        await database.query(`DELETE FROM serverroles WHERE guild=$1 AND roletype=$2`,
+            [guildId, type]
+        );
+    }
 }
 
 const ServerRolesRepo = new ServerRolesRepository();

@@ -29,3 +29,29 @@ There are systems and other features that need to perform actions upon specific 
 - inviteCreate: Logs invites
 - messageCreate: Handles /custom-reaction and flagged messages
 - messageDelete: Logging deleted messages and handles the removal of role reaction messages
+
+## Event hooks
+
+In order for the events to be used as a base without modifying the source files, hooks are implemented
+
+```js
+export type inviteCreateHook = (invite: Invite) => Promise<void>;
+const hooks: inviteCreateHook[] = [];
+export function extend_inviteCreate(hook: inviteCreateHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(invite: Invite) {
+    for(const hook of hooks) {
+        try {
+            await hook(invite);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+```
+
+Such as the example above; runHooks() is called inside the event execute body.
+
+Event hooks are to be written inside the source file: source/utility_modules/event_hooks.js using the OnReadyTaskBuilder template.

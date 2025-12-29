@@ -64,7 +64,7 @@ const messageCreate: Event = {
                 if(message.content.length <= 3000) {
                     flaggedEmbed.setDescription(`**Content**:\n${message.content}`);
                 } else {
-                    const dumpUrl = await dumpMessageFile(message, flaggedMessagesLogs);
+                    const dumpUrl = await dumpMessageFile(message, flaggedMessagesLogs, message.id);
                     flaggedEmbed.setDescription(`[[Content]](${dumpUrl})`);
                 }
 

@@ -52,7 +52,7 @@ const clientReady: Event = {
             throw error;
         }
 
-        const config_sources: ConfigSourcesJSON = await read_json_async("./objects/config_sources.json");
+        const config_sources: ConfigSourcesJSON = await read_json_async("./source/objects/config_sources.json");
 
         // initializing database tables
         try{
@@ -144,7 +144,7 @@ const clientReady: Event = {
             `${client.user.username}@${justiceVersion} is functional! - ${formatDate(currentDate)} | [${formatTime(currentDate)}]`
         );
 
-        const errorFiles = fs.readdirSync(config_sources.erro_dumps)
+        const errorFiles = fs.readdirSync(config_sources.error_dumps)
             .map((file: string) => file)
             .filter((file: string) => file !== 'error.log');
         

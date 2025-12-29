@@ -95,7 +95,7 @@ interface ConfigSourcesJSON {
   default_presence_presets: string,
   custom_presence_presets: string,
   flag_data: string,
-  erro_dumps: string,
+  error_dumps: string,
   event_hooks: string
 }
 

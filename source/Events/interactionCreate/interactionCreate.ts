@@ -21,6 +21,7 @@ import  { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/
 import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
+import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 
 export type interactionCreateHook = (interaction: ChatInputCommandInteraction, client: Client) => Promise<void>;
 const hooks: interactionCreateHook[] = [];
@@ -41,13 +42,29 @@ async function runHooks(interaction: ChatInputCommandInteraction, client: Client
 const interactonCreate: Event = {
     name: "interactionCreate",
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        if(interaction.isChatInputCommand() && interaction.member instanceof GuildMember) {
+        if(interaction.isChatInputCommand() && interaction.member instanceof GuildMember && interaction.guild) {
             const botMember = await fetch_bot_member(interaction.guild);
 
             if(!botMember) return; // do nothing if the member object of the client couldn't be fetched
 
             const command = client.commands.get(interaction.commandName);
             if(!command) return;
+
+            if(command.disabled) return; // if somehow a disabled command is reached, do not execute it
+
+            if(command.premium) {
+                const isPremium = await PremiumMembersRepo.checkUserMembership(
+                    interaction.guild.id,
+                    interaction.member.id
+                );
+
+                if(!isPremium) {
+                    return await interaction.reply({
+                        embeds: [ embed_error("This command is for premium members only!") ],
+                        flags: MessageFlags.Ephemeral
+                    })
+                }
+            }
 
             if(command.ownerOnly === true && interaction.user.id !== get_env_var("OWNER")) {
                 return await interaction.reply({
@@ -107,7 +124,7 @@ const interactonCreate: Event = {
                 return;
             }
 
-            if(command.testOnly && interaction.guild?.id !== get_env_var("HOME_SERVER_ID")) {
+            if(command.testOnly && interaction.guild.id !== get_env_var("HOME_SERVER_ID")) {
                 return await interaction.reply({
                     embeds: [embed_error("This command cannot be ran outside the Test Server!")],
                     flags: MessageFlags.Ephemeral
@@ -145,7 +162,19 @@ const interactonCreate: Event = {
             }
             
             await runHooks(interaction, client);
-            command.execute(interaction, client);
+            try {
+                await command.execute(interaction, client);
+            } catch(error) {
+                if(error instanceof Error) {
+                    await errorLogHandle(error, `Uncaught error inside ${command.data.name} command`);
+
+                    if(interaction.replied || interaction.deferred) {
+                        await interaction.editReply({
+                            embeds: [ embed_error(`Running ${command.data.name} threw and unexpected error!`) ]
+                        });
+                    }
+                }
+            }
         }
 
         return;

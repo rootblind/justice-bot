@@ -1,12 +1,11 @@
-import type { Client, Collection } from "discord.js";
+import type { Client } from "discord.js";
 import AsciiTable from "ascii-table";
 import fs from "graceful-fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { ChatCommand } from "../Interfaces/command.js";
 
-import type { CommandFile } from "../Interfaces/commandFile.ts";
-
-export async function load_commands(client: Client & {commands: Collection<string, CommandFile>}) {
+export async function load_commands(client: Client) {
     const table = new AsciiTable("Commands");
     table.setHeading("Commands", "Status");
 
@@ -25,11 +24,14 @@ export async function load_commands(client: Client & {commands: Collection<strin
 
         for(const file of files) {
             const filePath = path.join(folderPath, file);
-            const commandFile: CommandFile = await import(filePath).then(m => m.default ?? m);
-
+            const commandFile: ChatCommand = await import(filePath).then(m => m.default ?? m);
+            if(commandFile.disabled) {
+                table.addRow(file, "Disabled");
+                continue;
+            }
             const proprieties = { folder, ...commandFile };
             client.commands.set(commandFile.data.name, proprieties);
-            commandsArray.push(commandFile.data.toJSON());
+            commandsArray.push(commandFile.data);
             table.addRow(file, "Loaded");
         }
 

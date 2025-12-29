@@ -5,7 +5,8 @@ import type { ChatCommand } from "../../Interfaces/command.ts";
 const test: ChatCommand = {
     data: new SlashCommandBuilder()
         .setName("test")
-        .setDescription("Desc"),
+        .setDescription("Desc")
+        .toJSON(),
     
     async execute(interaction: ChatInputCommandInteraction) {
         return await interaction.reply("da");

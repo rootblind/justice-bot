@@ -1,6 +1,11 @@
 import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import type { PremiumMembers, GuildMemberCustomRole } from "../Interfaces/database_types.js";
+import { SelfCache } from "../Config/SelfCache.js";
+
+// this does not caches premiummembers objects, it keeps track of the boolean value
+// of a member's status as a premium member
+const membershipStatusCache = new SelfCache<string, boolean>(60 * 60_000);
 
 class PremiumMembersRepository {
     /**
@@ -10,12 +15,17 @@ class PremiumMembersRepository {
      * @returns A boolean whether the user has premium status in the given Guild
      */
     async checkUserMembership(guildId: Snowflake, userId: Snowflake): Promise<boolean> {
+        const key = `${guildId}:${userId}`;
+        const cache = membershipStatusCache.get(key);
+        if(cache !== undefined) return cache;
+
         const {rows: isPremium} = await database.query(
             `SELECT EXISTS
                 (SELECT 1 FROM premiummembers WHERE guild=$1 AND member=$2)`,
             [guildId, userId]
         );
 
+        membershipStatusCache.set(key, isPremium[0].exists);
         return isPremium[0].exists
     }
 
@@ -28,6 +38,10 @@ class PremiumMembersRepository {
         guildId: Snowflake,
         memberId: Snowflake
     ): Promise<boolean> {
+        const key = `${guildId}:${memberId}:from_boosting`; // from boosting is a different matter
+        const cache = membershipStatusCache.get(key);
+        if(cache !== undefined) return cache;
+
         const {rows: isBooster} = await database.query(
             `SELECT EXISTS(
                 SELECT 1 FROM premiummembers WHERE guild=$1 AND member=$2 AND from_boosting=true
@@ -35,6 +49,7 @@ class PremiumMembersRepository {
             [guildId, memberId]
         );
 
+        membershipStatusCache.set(key, isBooster[0].exists);
         return isBooster[0].exist;
     }
 
@@ -60,6 +75,7 @@ class PremiumMembersRepository {
      * @param memberId Member/User Snowflake
      */
     async deletePremiumGuildMember(guildId: Snowflake, memberId: Snowflake): Promise<void> {
+        membershipStatusCache.deleteByValue((_, key) => key.startsWith(`${guildId}:${memberId}`))
         await database.query(
             `DELETE FROM premiummembers WHERE guild=$1 AND member=$2`,
             [guildId, memberId]
@@ -123,8 +139,12 @@ class PremiumMembersRepository {
         const parameters: unknown[] = [code];
 
         if(from_boosting !== null) {
-             query += `, from_boosting=$${++index}`;
-             parameters.push(from_boosting);
+            query += `, from_boosting=$${++index}`;
+            parameters.push(from_boosting);
+
+            if(from_boosting === true) {
+                membershipStatusCache.set(`${guildId}:${memberId}:from_boosting`, true);
+            }
         }
 
         parameters.push(memberId);
@@ -151,6 +171,10 @@ class PremiumMembersRepository {
         customrole: Snowflake | null,
         from_boosting: boolean
     ): Promise<void> {
+        const cacheKey = `${guildId}:${memberId}`;
+        membershipStatusCache.set(cacheKey, true);
+        if(from_boosting) membershipStatusCache.set(`${cacheKey}:from_boosting`, true);
+
         await database.query(
             `INSERT INTO premiummembers(member, guild, code, customrole, from_boosting)
                 VALUES($1, $2, $3, $4, $5)`,
