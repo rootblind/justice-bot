@@ -58,7 +58,7 @@ class BanListRepository {
      */
     async deleteExpiredTempBans(): Promise<void> {
         const now = Math.floor(Date.now() / 1000);
-        banlistCache.deleteByValue((value) => value !== null && value.expires > 0 && value.expires <= now);
+        banlistCache.deleteByValue((value) => value !== null && Number(value.expires) > 0 && Number(value.expires) <= now);
         await database.query(
             `DELETE FROM banlist WHERE expires > 0 AND expires <= $1`,
             [now]
@@ -129,9 +129,9 @@ class BanListRepository {
             key,
             {
                 id: 0,
-                guild: BigInt(guildId),
-                target: BigInt(targetId),
-                moderator: BigInt(moderatorId),
+                guild: guildId,
+                target: targetId,
+                moderator: moderatorId,
                 expires: Number(expires),
                 reason: reason
             }

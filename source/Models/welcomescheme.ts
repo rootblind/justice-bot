@@ -6,7 +6,7 @@ import type { WelcomeScheme } from "../Interfaces/database_types.js";
 export default async function WelcomeScheme(): Promise<Result<WelcomeScheme>> {
     try{
         const result: Result<WelcomeScheme> = await database.query(`CREATE TABLE IF NOT EXISTS welcomescheme (
-              id bigint PRIMARY KEY,
+              id BIGINT PRIMARY KEY,
               guild VARCHAR(32),
               active BOOLEAN DEFAULT false NOT NULL,
               channel VARCHAR(30),

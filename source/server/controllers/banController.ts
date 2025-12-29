@@ -46,7 +46,7 @@ export const getBan = async (req: Request, res: Response, client: Client) => {
                 banInfo.moderator = banData.moderator;
             }
 
-            if(typeof banData.expires !== "bigint" && banData.expires == 0) {
+            if(banData.expires == 0) {
                 banInfo.expires = "Restricted"
             } else {
                 banInfo.expires = banData.expires;

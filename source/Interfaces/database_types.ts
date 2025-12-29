@@ -4,11 +4,11 @@ import { Snowflake } from "discord.js"
 
 interface GuildTable {
     id: number,
-    guild: bigint
+    guild: Snowflake
 }
 
 interface GuildChannelTable extends GuildTable{
-    channel: bigint
+    channel: Snowflake
 }
 
 interface GuildRolePair {
@@ -17,8 +17,8 @@ interface GuildRolePair {
 }
 
 type GuildMessageTable = 
-    | (GuildChannelTable & { messageid: bigint })
-    | (GuildChannelTable & { message: bigint })
+    | (GuildChannelTable & { messageid: Snowflake })
+    | (GuildChannelTable & { message: Snowflake })
 
 type GuildChannelWithType =
     | (GuildChannelTable & { channeltype: string })
@@ -31,7 +31,7 @@ interface ColumnValuePair {
 }
 
 interface WelcomeScheme {
-  id: bigint,
+  id: Snowflake,
   guild: string | null,
   active: boolean,
   channel: string | null,
@@ -44,7 +44,7 @@ interface WelcomeScheme {
 
 interface PanelScheme extends GuildTable {
     panelname: string,
-    roleid: bigint,
+    roleid: Snowflake,
     description: string
 }
 
@@ -54,26 +54,26 @@ interface PanelHeaders extends GuildTable {
 
 type PanelMessages = GuildMessageTable & { panelname: string }
 
-type ReactionRoles = GuildMessageTable & { roleid: bigint, emoji: string }
+type ReactionRoles = GuildMessageTable & { roleid: Snowflake, emoji: string }
 
 interface ServerRoles extends GuildTable {
     roletype: string,
-    role: bigint
+    role: Snowflake
 }
 
 interface PremiumKey extends GuildTable {
     code: Buffer,
-    generatedby: bigint,
-    createdat: bigint,
-    expiresat: bigint,
+    generatedby: Snowflake,
+    createdat: Snowflake,
+    expiresat: Snowflake,
     usesnumber: number,
-    dedicateduser: bigint | null,
+    dedicateduser: Snowflake | null,
 }
 
 interface PremiumMembers extends GuildTable {
-    member: bigint,
+    member: Snowflake,
     code: Buffer,
-    customrole: bigint | null,
+    customrole: Snowflake | null,
     from_boosting: boolean
 }
 
@@ -84,36 +84,36 @@ interface BotConfig {
 }
 
 interface BanList extends GuildTable {
-    target: bigint,
-    moderator: bigint,
-    expires: bigint | number,
+    target: Snowflake,
+    moderator: Snowflake,
+    expires: Snowflake | number,
     reason: string
 }
 
 interface PunishLogs extends GuildTable {
-    target: bigint,
-    moderator: bigint,
+    target: Snowflake,
+    moderator: Snowflake,
     punishment_type: number,
     reason: string,
-    timestamp: bigint
+    timestamp: Snowflake
 }
 
 interface AutoPunishRule extends GuildTable {
     warncount: number,
-    duration: bigint,
+    duration: Snowflake,
     punishment_type: number,
-    punishment_duration: bigint | number
+    punishment_duration: Snowflake | number
 }
 
 
 interface RankRole extends GuildTable {
     rankid: number,
     rankq: number,
-    role: bigint
+    role: Snowflake
 }
 
 interface PartyBaseScheme extends GuildTable {
-    owner: bigint,
+    owner: Snowflake,
     ign: string,
     region: string,
     gamemode: number,
@@ -127,7 +127,7 @@ interface PartyBaseScheme extends GuildTable {
 }
 
 interface PartyHistory extends PartyBaseScheme {
-    timestamp: bigint
+    timestamp: Snowflake
 }
 
 interface PartyDraft extends PartyBaseScheme {
@@ -136,31 +136,31 @@ interface PartyDraft extends PartyBaseScheme {
 }
 
 interface PartyRoom extends PartyHistory {  
-    channel: bigint,
-    message: bigint,
+    channel: Snowflake,
+    message: Snowflake,
 }
 
 interface LfgBlock extends GuildTable {
-    blocker: bigint,
-    blocked: bigint
+    blocker: Snowflake,
+    blocked: Snowflake
 }
 
 interface AutoVoiceManager extends GuildTable {
-    message: bigint
+    message: Snowflake
 }
 
 interface AutoVoiceRoom extends GuildChannelTable {
-    owner: bigint,
-    timestamp: bigint,
+    owner: Snowflake,
+    timestamp: Snowflake,
     order_room: number
 }
 
 interface AutoVoiceCd extends GuildTable {
-    member: bigint,
-    expires: bigint
+    member: Snowflake,
+    expires: Snowflake
 }
 
-type TicketManager = GuildMessageTable & { category: bigint }
+type TicketManager = GuildMessageTable & { category: Snowflake }
 
 interface TicketSubject extends GuildTable {
     subject: string,
@@ -172,10 +172,10 @@ interface StaffRoles extends ServerRoles {
 }
 
 interface StaffStrike extends GuildTable {
-    striked: bigint,
-    striker: bigint,
+    striked: Snowflake,
+    striker: Snowflake,
     reason: string,
-    expires: bigint
+    expires: Snowflake
 }
 
 interface StrikeRule extends GuildTable {

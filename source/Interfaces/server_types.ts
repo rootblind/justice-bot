@@ -2,10 +2,10 @@
 
 interface BanInfo {
     banned: boolean,
-    moderator: string | bigint | null,
-    expires: string | bigint | number,
+    moderator: string | null,
+    expires: string | number,
     reason: string,
-    timestamp: string | bigint | null
+    timestamp: string | null
 }
 
 interface MemberInfo {

@@ -11,7 +11,9 @@ import type {
     Guild,
     Invite,
     Message,
-    GuildTextBasedChannel
+    GuildTextBasedChannel,
+    VoiceState,
+    VoiceChannel
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
@@ -792,5 +794,133 @@ export function embed_message_delete_bulk(
         .setDescription(`Logged message bulk: [click](${file})`)
         .setTimestamp()
 
+    return embed;
+}
+
+/**
+ * 
+ * @param author Message author as user
+ * @param description Description of the embed
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_message_update(
+    author: User,
+    description: string,
+    color: ColorResolvable = "Aqua"
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setAuthor({
+            name: author.username,
+            iconURL: author.displayAvatarURL({extension: "jpg"})
+        })
+        .setColor(color)
+        .setTitle("📝 Message Edited")
+        .setDescription(description)
+        .setTimestamp()
+        .setFooter({text: `Author ID: ${author.id}`});
+}
+
+/**
+ * 
+ * @param member Member Snowflake
+ * @param oldState Old VoiceState
+ * @param newState New VoiceState
+ * @param color The embed color
+ * @returns Embed
+ */
+export function embed_member_voice_channel_state(
+    member: GuildMember,
+    oldState: VoiceState,
+    newState: VoiceState,
+    color: ColorResolvable = "Aqua"
+): EmbedBuilder {
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: `${member.user.username}`,
+            iconURL: member.user.displayAvatarURL({extension: "jpg"})
+        })
+        .setColor(color)
+        .setFields({
+            name: "Member",
+            value: `${member}`
+        })
+        .setTimestamp()
+        .setFooter({text: `Member ID: ${member.id}`});
+
+    if(!oldState.channel && newState.channel) {
+        embed
+            .setDescription("Member joined voice")
+            .addFields({
+                name: "Joined",
+                value: `${newState.channel} [${newState.channel.name}] [${newState.channel.id}]`
+            })
+    } else if(oldState.channel && !newState.channel) {
+        embed
+            .setDescription("Member left voice")
+            .addFields({
+                name: "Left",
+                value: `${oldState.channel} [${oldState.channel.name}] [${oldState.channel.id}]`
+            });
+    } else if(
+        oldState.channel && 
+        newState.channel && 
+        oldState.channel.id !== newState.channel.id
+    ) {
+        embed
+            .setDescription("Member moved voice")
+            .addFields(
+                {
+                    name: "From",
+                    value: `${oldState.channel} [${oldState.channel.name}] [${oldState.channel.id}]`
+                },
+                {
+                    name: "To",
+                    value: `${newState.channel} [${newState.channel.name}] [${newState.channel.id}]`
+                }
+            )
+    }
+    return embed;
+}
+
+export function embed_member_voice_state(
+    member: GuildMember,
+    channel: VoiceChannel,
+    oldState: VoiceState,
+    newState: VoiceState,
+    color: ColorResolvable = "Aqua"
+): EmbedBuilder {
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: member.user.username,
+            iconURL: member.user.displayAvatarURL({extension: "jpg"})
+        })
+        .setColor(color)
+        .setDescription("Member voice state updated")
+        .setFields(
+            {
+                name: "Member",
+                value: `${member}`
+            },
+            {
+                name: "In channel",
+                value: `${channel} [${channel.name}] [${channel.id}]`
+            }
+        )
+        .setTimestamp()
+        .setFooter({text: `Member ID: ${member.id}`});
+
+    let state = "None";
+
+    if(!oldState.serverMute && newState.serverMute) state = "Muted";
+    if(oldState.serverMute && !newState.serverMute) state = "Unmuted";
+    if(!oldState.serverDeaf && newState.serverDeaf) state = "Deafened";
+    if(oldState.serverDeaf && !newState.serverDeaf) state = "Undeafened";
+    if(!oldState.selfVideo && newState.selfVideo) state = "Camera ON";
+    if(oldState.selfVideo && !newState.selfVideo) state = "Camera OFF";
+    if(!oldState.streaming && newState.streaming) state = "Stream ON";
+    if(oldState.streaming && !newState.streaming) state = "Stream OFF";
+
+    embed.addFields({ name: "Current state", value: state});
     return embed;
 }

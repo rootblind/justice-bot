@@ -42,16 +42,16 @@ class PremiumKeyRepository {
         usesnumber: number,
         dedicateduser: Snowflake | null = null
     ): Promise<void> {
-        const now = Math.floor(Date.now() / 1000);
+        const now: Snowflake = String(Math.floor(Date.now() / 1000));
         const premiumKey: PremiumKey = {
             id: 0,
-            guild: BigInt(guildId),
+            guild: guildId,
             code: Buffer.from(code, "hex"),
-            generatedby: BigInt(generatedBy),
-            expiresat: BigInt(expiresAt),
-            createdat: BigInt(now),
+            generatedby: generatedBy,
+            expiresat: String(expiresAt),
+            createdat: now,
             usesnumber: usesnumber,
-            dedicateduser: dedicateduser ? BigInt(dedicateduser) : null
+            dedicateduser: dedicateduser ? dedicateduser : null
         }
 
         const cacheKey = `${guildId}:${code}`;
@@ -69,7 +69,7 @@ class PremiumKeyRepository {
      */
     async clearExpiredKeys() {
         const now = Math.floor(Date.now() / 1000);
-        premiumKeyCache.deleteByValue((v) => v.expiresat <= now && v.expiresat > 0)
+        premiumKeyCache.deleteByValue((v) => Number(v.expiresat) <= now && Number(v.expiresat) > 0)
         await database.query(
             `DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`,
             [now]

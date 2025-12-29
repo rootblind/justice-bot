@@ -181,6 +181,40 @@ class PremiumMembersRepository {
             [memberId, guildId, code, customrole, from_boosting]
         );
     }
+
+    /**
+     * 
+     * @param guildId Guild Snowflake
+     * @param memberId Member Snowflake
+     * @param customrole The value to be set as customrole for the member
+     */
+    async setMemberCustomRole(
+        guildId: Snowflake,
+        memberId: Snowflake,
+        customrole: Snowflake | null
+    ): Promise<void> {
+        await database.query(
+            `UPDATE premiummembers SET customrole=$3 
+                WHERE guild=$1
+                    AND member=$2`,
+            [guildId, memberId, customrole]
+        );
+    }
+
+    /**
+     * Based on role snowflake, nullify/remove a member's custom role
+     * @param guildId Guild Snowflake
+     * @param customrole Role Snowflake
+     */
+    async nullifyCustomRole(
+        guildId: Snowflake,
+        customrole: Snowflake
+    ) {
+        await database.query(
+            `UPDATE premiummembers SET customrole=NULL WHERE guild=$1 AND customrole=$2`,
+            [guildId, customrole]
+        );
+    }
  }
 
 const PremiumMembersRepo = new PremiumMembersRepository();

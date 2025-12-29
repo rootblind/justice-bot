@@ -18,9 +18,9 @@ class PunishLogsRepository {
         const cache = punishLogsCache.get(key);
         if(cache !== undefined) {
             if(order.toUpperCase() === "DESC") {
-                return cache.sort((a, b) => Number(b.timestamp - a.timestamp));
+                return cache.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
             } else {
-                return cache.sort((a, b) => Number(a.timestamp - b.timestamp));
+                return cache.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
             }
         }
 
@@ -57,12 +57,12 @@ class PunishLogsRepository {
         const key = `${guildId}:${targetId}`;
         const log: PunishLogs = {
             id: 0,
-            guild: BigInt(guildId),
-            target: BigInt(targetId),
-            moderator: BigInt(moderatorId),
+            guild: guildId,
+            target: targetId,
+            moderator: moderatorId,
             punishment_type: punishment_type,
             reason: reason,
-            timestamp: BigInt(timestamp)
+            timestamp: timestamp
         }
 
         const cache = punishLogsCache.get(key);
