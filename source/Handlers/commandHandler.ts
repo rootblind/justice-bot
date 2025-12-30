@@ -1,45 +1,63 @@
-import type { Client } from "discord.js";
+import { Guild, type Client } from "discord.js";
 import AsciiTable from "ascii-table";
-import fs from "graceful-fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { ChatCommand } from "../Interfaces/command.js";
+import { getFilesRecursive } from "../utility_modules/utility_methods.js";
+import GuildModulesRepo from "../Repositories/guildmodules.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const table = new AsciiTable("Commands");
+table.setHeading("Commands", "Status");
 
 export async function load_commands(client: Client) {
-    const table = new AsciiTable("Commands");
-    table.setHeading("Commands", "Status");
-
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
     const commandsPath = path.join(__dirname, "../Commands");
+    const files = getFilesRecursive(commandsPath);
 
-    const folders = fs.readdirSync(commandsPath);
+    for(const filePath of files) {
+        await load_command_file(client, filePath);
+    }
+}
 
-    const commandsArray = [];
+export async function load_command_file(client: Client, filePath: string) {
+    const command: ChatCommand = await import(filePath).then(m => m.default ?? m);
+    if(command.disabled) {
+        table.addRow(command.data.name, "Disabled");
+        return;
+    }
+    
+    if(command.scope === "global") command.group = "global";
 
-    for(const folder of folders) {
-        const folderPath = path.join(commandsPath, folder);
-        const files = fs.readdirSync(folderPath)
-            .filter((file: string) => file.endsWith(".js"));
+    table.addRow(command.data.name, "Enabled");
+    client.commands.set(command.data.name, command);
+}
 
-        for(const file of files) {
-            const filePath = path.join(folderPath, file);
-            const commandFile: ChatCommand = await import(filePath).then(m => m.default ?? m);
-            if(commandFile.disabled) {
-                table.addRow(file, "Disabled");
-                continue;
-            }
-            const proprieties = { folder, ...commandFile };
-            client.commands.set(commandFile.data.name, proprieties);
-            commandsArray.push(commandFile.data);
-            table.addRow(file, "Loaded");
-        }
-
+export async function registerGlobalCommands(client: Client) {
+    if (!client.application) {
+        throw new Error("Client application not found. Ensure the bot is logged in.");
     }
 
-    if(client.application) {
-        await client.application.commands.set(commandsArray);
-    }
+    const globalData = client.commands
+        .filter(cmd => cmd.scope === "global")
+        .map(cmd => cmd.data);
 
-    console.log(table.toString(), "\nLoaded commands");
+    try {
+        await client.application.commands.set(globalData);
+        console.log(table.toString(), `\nRegistered ${globalData.length} global commands.`);
+    } catch (error) {
+        console.error("Global commands registration failed:", error);
+    }
+}
+
+export async function sync_guild_commands(client: Client, guild: Guild) {
+    const disabledGroups = await GuildModulesRepo.getGuildDisabled(guild.id);
+    // scope === "guild" and group is not included in disabledGroups
+    const filteredCommands = client.commands.filter(
+        cmd => 
+            cmd.scope === "guild" && 
+            !disabledGroups.includes(cmd.group || "")
+    );
+
+    await guild.commands.set(filteredCommands.map(cmd => cmd.data));
 }

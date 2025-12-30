@@ -1,7 +1,7 @@
 import { BaseGuildTextChannel, EmbedBuilder, GuildBasedChannel, GuildMember, type Guild } from "discord.js";
 import { WelcomeScheme } from "../../Interfaces/database_types.js";
-import WelcomeSchemeRepo from "../../Repositories/welcomescheme";
-import { fetchGuildChannel } from "../../utility_modules/discord_helpers";
+import WelcomeSchemeRepo from "../../Repositories/welcomescheme.js";
+import { fetchGuildChannel } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 
 /**

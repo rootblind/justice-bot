@@ -6,19 +6,19 @@
 import { config } from 'dotenv';
 config();
 import {
-    GatewayIntentBits, Routes, Partials, Collection,
+    GatewayIntentBits, Partials, Collection,
 } from 'discord.js';
 
 import { __init_client__, setClient } from './client_provider.js';
 
-import { REST } from "@discordjs/rest";
+// import { REST } from "@discordjs/rest";
 
 import { get_env_var } from "./utility_modules/utility_methods.js";
 import { error_logger, errorLogHandle } from './utility_modules/error_logger.js';
 
 // Load modules (events and commands)
 import { load_events } from './Handlers/eventHandler.js';
-import { load_commands } from './Handlers/commandHandler.js';
+import { load_commands, registerGlobalCommands } from './Handlers/commandHandler.js';
 
 const intents = Object.values(GatewayIntentBits).filter(
     (v): v is number => typeof v === "number"
@@ -34,10 +34,10 @@ client.cooldowns = new Collection(); // collection for commands cooldowns: used 
 
 //env variables
 const TOKEN = get_env_var("BOT_TOKEN");
-const CLIENT_ID = get_env_var("CLIENT_ID");
-const GUILD_ID = get_env_var("HOME_SERVER_ID");
+// const CLIENT_ID = get_env_var("CLIENT_ID");
+// const GUILD_ID = get_env_var("HOME_SERVER_ID");
 
-const rest = new REST({ version: '10'}).setToken(TOKEN);
+// const rest = new REST({ version: '10'}).setToken(TOKEN);
 client.commands = new Collection();
 
 process.on('uncaughtException', (error) => {
@@ -60,17 +60,13 @@ process.on('unhandledRejection', (reason) => {
 
 
 async function main() {
-    const commands: unknown[] = [];
-    
     try {
         console.log("Refreshing slash commands");
-        await rest.put(Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID), {
-            body: commands
-        });
 
-        await client.login(TOKEN);
-        await load_events(client);
-        await load_commands(client);
+        await client.login(TOKEN); // keep login at top
+        await load_commands(client); // loading command sources comes above registering them
+        await registerGlobalCommands(client);
+        await load_events(client); // keep events to bottom
     } catch(error) {
         await errorLogHandle(error);
     }

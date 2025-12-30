@@ -21,7 +21,7 @@ import type {
 import { csv_append, read_json_async } from "../../utility_modules/utility_methods.js";
 import { embed_adjust_flags, embed_justicelogs_flagged_message } from "../../utility_modules/embed_builders.js";
 
-const config_sources: ConfigSourcesJSON = await read_json_async("./objects/config_sources.json");
+const config_sources: ConfigSourcesJSON = await read_json_async("./source/objects/config_sources.json");
 
 /**
  * A button component collector is attached to the flagged message log.

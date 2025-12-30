@@ -4,16 +4,19 @@ import type { PermissionResolvable, RESTPostAPIChatInputApplicationCommandsJSONB
 /**
  * The interface for slash commands
  */
-interface ChatCommand {
+export interface ChatCommand {
     data: RESTPostAPIChatInputApplicationCommandsJSONBody,
     execute: (interaction: ChatInputCommandInteraction, client: Client) => Promise<unknown>,
+    scope: "global" | "guild",
     cooldown: number,
     botPermissions: PermissionResolvable[],
     userPermissions: PermissionResolvable[],
     ownerOnly?: boolean,
     testOnly?: boolean,
-    premium?: boolean,
-    disabled?: boolean
+    disabled?: boolean,
+    group?: ChatCommandGroup
 }
 
-export type { ChatCommand };
+export type ChatCommandGroup = 
+    | "global"
+    | "premium"

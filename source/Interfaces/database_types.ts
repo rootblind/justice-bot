@@ -217,6 +217,11 @@ interface GuildMemberCustomRole {
 
 export type DbCacheKey = string;
 
+export interface GuildModules {
+    guild: Snowflake,
+    disabled_groups: string[]
+}
+
 export type {
     GuildTable,
     GuildChannelTable,

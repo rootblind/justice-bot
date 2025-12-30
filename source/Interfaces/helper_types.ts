@@ -48,7 +48,7 @@ interface CronTaskBuilder {
  * @param name The name of the task
  * @param task The function that will be executed
  * @param runCondition The condition for the task() method to be executed
- * @param fatal (Optional) Whether the bot should shutdown in the event that task runCondition throw errors
+ * @param fatal (Optional) Whether the bot should shutdown in the event that task or runCondition throw errors
  */
 interface OnReadyTaskBuilder {
   name: string,

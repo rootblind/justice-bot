@@ -1,5 +1,5 @@
 import type { Guild } from "discord.js";
-import type { Event } from "../../Interfaces/event";
+import type { Event } from "../../Interfaces/event.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 

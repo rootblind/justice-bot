@@ -1,7 +1,7 @@
 import type { Event } from "../../Interfaces/event.js";
 import { AuditLogEvent, type Guild, type GuildBan } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
-import { get_env_var } from "../../utility_modules/utility_methods";
+import { get_env_var } from "../../utility_modules/utility_methods.js";
 import BanListRepo from "../../Repositories/banlist.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_unban } from "../../utility_modules/embed_builders.js";

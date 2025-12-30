@@ -16,6 +16,8 @@ import { exec } from "child_process";
 import { errorLogHandle } from "./error_logger.js";
 import cron from "node-cron";
 import { remove_premium_from_member } from "../Systems/premium/premium_system.js";
+import GuildModulesRepo from "../Repositories/guildmodules.js";
+import { sync_guild_commands } from "../Handlers/commandHandler.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -110,4 +112,25 @@ export const backupDatabaseScheduler: OnReadyTaskBuilder = {
         const schedule = await BotConfigRepo.getBackupSchedule();
         return schedule !== null && cron.validate(schedule as string);
     }
+}
+
+/**
+ * Synchronizes guild-specific commands based on their enabled/disabled modules.
+ */
+export const loadGuildCommands: OnReadyTaskBuilder = {
+    name: "Sync Guild Commands",
+    task: async () => {
+        const client = getClient();
+        await GuildModulesRepo.getAll(); // initialize cache
+
+        for(const [ guildId, guild ] of client.guilds.cache) {
+            try {
+                await sync_guild_commands(client, guild);
+            } catch(error) {
+                console.error(`Failed to sync commands for ${guild.name} [${guildId}]` + error);
+            }
+        }
+    },
+    runCondition: async () => true,
+    fatal: true
 }

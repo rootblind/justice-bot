@@ -84,4 +84,6 @@ export async function on_ready_execute(tasks: OnReadyTaskBuilder[]) {
             }
         }
     }
+
+    console.log(table.toString(), "\nOn Ready Tasks executed");
 }

@@ -10,6 +10,7 @@ import PremiumKeyRepo from "../Repositories/premiumkey.js";
 import { LabelsClassification } from "../Interfaces/helper_types.js";
 import csvWriter from "csv-write-stream";
 import csvParse from "csv-parser";
+import path from "path";
 
 /**
  * 
@@ -302,4 +303,24 @@ export function csv_append(data: string, flags: LabelsClassification, path: stri
     });
 
     writer.end();
+}
+
+/**
+ * Recursively finds all .js files in the directory
+ * @param dir path to directory to look for sources
+ */
+export function getFilesRecursive(dir: string): string[] {
+    let results: string[] = [];
+    const list = fs.readdirSync(dir);
+    for(const file of list) {
+        const fullPath = path.join(dir, file);
+        const stat = fs.statSync(fullPath);
+        if(stat && stat.isDirectory()) {
+            results = results.concat(getFilesRecursive(fullPath));
+        } else if(file.endsWith(".js")) {
+            results.push(fullPath);
+        }
+    }
+
+    return results;
 }

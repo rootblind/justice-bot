@@ -52,7 +52,7 @@ const interactonCreate: Event = {
 
             if(command.disabled) return; // if somehow a disabled command is reached, do not execute it
 
-            if(command.premium) {
+            if(command.group === "premium") {
                 const isPremium = await PremiumMembersRepo.checkUserMembership(
                     interaction.guild.id,
                     interaction.member.id

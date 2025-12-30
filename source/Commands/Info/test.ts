@@ -14,7 +14,8 @@ const test: ChatCommand = {
 
     cooldown: 1,
     userPermissions: [],
-    botPermissions: []
+    botPermissions: [],
+    scope: "guild"
 }
 
 export default test;
