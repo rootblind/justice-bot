@@ -7,21 +7,23 @@
  * the bot handles buttons, select menus, modals, etc through Discord Collectors.
  */
 
-import { 
-    ChatInputCommandInteraction, 
-    Client, 
-    Collection, 
-    GuildMember, 
-    MessageFlags 
+import {
+    ChatInputCommandInteraction,
+    Client,
+    Collection,
+    Guild,
+    GuildMember,
+    MessageFlags
 } from "discord.js";
 
 import type { Event } from "../../Interfaces/event.js";
 import { fetch_bot_member, permission_names } from "../../utility_modules/discord_helpers.js";
-import  { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/utility_methods.js";
+import { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/utility_methods.js";
 import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
+import GuildPlanRepo from "../../Repositories/guildplan.js";
 
 export type interactionCreateHook = (interaction: ChatInputCommandInteraction, client: Client) => Promise<void>;
 const hooks: interactionCreateHook[] = [];
@@ -30,10 +32,10 @@ export function extend_interactionCreate(hook: interactionCreateHook) {
 }
 
 async function runHooks(interaction: ChatInputCommandInteraction, client: Client) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(interaction, client);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -42,89 +44,102 @@ async function runHooks(interaction: ChatInputCommandInteraction, client: Client
 const interactonCreate: Event = {
     name: "interactionCreate",
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
-        if(interaction.isChatInputCommand() && interaction.member instanceof GuildMember && interaction.guild) {
+        if (interaction.isChatInputCommand() && interaction.member instanceof GuildMember && interaction.guild) {
             const botMember = await fetch_bot_member(interaction.guild);
+            const guild = interaction.guild as Guild; 
 
-            if(!botMember) return; // do nothing if the member object of the client couldn't be fetched
+            if (!botMember) return; // do nothing if the member object of the client couldn't be fetched
 
             const command = client.commands.get(interaction.commandName);
-            if(!command) return;
+            if (!command) return;
 
-            if(command.disabled) return; // if somehow a disabled command is reached, do not execute it
+            if (command.metadata.disabled) return; // if somehow a disabled command is reached, do not execute it
 
-            if(command.group === "premium") {
+            if(command.metadata.premiumPlanOnly === true) {
+                const guildPlan = await GuildPlanRepo.getGuildPlan(guild.id);
+                if(guildPlan.plan === "free") {
+                    return await interaction.reply({
+                        embeds: [ 
+                            embed_error(
+                                "This command requires a premium plan or higher for this guild!", 
+                                "Command is not for free plan"
+                            )
+                        ]
+                    });
+                }
+            }
+
+            if (command.metadata.group === "premium") {
                 const isPremium = await PremiumMembersRepo.checkUserMembership(
                     interaction.guild.id,
                     interaction.member.id
                 );
 
-                if(!isPremium) {
+                if (!isPremium) {
                     return await interaction.reply({
-                        embeds: [ embed_error("This command is for premium members only!") ],
+                        embeds: [embed_error("This command is for premium members only!")],
                         flags: MessageFlags.Ephemeral
                     })
                 }
             }
 
-            if(command.ownerOnly === true && interaction.user.id !== get_env_var("OWNER")) {
+            if (command.metadata.ownerOnly === true && interaction.user.id !== get_env_var("OWNER")) {
                 return await interaction.reply({
-                    embeds: [ embed_error("This command requires Owner privileges!") ],
+                    embeds: [embed_error("This command requires Owner privileges!")],
                     flags: MessageFlags.Ephemeral
                 });
             }
 
-            if(command.userPermissions.length) {
-                for(const permission of command.userPermissions) {
-                    if(interaction.member?.permissions.has(permission)) {
+            if (command.metadata.userPermissions.length) {
+                for (const permission of command.metadata.userPermissions) {
+                    if (interaction.member?.permissions.has(permission)) {
                         continue;
                     }
 
                     return await interaction.reply({
-                        embeds: [ embed_error(
+                        embeds: [embed_error(
                             `You have lack permission \`${permission_names(permission)[0]}\` to use /${command.data.name}`
-                        ) ],
+                        )],
                         flags: MessageFlags.Ephemeral
                     });
                 }
             }
 
-            if(command.botPermissions.length) {
-                for(const permission of command.botPermissions) {
-                    if(botMember.permissions.has(permission)) {
+            if (command.metadata.botPermissions.length) {
+                for (const permission of command.metadata.botPermissions) {
+                    if (botMember.permissions.has(permission)) {
                         continue;
                     }
+                    return await interaction.reply({
+                        embeds: [
+                            embed_error(`I lack the permission \`${permission_names(permission)[0]}\` to do that!`)
+                        ],
+                        flags: MessageFlags.Ephemeral
+                    });
 
-                    if(permission_names(permission)[0] !== "SendMessages") {
-                        return await interaction.reply({
-                            embeds: [
-                                embed_error(`I lack the permission \`${permission_names(permission)[0]}\` to do that!`)
-                            ],
-                            flags: MessageFlags.Ephemeral
-                        });
-                    }
                 }
             }
 
-            try{
+            try {
                 const botAppData = await BotConfigRepo.getConfig();
-                if(botAppData) {
-                    if(botAppData.application_scope === "test" && interaction.user.id !== get_env_var("OWNER")) {
+                if (botAppData) {
+                    if (botAppData.application_scope === "test" && interaction.user.id !== get_env_var("OWNER")) {
                         return await interaction.reply({
-                            embeds: [ embed_error("Application scope is set to testing, maintenance might be undergoing.") ],
+                            embeds: [embed_error("Application scope is set to testing, maintenance might be undergoing.")],
                             flags: MessageFlags.Ephemeral
                         });
                     }
                 } else {
                     throw new Error("Missing bot configuration from database!");
                 }
-                
-            } catch(error) {
+
+            } catch (error) {
                 await errorLogHandle(error);
 
                 return;
             }
 
-            if(command.testOnly && interaction.guild.id !== get_env_var("HOME_SERVER_ID")) {
+            if (command.metadata.testOnly && interaction.guild.id !== get_env_var("HOME_SERVER_ID")) {
                 return await interaction.reply({
                     embeds: [embed_error("This command cannot be ran outside the Test Server!")],
                     flags: MessageFlags.Ephemeral
@@ -134,17 +149,17 @@ const interactonCreate: Event = {
             // user based cooldown implementation https://discordjs.guide/additional-features/cooldowns
             const { cooldowns } = interaction.client; // all cooldowns
 
-            if(!cooldowns.has(command.data.name)) {
+            if (!cooldowns.has(command.data.name)) {
                 cooldowns.set(command.data.name, new Collection());
             }
 
             const timestamps = cooldowns.get(command.data.name); // the cooldowns of the specific command
-            if(!timestamps) return;
+            if (!timestamps) return;
 
             // check if the user is in cooldown for the specific command
-            if(timestamps.has(interaction.user.id)) {
-                const expires = has_cooldown(interaction.user.id, timestamps, command.cooldown)
-                if(expires) {
+            if (timestamps.has(interaction.user.id)) {
+                const expires = has_cooldown(interaction.user.id, timestamps, command.metadata.cooldown)
+                if (expires) {
                     return await interaction.reply({
                         content: `Please wait, you are on cooldown for \`${command.data.name}\`.
                         You can use it again <t:${expires}:R>`,
@@ -153,24 +168,24 @@ const interactonCreate: Event = {
                 }
             }
 
-            if(command.cooldown) set_cooldown(interaction.user.id, timestamps, command.cooldown); // set a cooldown only if the command has one
-
-            if(!command) {
+            // set a cooldown only if the command has one
+            if (command.metadata.cooldown) set_cooldown(interaction.user.id, timestamps, command.metadata.cooldown);
+            if (!command) {
                 return await interaction.reply({
-                    embeds: [ embed_error("This is not an operable command", "Invalid command") ]
+                    embeds: [embed_error("This is not an operable command", "Invalid command")]
                 });
             }
-            
+
             await runHooks(interaction, client);
             try {
                 await command.execute(interaction, client);
-            } catch(error) {
-                if(error instanceof Error) {
+            } catch (error) {
+                if (error instanceof Error) {
                     await errorLogHandle(error, `Uncaught error inside ${command.data.name} command`);
 
-                    if(interaction.replied || interaction.deferred) {
+                    if (interaction.replied || interaction.deferred) {
                         await interaction.editReply({
-                            embeds: [ embed_error(`Running ${command.data.name} threw and unexpected error!`) ]
+                            embeds: [embed_error(`Running ${command.data.name} threw and unexpected error!`)]
                         });
                     }
                 }

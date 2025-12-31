@@ -14,8 +14,7 @@ export default async function PremiumKey(): Promise<Result<PremiumKey>> {
               createdat BIGINT NOT NULL,
               expiresat BIGINT NOT NULL,
               usesnumber INT NOT NULL,
-              dedicateduser BIGINT,
-              CONSTRAINT unique_guild_dedicateduser UNIQUE (guild, dedicateduser)
+              dedicateduser BIGINT
             )`
         );
         

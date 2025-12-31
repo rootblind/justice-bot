@@ -1,36 +1,36 @@
 // Interfaces and types to respect the database tables
 
-import { Snowflake } from "discord.js"
+import type { Snowflake } from "discord.js"
 
-interface GuildTable {
+export interface GuildTable {
     id: number,
     guild: Snowflake
 }
 
-interface GuildChannelTable extends GuildTable{
+export interface GuildChannelTable extends GuildTable{
     channel: Snowflake
 }
 
-interface GuildRolePair {
+export interface GuildRolePair {
     guild: Snowflake,
     role: Snowflake
 }
 
-type GuildMessageTable = 
+export type GuildMessageTable = 
     | (GuildChannelTable & { messageid: Snowflake })
     | (GuildChannelTable & { message: Snowflake })
 
-type GuildChannelWithType =
+export type GuildChannelWithType =
     | (GuildChannelTable & { channeltype: string })
     | (GuildChannelTable & { type: string })
     | (GuildChannelTable & { eventtype: string })
 
-interface ColumnValuePair {
+export interface ColumnValuePair {
     column: string,
     value: unknown
 }
 
-interface WelcomeScheme {
+export interface WelcomeScheme {
   id: Snowflake,
   guild: string | null,
   active: boolean,
@@ -42,26 +42,26 @@ interface WelcomeScheme {
   imagelink: string | null
 }
 
-interface PanelScheme extends GuildTable {
+export interface PanelScheme extends GuildTable {
     panelname: string,
     roleid: Snowflake,
     description: string
 }
 
-interface PanelHeaders extends GuildTable {
+export interface PanelHeaders extends GuildTable {
     panelname: string
 }
 
-type PanelMessages = GuildMessageTable & { panelname: string }
+export type PanelMessages = GuildMessageTable & { panelname: string }
 
-type ReactionRoles = GuildMessageTable & { roleid: Snowflake, emoji: string }
+export type ReactionRoles = GuildMessageTable & { roleid: Snowflake, emoji: string }
 
-interface ServerRoles extends GuildTable {
+export interface ServerRoles extends GuildTable {
     roletype: string,
     role: Snowflake
 }
 
-interface PremiumKey extends GuildTable {
+export interface PremiumKey extends GuildTable {
     code: Buffer,
     generatedby: Snowflake,
     createdat: Snowflake,
@@ -70,27 +70,27 @@ interface PremiumKey extends GuildTable {
     dedicateduser: Snowflake | null,
 }
 
-interface PremiumMembers extends GuildTable {
+export interface PremiumMembers extends GuildTable {
     member: Snowflake,
     code: Buffer,
     customrole: Snowflake | null,
     from_boosting: boolean
 }
 
-interface BotConfig {
+export interface BotConfig {
     id: number,
     application_scope: string,
     backup_db_schedule: string | null
 }
 
-interface BanList extends GuildTable {
+export interface BanList extends GuildTable {
     target: Snowflake,
     moderator: Snowflake,
     expires: Snowflake | number,
     reason: string
 }
 
-interface PunishLogs extends GuildTable {
+export interface PunishLogs extends GuildTable {
     target: Snowflake,
     moderator: Snowflake,
     punishment_type: number,
@@ -98,7 +98,7 @@ interface PunishLogs extends GuildTable {
     timestamp: Snowflake
 }
 
-interface AutoPunishRule extends GuildTable {
+export interface AutoPunishRule extends GuildTable {
     warncount: number,
     duration: Snowflake,
     punishment_type: number,
@@ -106,13 +106,13 @@ interface AutoPunishRule extends GuildTable {
 }
 
 
-interface RankRole extends GuildTable {
+export interface RankRole extends GuildTable {
     rankid: number,
     rankq: number,
     role: Snowflake
 }
 
-interface PartyBaseScheme extends GuildTable {
+export interface PartyBaseScheme extends GuildTable {
     owner: Snowflake,
     ign: string,
     region: string,
@@ -126,64 +126,64 @@ interface PartyBaseScheme extends GuildTable {
     hexcolor: number | null, 
 }
 
-interface PartyHistory extends PartyBaseScheme {
+export interface PartyHistory extends PartyBaseScheme {
     timestamp: Snowflake
 }
 
-interface PartyDraft extends PartyBaseScheme {
+export interface PartyDraft extends PartyBaseScheme {
     slot: number,
     draftname: string,
 }
 
-interface PartyRoom extends PartyHistory {  
+export interface PartyRoom extends PartyHistory {  
     channel: Snowflake,
     message: Snowflake,
 }
 
-interface LfgBlock extends GuildTable {
+export interface LfgBlock extends GuildTable {
     blocker: Snowflake,
     blocked: Snowflake
 }
 
-interface AutoVoiceManager extends GuildTable {
+export interface AutoVoiceManager extends GuildTable {
     message: Snowflake
 }
 
-interface AutoVoiceRoom extends GuildChannelTable {
+export interface AutoVoiceRoom extends GuildChannelTable {
     owner: Snowflake,
     timestamp: Snowflake,
     order_room: number
 }
 
-interface AutoVoiceCd extends GuildTable {
+export interface AutoVoiceCd extends GuildTable {
     member: Snowflake,
     expires: Snowflake
 }
 
-type TicketManager = GuildMessageTable & { category: Snowflake }
+export type TicketManager = GuildMessageTable & { category: Snowflake }
 
-interface TicketSubject extends GuildTable {
+export interface TicketSubject extends GuildTable {
     subject: string,
     description: string
 }
 
-interface StaffRoles extends ServerRoles {
+export interface StaffRoles extends ServerRoles {
     position: number
 }
 
-interface StaffStrike extends GuildTable {
+export interface StaffStrike extends GuildTable {
     striked: Snowflake,
     striker: Snowflake,
     reason: string,
     expires: Snowflake
 }
 
-interface StrikeRule extends GuildTable {
+export interface StrikeRule extends GuildTable {
     strikecount: number,
     punishment: string
 }
 
-interface CustomReact extends GuildTable {
+export interface CustomReact extends GuildTable {
     keyword: string,
     reply: string
 }
@@ -209,7 +209,7 @@ export type EventGuildLogsString =
     | "lfg-logs"
     | "ticket-support"
 
-interface GuildMemberCustomRole {
+export interface GuildMemberCustomRole {
     guild: Snowflake,
     member: Snowflake,
     customrole: Snowflake | null
@@ -222,40 +222,9 @@ export interface GuildModules {
     disabled_groups: string[]
 }
 
-export type {
-    GuildTable,
-    GuildChannelTable,
-    GuildMessageTable,
-    GuildChannelWithType,
-    GuildRolePair,
-    GuildMemberCustomRole,
-    ColumnValuePair,
-
-    // database tables
-    WelcomeScheme,
-    PanelScheme,
-    PanelHeaders,
-    PanelMessages,
-    ReactionRoles,
-    ServerRoles,
-    PremiumKey,
-    PremiumMembers,
-    BotConfig,
-    BanList,
-    PunishLogs,
-    AutoPunishRule,
-    RankRole,
-    PartyDraft,
-    PartyRoom,
-    PartyHistory,
-    LfgBlock,
-    AutoVoiceManager,
-    AutoVoiceRoom,
-    AutoVoiceCd,
-    TicketManager,
-    TicketSubject,
-    StaffRoles,
-    StaffStrike,
-    StrikeRule,
-    CustomReact
+export interface GuildPlanTable {
+    guild: Snowflake,
+    plan: "free" | "premium",
+    planSince: string,
+    expiresAt: string | null
 }

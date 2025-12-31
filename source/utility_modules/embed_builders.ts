@@ -13,10 +13,14 @@ import type {
     Message,
     GuildTextBasedChannel,
     VoiceState,
-    VoiceChannel
+    VoiceChannel,
+    RESTPostAPIChatInputApplicationCommandsJSONBody,
+    APIApplicationCommandOption
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
+import { ChatCommandMetadata } from "../Interfaces/command.js";
+import { isSubcommand, isSubcommandGroup, permission_names, renderArgs } from "./discord_helpers.js";
 
 /**
  * Embed for errors while a response is awaited
@@ -29,6 +33,13 @@ export function embed_error(description: string, title?: string): EmbedBuilder {
         .setColor("Red")
         .setTitle(title || "Error")
         .setDescription(description);
+}
+
+export function embed_message(color: ColorResolvable, description: string, title?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(color).setDescription(description);
+    if(title) embed.setTitle(title);
+
+    return embed;
 }
 
 /**
@@ -822,8 +833,8 @@ export function embed_message_update(
 }
 
 /**
- * 
- * @param member Member Snowflake
+ * Voice channel state represents when a member joins, leaves or moves from and to a voice channel
+ * @param member Member Object
  * @param oldState Old VoiceState
  * @param newState New VoiceState
  * @param color The embed color
@@ -883,6 +894,16 @@ export function embed_member_voice_channel_state(
     return embed;
 }
 
+/**
+ * Member voice state represents the changes to the member in a voice channel that are related to the voice channel 
+ * such as server muting or unmuting
+ * @param member Member Object
+ * @param channel The voice channel where the member is at
+ * @param oldState Previous VoiceState
+ * @param newState Current VoiceState
+ * @param color The embed color
+ * @returns Embed
+ */
 export function embed_member_voice_state(
     member: GuildMember,
     channel: VoiceChannel,
@@ -924,3 +945,167 @@ export function embed_member_voice_state(
     embed.addFields({ name: "Current state", value: state});
     return embed;
 }
+
+/**
+ * Converts data and metadata into ChatCommand manual
+ * @param data The discord API Application Command JSON Body
+ * @param metadata The metadata of ChatCommand
+ * @param color The embed color
+ * @returns Manual pages as embeds
+ */
+export function embed_manual_command_pages(
+    data: RESTPostAPIChatInputApplicationCommandsJSONBody,
+    metadata: ChatCommandMetadata,
+    color: ColorResolvable = "Purple"
+): EmbedBuilder[] {
+
+    const embeds: EmbedBuilder[] = [];
+
+    let embed = new EmbedBuilder()
+        .setTitle(`${data.name} manual page`)
+        .setColor(color)
+
+    let embedDesc = data.description + "\n";
+    
+    if(metadata.group) {
+        embedDesc += `**Group**: ${metadata.group}\n`;
+    }
+
+    if(metadata.category) {
+        embedDesc += `**Category**: ${metadata.category}\n`;
+    }
+
+    if(metadata.cooldown) {
+        embedDesc += `**Cooldown**: ${metadata.cooldown} seconds\n`;
+    }
+
+    if(metadata.ownerOnly) {
+        embed.setFooter({text: "**BOT OWNER COMMAND**"});
+    }
+
+    embed.setDescription(embedDesc);
+
+    let fieldCount = 0;
+
+    if(metadata.botPermissions.length || metadata.userPermissions.length) {
+        let permissionsRequired = "";
+
+        permissionsRequired += metadata.botPermissions.length ? 
+            `**Bot**: ${permission_names(metadata.botPermissions).join(", ")}\n` : "";
+        permissionsRequired += metadata.userPermissions.length ? 
+            `**User**: ${permission_names(metadata.userPermissions).join(", ")}\n` : "";
+
+        embed.addFields({
+            name: "Permissions required",
+            value: `${permissionsRequired}`
+        });
+
+        ++fieldCount;
+    }
+
+
+    const pushEmbed = (): void => {
+        embeds.push(embed);
+        embed = new EmbedBuilder()
+            .setColor(color);
+        fieldCount = 0;
+    };
+
+    const addField = (name: string, value: string): void => {
+        const chunks = value.match(/.{1,1024}/gs) ?? [value];
+
+        for (const chunk of chunks) {
+            if (fieldCount >= 25) pushEmbed();
+            embed.addFields({ name, value: chunk });
+            fieldCount++;
+        }
+    };
+
+    const options = data.options as readonly APIApplicationCommandOption[];
+
+
+    const hasGroups = options.some(isSubcommandGroup);
+    const hasSubcommands = options.some(isSubcommand);
+
+    if (!hasGroups && !hasSubcommands) {
+        addField(
+            "Usage",
+            `**/${data.name}** ${renderArgs(options)}`
+        );
+        embeds.push(embed);
+        return embeds;
+    }
+
+    for (const option of options) {
+
+        if (isSubcommand(option)) {
+            addField(
+                "Subcommand",
+                `**${option.name}** ${renderArgs(option.options)}\n${option.description}`
+            );
+        }
+
+        if (isSubcommandGroup(option)) {
+            addField(
+                "Subcommand group",
+                `**${option.name}** — ${option.description}`
+            );
+
+            if(option.options) {
+                for (const sub of option.options) {
+                    addField(
+                        "Subcommand",
+                        `**${option.name} ${sub.name}** ${renderArgs(sub.options)}\n${sub.description}`
+                    );
+                }
+            }
+        }
+    }
+
+    embeds.push(embed);
+    return embeds;
+}
+
+
+/*
+export function embed_manual_command_page(
+    command: ChatCommand,
+    color: ColorResolvable = "Purple"
+): EmbedBuilder {
+    const data = command.data;
+    const metadata = command.metadata;
+    const manual = command.metadata.manual;
+
+    
+
+    if(manual?.usage) {
+        let fieldName = "";
+        let fieldValue = "";
+        // since commands with subcommands have all their arguments under subcommands
+        // if the first usage element is has a subcommand object, then all usages are using subcommands
+        if(manual.usage[0]?.subcommand) {
+            // subcommands
+            fieldName = "Subcommands";
+            for(const u of manual.usage) { // for each subcommand
+                if(u.subcommand) {
+                    fieldValue += `**${u.subcommand.name}** `; // add the name
+                    fieldValue += u.args?.map(arg => arg.required ? `<${arg.name}>` : `[${arg.name}]`).join(" ") + "\n"; // followed by the arguments between the required or optional brackets
+                    fieldValue += u.subcommand.description + "\n"; // adding subcommand description under its usage
+                }
+            }
+        } else if(!manual.usage[0]?.subcommand && manual.usage[0]) {
+            // if no subcommand, but there is usage
+            // if there are no subcommands, then usage has a single element
+            fieldName = "Command";
+            fieldValue = `**${data.name}** `;
+            fieldValue += manual.usage[0].args?.map(arg => arg.required ? `<${arg.name}>` : `[${arg.name}]`).join(" ") + "\n";
+        }
+
+        embed.addFields({
+            name: fieldName,
+            value: fieldValue
+        });
+    }
+
+    return embed;
+} */

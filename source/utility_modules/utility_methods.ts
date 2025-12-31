@@ -2,7 +2,7 @@
  * General purpose methods as a toolkit
  */
 
-import type { Collection, Snowflake } from "discord.js";
+import type { Client, Collection, Snowflake } from "discord.js";
 import fs from "graceful-fs";
 import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
@@ -11,6 +11,8 @@ import { LabelsClassification } from "../Interfaces/helper_types.js";
 import csvWriter from "csv-write-stream";
 import csvParse from "csv-parser";
 import path from "path";
+import GuildModulesRepo from "../Repositories/guildmodules.js";
+import { ChatCommandGroup } from "../Interfaces/command.js";
 
 /**
  * 
@@ -273,7 +275,7 @@ export async function generate_unique_code(
 export async function csv_read(path: string) {
     const data: unknown[] = [];
     await fs.createReadStream(path)
-        .pipe(csvParse({separator: ","}))
+        .pipe(csvParse({ separator: "," }))
         .on("data", (row: unknown) => {
             data.push(row);
         })
@@ -290,8 +292,8 @@ export async function csv_read(path: string) {
  * @param path The path to flag_data.csv
  */
 export function csv_append(data: string, flags: LabelsClassification, path: string, send_headers: boolean = false) {
-    const writer = csvWriter({sendHeaders: send_headers});
-    const stream = fs.createWriteStream(path, {flags: "a"});
+    const writer = csvWriter({ sendHeaders: send_headers });
+    const stream = fs.createWriteStream(path, { flags: "a" });
     writer.pipe(stream);
     writer.write({
         Message: data,
@@ -312,15 +314,33 @@ export function csv_append(data: string, flags: LabelsClassification, path: stri
 export function getFilesRecursive(dir: string): string[] {
     let results: string[] = [];
     const list = fs.readdirSync(dir);
-    for(const file of list) {
+    for (const file of list) {
         const fullPath = path.join(dir, file);
         const stat = fs.statSync(fullPath);
-        if(stat && stat.isDirectory()) {
+        if (stat && stat.isDirectory()) {
             results = results.concat(getFilesRecursive(fullPath));
-        } else if(file.endsWith(".js")) {
+        } else if (file.endsWith(".js")) {
             results.push(fullPath);
         }
     }
 
     return results;
+}
+
+/**
+ * Return all command groups that are not disabled by the guild
+ * @param guildId Guild Snowflake
+ * @param client Client object
+ * @returns 
+ */
+export async function getGuildCommandGroups(guildId: Snowflake, client: Client): Promise<ChatCommandGroup[]> {
+    const disabled_groups = await GuildModulesRepo.getGuildDisabled(guildId);
+    // get all unique groups from all commands
+    const groups = Array.from(
+        new Set(client.commands.map(
+            (value) => value.metadata.group ?? "global")
+        )
+    ).filter(group => !disabled_groups.includes(group)); // keep groups that are not excluded from the guild
+
+    return groups;
 }

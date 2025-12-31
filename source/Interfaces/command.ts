@@ -6,17 +6,28 @@ import type { PermissionResolvable, RESTPostAPIChatInputApplicationCommandsJSONB
  */
 export interface ChatCommand {
     data: RESTPostAPIChatInputApplicationCommandsJSONBody,
+    metadata: ChatCommandMetadata,
     execute: (interaction: ChatInputCommandInteraction, client: Client) => Promise<unknown>,
-    scope: "global" | "guild",
-    cooldown: number,
-    botPermissions: PermissionResolvable[],
-    userPermissions: PermissionResolvable[],
-    ownerOnly?: boolean,
-    testOnly?: boolean,
-    disabled?: boolean,
-    group?: ChatCommandGroup
 }
 
-export type ChatCommandGroup = 
+export interface ChatCommandMetadata {
+    botPermissions: PermissionResolvable[],
+    userPermissions: PermissionResolvable[],
+    cooldown: number,
+    scope: "global" | "guild",
+    group?: ChatCommandGroup,
+    category?: ChatCommandCategory,
+    ownerOnly?: boolean,
+    testOnly?: boolean,
+    premiumPlanOnly?: boolean
+    disabled?: boolean
+}
+
+export type ChatCommandGroup =
     | "global"
     | "premium"
+
+export type ChatCommandCategory = 
+    | "Info"
+    | "Administrator"
+    | "Owner"

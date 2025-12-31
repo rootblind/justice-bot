@@ -3,6 +3,11 @@
  */
 
 import {
+    APIApplicationCommandBasicOption,
+    APIApplicationCommandOption,
+    APIApplicationCommandSubcommandGroupOption,
+    APIApplicationCommandSubcommandOption,
+    ApplicationCommandOptionType,
     CacheType,
     Client, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
@@ -452,4 +457,54 @@ export async function message_collector<T extends MessageComponentType> (
     });
 
     return collector;
+}
+
+export function isSubcommand(
+    option: unknown
+): option is APIApplicationCommandSubcommandOption {
+    return (
+        typeof option === "object" &&
+        option !== null &&
+        "type" in option &&
+        (option as { type: number }).type === ApplicationCommandOptionType.Subcommand
+    );
+}
+
+export function isSubcommandGroup(
+    option: unknown
+): option is APIApplicationCommandSubcommandGroupOption {
+    return (
+        typeof option === "object" &&
+        option !== null &&
+        "type" in option &&
+        (option as { type: number }).type === ApplicationCommandOptionType.SubcommandGroup
+    );
+}
+
+export function isArgument(
+    option: unknown
+): option is APIApplicationCommandBasicOption {
+    return (
+        typeof option === "object" &&
+        option !== null &&
+        "type" in option &&
+        (option as { type: number }).type !== ApplicationCommandOptionType.Subcommand &&
+        (option as { type: number }).type !== ApplicationCommandOptionType.SubcommandGroup
+    );
+}
+
+/**
+ * 
+ * @param options Command options
+ * @returns The option between brackets depending if it's required or not
+ */
+export function renderArgs(
+    options?: readonly APIApplicationCommandOption[]
+): string {
+    if (!options?.length) return "";
+
+    return options
+        .filter(isArgument)
+        .map(o => (o.required ? `<${o.name}>` : `[${o.name}]`))
+        .join(" ");
 }

@@ -15,13 +15,13 @@ import ServerRolesRepo from "../../Repositories/serverroles.js";
 import type {
     ClassifierResponse,
     CollectorFilterCustom,
-    ConfigSourcesJSON,
     LabelsClassification
 } from "../../Interfaces/helper_types.js";
-import { csv_append, read_json_async } from "../../utility_modules/utility_methods.js";
+import { csv_append } from "../../utility_modules/utility_methods.js";
 import { embed_adjust_flags, embed_justicelogs_flagged_message } from "../../utility_modules/embed_builders.js";
+import { LocalConfigSources, local_config } from "../../objects/local_config.js";
 
-const config_sources: ConfigSourcesJSON = await read_json_async("./source/objects/config_sources.json");
+const local_config_sources: LocalConfigSources = local_config.sources;
 
 /**
  * A button component collector is attached to the flagged message log.
@@ -84,7 +84,7 @@ export async function attach_flagged_message_collector(message: Message, respons
                     await buttonInteraction.editReply({
                         content: `Confirmed labels: ${response.labels.join(", ")}\nMessage ID: ${message.id}`
                     });
-                    if(config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                    if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                     break;
                 case "adjust": {
                     const tags = ["Aggro", "Violence", "Sexual", "Hateful"];
@@ -135,7 +135,7 @@ export async function attach_flagged_message_collector(message: Message, respons
                                 await selectFlagsReply.delete();
                             } catch {/* Do nothing */}
 
-                            if(config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                            if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                             buttonCollector.stop();
                         }
                     );
@@ -146,7 +146,7 @@ export async function attach_flagged_message_collector(message: Message, respons
                     await buttonInteraction.editReply({
                         content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${message.id}`
                     });
-                    if(config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                    if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                     buttonCollector.stop();
                 break;
             }

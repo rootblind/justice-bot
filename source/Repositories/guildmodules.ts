@@ -3,7 +3,7 @@ import database from "../Config/database.js";
 import { SelfCache } from "../Config/SelfCache.js";
 import { GuildModules } from "../Interfaces/database_types";
 
-const guildModulesCache = new SelfCache<string, string[]>(60 * 60_000);
+const guildModulesCache = new SelfCache<string, string[]>();
 
 class GuildModulesRepository {
     /**

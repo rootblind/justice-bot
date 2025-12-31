@@ -87,18 +87,6 @@ export type CacheEntry<T> = {
   expiresAt: number
 }
 
-interface ConfigSourcesJSON {
-  system_directories: string[],
-  cron_tasks: string,
-  on_ready_tasks: string,
-  presence_config: string,
-  default_presence_presets: string,
-  custom_presence_presets: string,
-  flag_data: string,
-  error_dumps: string,
-  event_hooks: string
-}
-
 interface AutomodResponse {
     labels: string[],
     text: string
@@ -114,6 +102,5 @@ export type {
     TriggerWordsObject,
     LabelsClassification,
     ClassifierResponse,
-    ConfigSourcesJSON,
     AutomodResponse
 };
