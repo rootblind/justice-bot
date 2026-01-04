@@ -41,7 +41,8 @@ export const toxic_patterns: LocalConfigToxicPatterns = {
     "\\bmuie\\b",
     "\\besti\\s+muist\\b",
     "\\bsuck\\s+my\\s+dick\\b",
-    "\\bfuck\\s+you\\b"
+    "\\bfuck\\s+you\\b",
+    "\\bpizd(a|e|le|lor)\\b"
   ],
   Hateful: [
     "\\besti\\s+handicapat\\b",

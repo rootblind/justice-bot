@@ -1,12 +1,12 @@
 export const GUILD_PLANS = {
-  FREE: {
-    maxSlots: {
-      autovoiceManagers: 2
+  free: {
+    autoVoiceSystem: {
+      maxSlots: 2
     }
   },
-  PREMIUM: {
-    maxSlots: {
-      autovoiceManagers: 4
+  premium: {
+    autoVoiceSystem: {
+      maxSlots: 4
     }
   }
 } as const;

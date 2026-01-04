@@ -5,6 +5,7 @@ import { embed_channel_event } from "../../utility_modules/embed_builders.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import type { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 
 export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
 const hooks: channelDeleteHook[] = [];
@@ -36,6 +37,8 @@ const channelDelete: Event = {
         for(const table of tablesToBeCleaned) {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
+        // clean system if any channel is deleted from it
+        await AutoVoiceSystemRepo.onChannelDelete(guild.id, channel.id);
 
         await runHooks(channel);
         // logging

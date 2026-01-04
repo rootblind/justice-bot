@@ -11,7 +11,8 @@ export const local_config: LocalConfig = {
         custom_presence_presets: "./source/objects/custom-presence-presets.json",
         flag_data: "./source/flag_data.csv",
         error_dumps: "./error_dumps",
-        event_hooks: "./event_hooks.js"
+        event_hooks: "./event_hooks.js",
+        attach_collectors: "./attach_collectors.js"
     },
 
     rules: {
@@ -38,7 +39,8 @@ export interface LocalConfigSources {
   custom_presence_presets: string,
   flag_data: string,
   error_dumps: string,
-  event_hooks: string
+  event_hooks: string,
+  attach_collectors: string
 }
 export interface LocalConfigPresenceState {
     status: "enable" | "disable",

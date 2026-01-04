@@ -26,6 +26,7 @@ export interface ChatCommandMetadata {
 export type ChatCommandGroup =
     | "global"
     | "premium"
+    | "autovoice"
 
 export type ChatCommandCategory = 
     | "Info"

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { curate_text } from "./curate_data.js";
+import { curate_text } from "../../utility_modules/curate_data.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { AutomodResponse } from "../../Interfaces/helper_types.js";
 

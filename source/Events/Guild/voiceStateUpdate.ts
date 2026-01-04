@@ -3,8 +3,8 @@ import { VoiceChannel, VoiceState } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_member_voice_channel_state, embed_member_voice_state } from "../../utility_modules/embed_builders.js";
-//import { PartyRoom } from "../../Interfaces/database_types.js";
-//import PartyRoomRepo from "../../Repositories/partyroom.js";
+import { create_autovoice_room, delete_autovoice_room } from "../../Systems/autovoice/autovoice_system.js";
+
 
 export type voiceStatusUpdateHook = (oldState: VoiceState, newState: VoiceState) => Promise<void>;
 const hooks: voiceStatusUpdateHook[] = [];
@@ -69,7 +69,17 @@ const voiceStateUpdate: Event = {
         */
 
         // manage autovoice channels
-        // TODO: implement after autovoice system is rebuilt
+        if(newState.channel instanceof VoiceChannel) {
+            // if member moves or joins a channel, call create_autovoice which does the necessary checks
+            try {
+                await create_autovoice_room(newState.channel, member);
+            } catch(error) {
+                await errorLogHandle(error);
+            }
+        }
+        if(oldState.channel instanceof VoiceChannel && oldState.channel.members.size === 0) {
+            await delete_autovoice_room(oldState.channel);
+        }
     }
 }
 

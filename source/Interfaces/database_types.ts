@@ -3,7 +3,7 @@
 import type { Snowflake } from "discord.js"
 
 export interface GuildTable {
-    id: number,
+    id?: number,
     guild: Snowflake
 }
 
@@ -140,12 +140,15 @@ export interface PartyRoom extends PartyHistory {
     message: Snowflake,
 }
 
-export interface LfgBlock extends GuildTable {
+export interface BlockSystem extends GuildTable {
     blocker: Snowflake,
     blocked: Snowflake
 }
 
-export interface AutoVoiceManager extends GuildTable {
+export interface AutoVoiceSystem extends GuildTable {
+    category: Snowflake,
+    managerchannel: Snowflake,
+    autovoice: Snowflake,
     message: Snowflake
 }
 
@@ -153,11 +156,6 @@ export interface AutoVoiceRoom extends GuildChannelTable {
     owner: Snowflake,
     timestamp: Snowflake,
     order_room: number
-}
-
-export interface AutoVoiceCd extends GuildTable {
-    member: Snowflake,
-    expires: Snowflake
 }
 
 export type TicketManager = GuildMessageTable & { category: Snowflake }

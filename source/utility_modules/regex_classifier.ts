@@ -1,20 +1,22 @@
 import { curate_text } from "./curate_data.js";
 
+export function escapeRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 /**
  * Generate a regex pattern for the word
  * @param word string
  */
 export function regexGen(word: string) {
-    return `(${word})`;
+    return `\\b${escapeRegex(word)}\\b`;
 }
 
-/**
- * Generate regex patterns for each word and join them with the `|` (OR) operator
- * @param triggerWords List of strings that will trigger the regex classifier
- */
-export function triggerPatterns(triggerWords: string[]) {
-    const patterns = triggerWords.map(word => regexGen(word));
-    return patterns.join("|");
+export function buildTriggerRegex(triggerWords: string[]): RegExp {
+    const pattern = triggerWords
+        .join("|");
+
+    return new RegExp(pattern, "i");
 }
 
 /**
@@ -30,10 +32,9 @@ export function regexClassifier(message: string, triggerWords: string[]): string
     const allowedPattern = /[^a-zA-Z -]/g;
 
     const curated_message = curate_text(message, [emojiPattern, urlPattern, allowedPattern]);
-    if(curated_message === false || typeof curated_message !== "string") return false;
+    if(typeof curated_message !== "string") return false;
 
-    const triggerPattern = triggerPatterns(triggerWords);
-    const regex = new RegExp(triggerPattern, "gi");
+    const regex = buildTriggerRegex(triggerWords);
     const matches = curated_message.toLowerCase().match(regex);
     return matches ? [...new Set(matches)] : false;
 }

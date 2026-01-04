@@ -8,6 +8,7 @@ import {
     APIApplicationCommandSubcommandGroupOption,
     APIApplicationCommandSubcommandOption,
     ApplicationCommandOptionType,
+    AutoModerationRuleTriggerType,
     CacheType,
     Client, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
@@ -21,13 +22,13 @@ import {
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
 import { get_env_var, random_number, read_json_async } from "./utility_methods.js";
-import { 
-    CollectorCollectHandler, 
-    CollectorFilterCustom, 
-    CollectorStopHandler, 
-    PresenceConfig, 
-    PresencePreset, 
-    PresencePresetKey 
+import {
+    CollectorCollectHandler,
+    CollectorFilterCustom,
+    CollectorStopHandler,
+    PresenceConfig,
+    PresencePreset,
+    PresencePresetKey
 } from "../Interfaces/helper_types.js";
 import { errorLogHandle } from "./error_logger.js";
 import ServerLogsRepo from "../Repositories/serverlogs.js";
@@ -35,6 +36,8 @@ import type { EventGuildLogsString } from "../Interfaces/database_types.js";
 import ServerRolesRepo from "../Repositories/serverroles.js";
 import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import fs from "graceful-fs";
+import { escapeRegex } from "./curate_data.js";
+import { regexClassifier } from "./regex_classifier.js";
 
 /**
  * 
@@ -300,10 +303,10 @@ export async function fetchLogsChannel(guild: Guild, event: EventGuildLogsString
         await errorLogHandle(error, `Failed to get serverlogs channel id from ${guild.name}[${guild.id}]`);
     }
 
-    if(!channelId) return null;
+    if (!channelId) return null;
     const channel = await fetchGuildChannel(guild, channelId) as TextChannel | null;
 
-    if(channel === null) {
+    if (channel === null) {
         // if the channel is still null after the fetch, then there must be a faulty row
         await ServerLogsRepo.deleteGuildEventChannel(guild.id, event);
     }
@@ -329,7 +332,7 @@ export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake)
     if (!premiumGuildRoleId) return null; // invalid guild
     const premiumRole = await fetchGuildRole(guildObject, premiumGuildRoleId);
 
-    if(premiumRole === null) {
+    if (premiumRole === null) {
         // if premiumRole is null even after fetching, there must be a faulty row
         await ServerRolesRepo.deleteGuildRole(guildObject.id, "premium");
     }
@@ -351,10 +354,10 @@ export async function fetchStaffRole(client: Client, guild: Guild | Snowflake): 
 
     if (!guildObject) return null; // invalid guild
     const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guildObject.id);
-    if(!staffRoleId) return null; // invalid guild
+    if (!staffRoleId) return null; // invalid guild
     const staffRole = await fetchGuildRole(guildObject, staffRoleId);
 
-    if(staffRole === null) {
+    if (staffRole === null) {
         // if staff role is still null, must be a faulty row
         await ServerRolesRepo.deleteGuildRole(guildObject.id, "staff");
     }
@@ -382,7 +385,7 @@ export async function fetchMemberCustomRole(client: Client,
 
     const memberId = typeof member === "string" ? member : member.id;
     const customRoleId = await PremiumMembersRepo.getMemberCustomRole(guildObject.id, memberId);
-    if(!customRoleId) return null; // the member doesn't have a customrole registered
+    if (!customRoleId) return null; // the member doesn't have a customrole registered
 
     const customRole = await fetchGuildRole(guildObject, customRoleId);
     return customRole;
@@ -409,9 +412,9 @@ export async function dumpMessageFile(
         console.error(error);
     });
 
-    const sendFile = await logChannel.send({files: [filePath]});
+    const sendFile = await logChannel.send({ files: [filePath] });
     fs.unlink(filePath, (error: Error) => {
-        if(error) throw error;
+        if (error) throw error;
     });
 
     return sendFile.url;
@@ -425,7 +428,7 @@ export async function dumpMessageFile(
  * @param onStart The "collect" event handler
  * @param onStop The "end" event handler
  */
-export async function message_collector<T extends MessageComponentType> (
+export async function message_collector<T extends MessageComponentType>(
     message: Message,
     options: {
         componentType: T,
@@ -439,7 +442,7 @@ export async function message_collector<T extends MessageComponentType> (
 
     collector.on("collect", async (interaction) => {
         // collect only the defined component type interactions
-        if(interaction.componentType !== options.componentType) return;
+        if (interaction.componentType !== options.componentType) return;
         // call the handler
         await onStart(interaction as MappedInteractionTypes[T]);
     });
@@ -507,4 +510,68 @@ export function renderArgs(
         .filter(isArgument)
         .map(o => (o.required ? `<${o.name}>` : `[${o.name}]`))
         .join(" ");
+}
+
+export function automodRegex(word: string): string {
+    return escapeRegex(word.toLocaleLowerCase())
+}
+
+export async function getAutoModWords(guild: Guild): Promise<{ words: string[]; ruleName: string }[]> { 
+    const manager = guild.autoModerationRules; 
+    const rawRules = await manager.fetch(); 
+    const rules = Array.from( 
+        rawRules
+            .filter( 
+                rule => { 
+                    return rule.triggerType === AutoModerationRuleTriggerType.Keyword && rule.enabled; 
+                } 
+            ) .values() 
+    ); 
+    const list = rules.map(r => ({ words: r.triggerMetadata.keywordFilter, ruleName: r.name })); 
+    return JSON.parse(JSON.stringify(list)); 
+}
+
+export async function fetchAutoModList(guild: Guild): Promise<string[]> { 
+    const rules = await getAutoModWords(guild); 
+    return rules.flatMap(r => r.words); 
+}
+
+export async function getAllTriggerPatterns(
+    localPatterns: string[],
+    guild: Guild
+): Promise<string[]> {
+    const automodWords = await fetchAutoModList(guild);
+    const automodPatterns = automodWords.map(automodRegex);
+
+    return Array.from(
+        new Set(
+            [...localPatterns, ...automodPatterns]
+                .map(p => p.trim())
+                .filter(Boolean)
+        )
+    );
+}
+
+export async function hasBlockedContent(
+    input: string,
+    localRegexPatterns: string[],
+    guild: Guild
+): Promise<boolean> {
+
+    const patterns = await getAllTriggerPatterns(localRegexPatterns, guild);
+    if (!patterns.length) return false;
+
+    return regexClassifier(input, patterns) !== false;
+}
+
+/**
+ * Iterate through a Snowflake array and return true if any of the ids is a bot in the guild.
+ */
+export async function anyBots(guild: Guild, userIds: string[]): Promise<boolean> {
+    for(const id of userIds) {
+        const member = await fetchGuildMember(guild, id);
+        if(member && member.user.bot) return true;
+    }
+
+    return false;
 }

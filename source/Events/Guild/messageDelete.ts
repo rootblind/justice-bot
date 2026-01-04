@@ -12,6 +12,7 @@ import { embed_message_action_context, embed_message_delete } from "../../utilit
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 
 export type messageDeleteHook = (message: Message) => Promise<void>;
 const hooks: messageDeleteHook[] = [];
@@ -116,6 +117,9 @@ const messageDelete: Event = {
             for(const table of tablesWithMessageColumn) {
                 await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
             }
+
+            // autovoicesystem
+            await AutoVoiceSystemRepo.deleteSystem(guild.id, message.id); // if the message is of autovoicesystem, the system will be deleted from database.
         }
     }
 }

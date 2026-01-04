@@ -82,7 +82,7 @@ const clientReady: Event = {
         if(local_config.sources.on_ready_tasks) {
             try {
                 const onReadyTasks = await load_onReady_tasks(local_config.sources.on_ready_tasks);
-                if(onReadyTasks) await on_ready_execute(onReadyTasks);
+                if(onReadyTasks) await on_ready_execute("On Ready Tasks", onReadyTasks);
             } catch(error) {
                 await errorLogHandle(error, "", "Fatal error");
                 setTimeout(() => process.exit(1), 5_000);
@@ -96,7 +96,17 @@ const clientReady: Event = {
         if(local_config.sources.event_hooks) {
             try {
                 const eventHooks = await load_onReady_tasks(local_config.sources.event_hooks);
-                if(eventHooks) await on_ready_execute(eventHooks);
+                if(eventHooks) await on_ready_execute("Event Hooks", eventHooks);
+            } catch(error) {
+                await errorLogHandle(error, "", "Fatal error");
+                setTimeout(() => process.exit(1), 5_000);
+            }
+        }
+
+        if(local_config.sources.attach_collectors) {
+            try {
+                const collectors = await load_onReady_tasks(local_config.sources.attach_collectors);
+                if(collectors) await on_ready_execute("Collectors", collectors);
             } catch(error) {
                 await errorLogHandle(error, "", "Fatal error");
                 setTimeout(() => process.exit(1), 5_000);
@@ -114,10 +124,6 @@ const clientReady: Event = {
         } catch(error) {
             await errorLogHandle(error);
         }
-
-        /**
-         * TODO: ADD COLLECTORS
-         */
 
         if(local_config.sources.flag_data) {
             // setting a csv file for the data collection of the moderation model

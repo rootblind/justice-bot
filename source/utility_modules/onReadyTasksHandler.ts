@@ -38,7 +38,7 @@ export async function load_onReady_tasks(sourceFile: string): Promise<OnReadyTas
  * Handles the execution of the tasks
  * @param tasks OnReadyTaskBuilder Array
  */
-export async function on_ready_execute(tasks: OnReadyTaskBuilder[]) {
+export async function on_ready_execute(heading: string, tasks: OnReadyTaskBuilder[]) {
     if (tasks.length === 0) {
         console.log(
             "on_ready_execute was called on an empty array, execution interrupted."
@@ -46,7 +46,7 @@ export async function on_ready_execute(tasks: OnReadyTaskBuilder[]) {
         return;
     }
 
-    const table = new AsciiTable().setHeading("On ready tasks", "Status");
+    const table = new AsciiTable().setHeading(heading, "Status");
 
     for (const task of tasks) {
         try {
@@ -85,5 +85,5 @@ export async function on_ready_execute(tasks: OnReadyTaskBuilder[]) {
         }
     }
 
-    console.log(table.toString(), "\nOn Ready Tasks executed");
+    console.log(table.toString(), `\n${heading} executed`);
 }

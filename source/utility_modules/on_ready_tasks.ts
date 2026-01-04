@@ -18,6 +18,8 @@ import cron from "node-cron";
 import { remove_premium_from_member } from "../Systems/premium/premium_system.js";
 import GuildModulesRepo from "../Repositories/guildmodules.js";
 import { sync_guild_commands } from "../Handlers/commandHandler.js";
+import AutoVoiceRoomRepo from "../Repositories/autovoiceroom.js";
+import { VoiceChannel } from "discord.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -133,4 +135,28 @@ export const loadGuildCommands: OnReadyTaskBuilder = {
     },
     runCondition: async () => true,
     fatal: true
+}
+
+export const cleanAutovoiceGarbage: OnReadyTaskBuilder = {
+    name: "Clean Autovoice Garbage",
+    task: async () => {
+        const client = getClient();
+        const roomsData = await AutoVoiceRoomRepo.getRooms();
+        for(const row of roomsData) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const channel = await guild.channels.fetch(row.channel);
+                if(!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
+                if(channel.members.size === 0) {
+                    await channel.delete();
+                    await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
+                }
+            } catch(error) {
+                await errorLogHandle(error, `At guild ${row.guild}`);
+                // delete the room row anyway if something fails to fetch
+                await AutoVoiceRoomRepo.deleteRoom(row.guild, row.channel);
+            }
+        }
+    },
+    runCondition: async() => true
 }

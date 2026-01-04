@@ -2,8 +2,8 @@ import { TriggerWordsObject, LabelsClassification, ClassifierResponse } from "..
 import { AutomodResponse } from "../../Interfaces/helper_types.js";
 import { get_env_var, read_json_async } from "../../utility_modules/utility_methods.js";
 import { text_classification } from "./automod_model_methods.js";
-import { curate_text } from "./curate_data.js";
-import { regexClassifier, triggerPatterns } from "./regex_classifier.js";
+import { curate_text } from "../../utility_modules/curate_data.js";
+import { buildTriggerRegex, regexClassifier } from "../../utility_modules/regex_classifier.js";
 
 /**
  * classifier method combines regexClassifier and automod model to calculate the toxicity score, flagged matches
@@ -41,7 +41,7 @@ export async function classifier(
             matchesDict[key] = regResponse;
             labelsObject[key] = 1;
             // find trigger words as substrings and surround them with spaces
-            message = message.replace(new RegExp(triggerPatterns(triggerDict[key]), "g"), ' $& ').trim();
+            message = message.replace(new RegExp(buildTriggerRegex(triggerDict[key]), "g"), ' $& ').trim();
         }
     }
 
