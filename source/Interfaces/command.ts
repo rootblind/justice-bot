@@ -27,8 +27,10 @@ export type ChatCommandGroup =
     | "global"
     | "premium"
     | "autovoice"
+    | "block"
 
 export type ChatCommandCategory = 
     | "Info"
     | "Administrator"
     | "Owner"
+    | "Social"
