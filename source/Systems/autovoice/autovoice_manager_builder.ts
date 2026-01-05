@@ -126,6 +126,9 @@ export async function autovoice_manager_builder_collector(
                 }
                 if (channels?.autovoice) {
                     autovoice = channels.autovoice;
+                    if(autovoice.parentId !== category.id) {
+                        await autovoice.edit({ parent: category });
+                    }
                 } else {
                     autovoice = await category.children.create({
                         name: "➕ Auto Voice",
@@ -144,6 +147,9 @@ export async function autovoice_manager_builder_collector(
                 }
                 if (channels?.managerchannel) {
                     managerchannel = channels.managerchannel;
+                    if(managerchannel.parentId !== category.id) {
+                        await managerchannel.edit({ parent: category });
+                    }
                 } else {
                     managerchannel = await category.children.create({
                         name: "voice-manager",

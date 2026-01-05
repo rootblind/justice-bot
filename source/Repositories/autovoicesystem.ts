@@ -80,6 +80,33 @@ class AutoVoiceSystemRepository {
             return null;
         }
     }
+
+    /**
+     * Fetch the autovoicesystem of the guild based on interface id (the message that acts as the manager)
+     */
+    async getInterfaceSystem(guildId: Snowflake, messageId: Snowflake): Promise<AutoVoiceSystem | null> {
+        const cache = autoVoiceCache.getByValue((row) => row.message === messageId);
+        if(cache !== undefined && cache[0]) return cache[0];
+        
+        const {rows: data} = await database.query<AutoVoiceSystem>(
+            `SELECT * FROM autovoicesystem WHERE guild=$1 AND message=$2`,
+            [guildId, messageId]
+        );
+
+        if(data.length && data[0]) {
+            autoVoiceCache.set(`${guildId}:${messageId}`, {
+                guild: guildId,
+                category: data[0].category,
+                autovoice: data[0].autovoice,
+                managerchannel: data[0].managerchannel,
+                message: messageId
+            });
+
+            return data[0];
+        } else {
+            return null;
+        }
+    }
     /**
      * 
      * @param guildId Guild Snowflake
@@ -135,15 +162,28 @@ class AutoVoiceSystemRepository {
 
     async deleteSystem(guildId: Snowflake, message: Snowflake) {
         autoVoiceCache.delete(`${guildId}:${message}`);
-        await database.query(`DELETE FROM autovoicesystem WHERE guild=$1 AND message=$2`, [guildId, message]);
+        const result = await database.query(`DELETE FROM autovoicesystem WHERE guild=$1 AND message=$2`, [guildId, message]);
+        return result.rowCount;
     }
 
     async onChannelDelete(guildId: Snowflake, channelId: Snowflake) {
+        autoVoiceCache.deleteByValue((s) =>
+            s.category === channelId || s.autovoice === channelId || s.managerchannel === channelId
+        );
+
         await database.query(
             `DELETE FROM autovoicesystem
                 WHERE guild = $1
                 AND (category = $2 OR autovoice = $2 OR managerchannel = $2);`,
             [guildId, channelId]
+        );
+    }
+
+    async wipeGuildSystems(guildId: Snowflake) {
+        autoVoiceCache.deleteByValue((_, key) => key.startsWith(guildId));
+        await database.query(
+            `DELETE FROM autovoicesystem WHERE guild=$1`,
+            [ guildId ]
         );
     }
 }

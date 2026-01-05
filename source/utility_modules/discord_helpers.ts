@@ -575,3 +575,30 @@ export async function anyBots(guild: Guild, userIds: string[]): Promise<boolean>
 
     return false;
 }
+
+/**
+ * Given an array of IDs, the method tries to resolve them to guild channels before deletion
+ * 
+ * All successful and failed resolutions are returned as an object with resolved/unresolved string arrays. 
+ */
+export async function resolveAndDeleteChannels(
+    guild: Guild,
+    channels: string[]
+): Promise<{ resolved: string[], unresolved: string[] }> {
+    const response: { resolved: string[], unresolved: string[]} = { resolved: [], unresolved: []};
+    for(const id of channels) {
+        try {
+            const channel = await guild.channels.fetch(id);
+            if(channel) { 
+                await channel.delete();
+                response.resolved.push(id);
+            } else {
+                response.unresolved.push(id);
+            }
+        } catch {
+            response.unresolved.push(id);
+        }
+    }
+
+    return response;
+}

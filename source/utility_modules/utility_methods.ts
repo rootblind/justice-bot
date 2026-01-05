@@ -2,12 +2,12 @@
  * General purpose methods as a toolkit
  */
 
-import type { Client, Collection, Snowflake } from "discord.js";
+import { type Client, type Collection, type Snowflake } from "discord.js";
 import fs from "graceful-fs";
 import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
 import PremiumKeyRepo from "../Repositories/premiumkey.js";
-import { LabelsClassification } from "../Interfaces/helper_types.js";
+import { LabelsClassification, TimeStringUnit } from "../Interfaces/helper_types.js";
 import csvWriter from "csv-write-stream";
 import csvParse from "csv-parser";
 import path from "path";
@@ -343,4 +343,79 @@ export async function getGuildCommandGroups(guildId: Snowflake, client: Client):
     ).filter(group => !disabled_groups.includes(group)); // keep groups that are not excluded from the guild
 
     return groups;
+}
+
+export function isSnowflake(value: Snowflake): value is string {
+    return (
+        typeof value === "string" &&
+        /^[0-9]{17,20}$/.test(value)
+    );
+}
+
+
+/**
+ * Regex to match duration inputs such as 1m (one minute); 2h (two hours); 99y (ninety nine years)
+ */
+export const durationRegex = /^(\d+)([mhdwy])$/;
+
+const secondsMap: Record<TimeStringUnit, number> = {
+    "m": 60,
+    "h": 3600,
+    "d": 86400,
+    "w": 604800,
+    "y": 31556926
+} as const;
+
+/**
+ * Converts seconds into the closest duration string (ex 119 -> "2m")
+ */
+export function seconds_to_duration(seconds: number): string | null {
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+        return null;
+    }
+
+    let bestUnit: TimeStringUnit = "m";
+    let bestValue = 1;
+    let smallestError = Infinity;
+
+    for (const unit of Object.keys(secondsMap) as TimeStringUnit[]) {
+        const unitSeconds = secondsMap[unit];
+        const value = Math.round(seconds / unitSeconds);
+
+        if (value <= 0) continue;
+
+        const error = Math.abs(seconds - value * unitSeconds);
+
+        if (error < smallestError) {
+            smallestError = error;
+            bestUnit = unit;
+            bestValue = value;
+        }
+    }
+
+    return `${bestValue}${bestUnit}`;
+}
+
+/**
+ * Returns the value in seconds of the time unit
+ * @param unit Time unit character
+ */
+export function time_unit_conversion(unit: TimeStringUnit) {
+    return secondsMap[unit];
+}
+
+/**
+ * 
+ * @param durationString durationRegex compatible string ex: "3h"
+ * @returns Timestamp in seconds of the duration (current time + duration) or null if the string given is invalid.
+ */
+export function duration_timestamp(durationString: string): number | null {
+    const match = durationString.match(durationRegex);
+    if (match && match[1] && match[2]) {
+        const value = Number(match[1]);
+        const unit = match[2].toLowerCase() as TimeStringUnit;
+        return Math.floor(Date.now() / 1000) + value * time_unit_conversion(unit);
+    }
+
+    return null;
 }

@@ -92,6 +92,8 @@ interface AutomodResponse {
     text: string
 }
 
+export type TimeStringUnit = "m" | "h" | "d" | "w" | "y";
+
 export type {
     PresenceConfig,
     PresencePreset,

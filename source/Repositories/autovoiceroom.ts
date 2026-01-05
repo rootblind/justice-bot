@@ -5,10 +5,13 @@ import { AutoVoiceRoom } from "../Interfaces/database_types.js";
 
 const roomsCache = new SelfCache<string, AutoVoiceRoom>();
 // keeps the expiration timestamp in seconds of a member in a guild
-const cooldowns = new SelfCache<string, string>(5 * 60_000); // cooldowns clear themselves
-const AUTOVOICE_COOLDOWN = 300;
+const cooldowns = new SelfCache<string, string>();
+export const AUTOVOICE_COOLDOWN = 300;
 
 class AutoVoiceRoomRepository {
+    /**
+     * Get timestamp in seconds of cooldown expiration or null if there is no cooldown.
+     */
     async getCooldown(guildId: Snowflake, memberId: Snowflake): Promise<string | null> {
         const key = `${guildId}:${memberId}`;
         const cd = cooldowns.get(key);
@@ -17,9 +20,23 @@ class AutoVoiceRoomRepository {
         return null;
     }
 
-    async setCooldown(guildId: Snowflake, memberId: Snowflake) {
+    /**
+     * Set cooldown to a member
+     * 
+     * @param cd Cooldown in seconds (defaults to 300seconds / 5mins)
+     */
+    async setCooldown(guildId: Snowflake, memberId: Snowflake, cd: number = AUTOVOICE_COOLDOWN) {
         const key = `${guildId}:${memberId}`;
-        cooldowns.set(key, String(Math.floor((Date.now() / 1000) + AUTOVOICE_COOLDOWN)));
+        cooldowns.set(key, String(Math.floor((Date.now() / 1000) + cd)));
+        setTimeout(() => cooldowns.delete(key), cd * 1000)
+    }
+
+    /**
+     * Remove cooldown from member
+     */
+    async deleteCooldown(guildId: Snowflake, memberId: Snowflake) {
+        const key = `${guildId}:${memberId}`;
+        cooldowns.delete(key);
     }
 
     /**
@@ -52,7 +69,7 @@ class AutoVoiceRoomRepository {
     }
 
     /**
-     * Fetch the autovoiceroom of a member
+     * Fetch the autovoiceroom of a member by member id
      */
     async getMemberRoom(guildId: Snowflake, memberId: Snowflake): Promise<AutoVoiceRoom | null> {
         const key = `${guildId}:${memberId}`;
@@ -176,9 +193,20 @@ class AutoVoiceRoomRepository {
         return data[0].exists as boolean;
     }
 
+    /**
+     * Delete room based on its ID
+     */
     async deleteRoom(guildId:Snowflake, channelId: Snowflake) {
         roomsCache.deleteByValue((room) => room.channel === channelId);
         await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND channel=$2`, [ guildId, channelId ]);
+    }
+
+    /**
+     * Delete room based on its owner ID
+     */
+    async deleteOwnerRoom(guildId:Snowflake, memberId: Snowflake) {
+        roomsCache.deleteByValue((room) => room.owner === memberId);
+        await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND owner=$2`, [ guildId, memberId ]);
     }
 
     async getLastOrder(guildId: Snowflake): Promise<number> {
