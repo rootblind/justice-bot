@@ -4,9 +4,10 @@ import AutoVoiceRoomRepo, { AUTOVOICE_COOLDOWN } from "../../Repositories/autovo
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { AutoVoiceRoom } from "../../Interfaces/database_types.js";
-import { fetchGuildChannel } from "../../utility_modules/discord_helpers.js";
+import { fetchGuildChannel, fetchGuildMember } from "../../utility_modules/discord_helpers.js";
 import { duration_timestamp, seconds_to_duration, time_unit_conversion } from "../../utility_modules/utility_methods.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
+import ServerRolesRepo from "../../Repositories/serverroles.js";
 
 const autovoice_admin: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -239,7 +240,6 @@ const autovoice_admin: ChatCommand = {
                 break;
             }
             case "timeout": {
-                // TODO: AFTER STAFF ROLE, DENY TIMING OUT STAFF MEMBERS
                 const user = options.getUser("member", true);
                 if(user.bot) {
                     await interaction.reply({
@@ -249,6 +249,20 @@ const autovoice_admin: ChatCommand = {
                         flags: MessageFlags.Ephemeral
                     });
                     return;
+                }
+                const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
+                if(staffRoleId) {
+                    // if a staff server role is set, then members with the staff role are immune to this command
+                    const memberObj = await fetchGuildMember(guild, user.id) as GuildMember;
+                    if(memberObj.roles.cache.has(staffRoleId)) {
+                        await interaction.reply({
+                            flags: MessageFlags.Ephemeral,
+                            embeds: [
+                                embed_error("You can not do that to staff members!")
+                            ]
+                        });
+                        return;
+                    }
                 }
                 const durationString = options.getString("duration", true);
 

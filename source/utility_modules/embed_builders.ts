@@ -15,12 +15,16 @@ import type {
     VoiceState,
     VoiceChannel,
     RESTPostAPIChatInputApplicationCommandsJSONBody,
-    APIApplicationCommandOption
+    APIApplicationCommandOption,
+    TextChannel,
+    RestOrArray,
+    APIEmbedField
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
 import { ChatCommandMetadata } from "../Interfaces/command.js";
 import { isSubcommand, isSubcommandGroup, permission_names, renderArgs } from "./discord_helpers.js";
+import { EventGuildLogsString } from "../Interfaces/database_types.js";
 
 /**
  * Embed for errors while a response is awaited
@@ -1066,46 +1070,27 @@ export function embed_manual_command_pages(
     return embeds;
 }
 
-
-/*
-export function embed_manual_command_page(
-    command: ChatCommand,
-    color: ColorResolvable = "Purple"
+/**
+ * List all channels provided in fields based on event type
+ */
+export function embed_current_logs_list(
+    guild: Guild,
+    embedChannels: {channel: TextChannel, event: EventGuildLogsString}[]
 ): EmbedBuilder {
-    const data = command.data;
-    const metadata = command.metadata;
-    const manual = command.metadata.manual;
-
-    
-
-    if(manual?.usage) {
-        let fieldName = "";
-        let fieldValue = "";
-        // since commands with subcommands have all their arguments under subcommands
-        // if the first usage element is has a subcommand object, then all usages are using subcommands
-        if(manual.usage[0]?.subcommand) {
-            // subcommands
-            fieldName = "Subcommands";
-            for(const u of manual.usage) { // for each subcommand
-                if(u.subcommand) {
-                    fieldValue += `**${u.subcommand.name}** `; // add the name
-                    fieldValue += u.args?.map(arg => arg.required ? `<${arg.name}>` : `[${arg.name}]`).join(" ") + "\n"; // followed by the arguments between the required or optional brackets
-                    fieldValue += u.subcommand.description + "\n"; // adding subcommand description under its usage
-                }
+    const fields: RestOrArray<APIEmbedField> = 
+        embedChannels.map((row) => {
+            return {
+                name: row.event.replace("-", " ").toUpperCase(),
+                value: `${row.channel}`
             }
-        } else if(!manual.usage[0]?.subcommand && manual.usage[0]) {
-            // if no subcommand, but there is usage
-            // if there are no subcommands, then usage has a single element
-            fieldName = "Command";
-            fieldValue = `**${data.name}** `;
-            fieldValue += manual.usage[0].args?.map(arg => arg.required ? `<${arg.name}>` : `[${arg.name}]`).join(" ") + "\n";
-        }
-
-        embed.addFields({
-            name: fieldName,
-            value: fieldValue
         });
-    }
 
-    return embed;
-} */
+    return new EmbedBuilder()
+        .setColor("Aqua")
+        .setAuthor({
+            name: `${guild.name} logs configuration`,
+            iconURL: `${guild.iconURL({extension: "png"})}`
+        })
+        .addFields(...fields);
+
+}

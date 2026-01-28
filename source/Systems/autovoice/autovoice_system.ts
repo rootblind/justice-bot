@@ -14,7 +14,7 @@ import {
     UserSelectMenuBuilder,
     VoiceChannel
 } from "discord.js";
-import { anyBots, fetchGuildChannel, fetchGuildMember, hasBlockedContent, message_collector } from "../../utility_modules/discord_helpers.js";
+import { anyBots, anyStaff, fetchGuildChannel, fetchGuildMember, hasBlockedContent, message_collector } from "../../utility_modules/discord_helpers.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import AutoVoiceRoomRepo from "../../Repositories/autovoiceroom.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
@@ -24,6 +24,7 @@ import { channelLimitModal, channelNameModal, selectRegionRow } from "./autovoic
 import { local_config } from "../../objects/local_config.js";
 import BlockSystemRepo from "../../Repositories/blocksystem.js";
 import { add_block_collector, remove_block_collector, select_block_row, select_unblock_builder } from "../block/block_system.js";
+import ServerRolesRepo from "../../Repositories/serverroles.js";
 
 const relevantPermissions = [
     PermissionFlagsBits.ViewChannel,
@@ -62,13 +63,21 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     }
 
     const order = (await AutoVoiceRoomRepo.getLastOrder(guild.id)) + 1;
-
+    
     const perms: OverwriteResolvable[] = [
         {
             id: member.id,
             allow: relevantPermissions
         }
     ];
+    const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
+    if(staffRoleId) {
+        // if there is a staff role set, then grant permission to staff members
+        perms.push({
+            id: staffRoleId,
+            allow: relevantPermissions
+        });
+    }
 
     const mutualBlockedList = await BlockSystemRepo.getMutualRestrictedList(guild.id, member.id);
     for (const id of mutualBlockedList) { // deny access to mutual restricted members from the channel
@@ -88,7 +97,6 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
         name: `Room #${order}`,
         type: ChannelType.GuildVoice,
         permissionOverwrites: perms
-        // TODO: AFTER SERVERROLES ALLOW STAFF ROLE
     });
 
     await AutoVoiceRoomRepo.put(guild.id, voiceRoom.id, member.id, order);
@@ -481,8 +489,17 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 return;
                             }
 
+                            const staffSelected = await anyStaff(guild, selectInteraction.values);
+                            if(staffSelected) {
+                                await selectInteraction.reply({
+                                    embeds: [embed_error("You can not target staff members!")],
+                                    flags: MessageFlags.Ephemeral
+                                });
+                                collector.stop();
+                                return;
+                            }
+
                             for (const user of selectInteraction.values) {
-                                // TODO DO NOT ALLOW TARGETING STAFF MEMBERS
                                 await room.permissionOverwrites.edit(user, {
                                     ViewChannel: true,
                                     Connect: true,
@@ -612,8 +629,17 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 return;
                             }
 
+                            const staffSelected = await anyStaff(guild, selectInteraction.values);
+                            if(staffSelected) {
+                                await selectInteraction.reply({
+                                    embeds: [embed_error("You can not target staff members!")],
+                                    flags: MessageFlags.Ephemeral
+                                });
+                                collector.stop();
+                                return;
+                            }
+
                             for (const user of selectInteraction.values) {
-                                // TODO DO NOT ALLOW TARGETING STAFF MEMBERS
                                 await room.permissionOverwrites.edit(user, {
                                     ViewChannel: false,
                                     Connect: false,

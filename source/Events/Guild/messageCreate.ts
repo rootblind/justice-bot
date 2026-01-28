@@ -77,7 +77,9 @@ const messageCreate: Event = {
                     embeds: [ flaggedEmbed ],
                     components: [ flaggedMessageActionRow ]
                 });
-                await attach_flagged_message_collector(flaggedMessage, response);
+
+                // attach dataset related buttons for the owner server
+                if(guild.id === get_env_var("HOME_SERVER_ID")) await attach_flagged_message_collector(flaggedMessage, response);
             }
         }
     }

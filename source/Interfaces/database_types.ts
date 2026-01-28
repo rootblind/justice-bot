@@ -186,26 +186,33 @@ export interface CustomReact extends GuildTable {
     reply: string
 }
 
-export type GuildRoleTypeString = 
-    | "staff"
-    | "premium"
-    | "probation"
-    | "bot"
-    | "lfg-eune"
-    | "lfg-euw"
-    | "ticket-support"
+export const GUILD_ROLE_TYPE = [
+    "staff",
+    "premium",
+    "probation",
+    "bot",
+    //| "lfg-eune"
+    //| "lfg-euw"
+    "ticket-support"
+] as const;
 
-export type EventGuildLogsString =
-    | "moderation"
-    | "voice"
-    | "messages"
-    | "user-activity"
-    | "server-activity"
-    | "flagged-messages"
-    | "premium-activity"
-    | "justice-logs"
-    | "lfg-logs"
-    | "ticket-support"
+export type GuildRoleTypeString = typeof GUILD_ROLE_TYPE[number];
+    
+
+export const EVENT_GUILD_LOGS = [
+    "moderation",
+    "voice",
+    "messages",
+    "user-activity",
+    "server-activity",
+    "flagged-messages",
+    "premium-activity",
+    "justice-logs",
+    // "lfg-logs",
+    "ticket-support"
+] as const;
+
+export type EventGuildLogsString = typeof EVENT_GUILD_LOGS[number];
 
 export interface GuildMemberCustomRole {
     guild: Snowflake,

@@ -10,7 +10,8 @@ export default async function ServerLogs(): Promise<Result<GuildChannelWithType>
               id SERIAL PRIMARY KEY,
               guild BIGINT NOT NULL,
               channel BIGINT NOT NULL,
-              eventtype TEXT NOT NULL
+              eventtype TEXT NOT NULL,
+              CONSTRAINT guild_event_logs UNIQUE (guild, eventtype)
             )`
         );
         

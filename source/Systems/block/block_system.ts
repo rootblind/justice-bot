@@ -10,7 +10,7 @@ import {
     Message,
     MessageFlags
 } from "discord.js";
-import { anyBots, fetchGuildMember, message_collector } from "../../utility_modules/discord_helpers.js";
+import { anyBots, anyStaff, fetchGuildMember, message_collector } from "../../utility_modules/discord_helpers.js";
 import BlockSystemRepo from "../../Repositories/blocksystem.js";
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 
@@ -66,10 +66,20 @@ export async function add_block_collector(
                 }
 
                 const botSelected = await anyBots(guild, selectInteraction.values);
-                if(botSelected) {
+                if (botSelected) {
                     await selectInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [ embed_error("You can not block BOTS!") ]
+                        embeds: [embed_error("You can not block BOTS!")]
+                    });
+                    (await collector).stop();
+                    return;
+                }
+
+                const staffSelected = await anyStaff(guild, selectInteraction.values);
+                if (staffSelected) {
+                    await selectInteraction.reply({
+                        embeds: [embed_error("You can not target staff members!")],
+                        flags: MessageFlags.Ephemeral
                     });
                     (await collector).stop();
                     return;
@@ -159,8 +169,8 @@ export async function remove_block_collector(
                 });
                 (await collector).stop();
             },
-            async () => { 
-                if (interaction.replied) await interaction.deleteReply() 
+            async () => {
+                if (interaction.replied) await interaction.deleteReply()
                 resolve(unblockedIds);
             }
         );

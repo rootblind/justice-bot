@@ -1,11 +1,26 @@
 import { Snowflake } from "discord.js";
 import database from "../Config/database.js";
-import type { GuildRolePair, GuildRoleTypeString } from "../Interfaces/database_types.js";
+import { ServerRoles, type GuildRolePair, type GuildRoleTypeString } from "../Interfaces/database_types.js";
 import { SelfCache } from "../Config/SelfCache.js";
 
 const serverRolesCache = new SelfCache<string, Snowflake | null>(60 * 60_000);
 
 class ServerRolesRepository {
+    /**
+     * Insert or update a row based on guild-roletype pair
+     */
+    async put(guildId: Snowflake, type: GuildRoleTypeString, roleId: Snowflake) {
+        const key = `${guildId}:${type}`;
+        serverRolesCache.set(key, roleId);
+
+        await database.query(
+            `INSERT INTO serverroles (guild, roletype, role) VALUES($1, $2, $3)
+                ON CONFLICT (guild, roletype)
+                    DO UPDATE SET
+                        role = EXCLUDED.role`,
+            [guildId, type, roleId]
+        );
+    }
     /**
      * Fetch all rows of all guilds that have set up the specific roletype
      * @param roletype 
@@ -24,6 +39,20 @@ class ServerRolesRepository {
         }
     }
 
+    /**
+     * Fetch all assigned server roles.
+     */
+    async getServerRoles(guildId: Snowflake): Promise<ServerRoles[]> {
+        const {rows: data} = await database.query<ServerRoles>(
+            `SELECT * FROM serverroles WHERE guild=$1`, [ guildId ]
+        );
+
+        for(const row of data) {
+            serverRolesCache.set(`${guildId}:${row.roletype}`, row.role);
+        }
+
+        return data;
+    }
     /**
      * 
      * @param guildId Guild Snowflake
@@ -60,6 +89,25 @@ class ServerRolesRepository {
 
         const {rows: response} = await database.query(
             `SELECT role FROM serverroles WHERE guild=$1 AND roletype='staff'`,
+            [guildId]
+        );
+
+        if(response.length) {
+            serverRolesCache.set(key, String(response[0].role));
+            return String(response[0].role);
+        } else {
+            serverRolesCache.set(key, null);
+            return null;
+        }
+    }
+
+    async getGuildBotRole(guildId: Snowflake): Promise<Snowflake | null> {
+        const key = `${guildId}:bot`;
+        const cache = serverRolesCache.get(key);
+        if(cache !== undefined) return cache;
+
+        const {rows: response} = await database.query(
+            `SELECT role FROM serverroles WHERE guild=$1 AND roletype='bot'`,
             [guildId]
         );
 

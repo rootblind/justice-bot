@@ -10,15 +10,19 @@ import {
     ApplicationCommandOptionType,
     AutoModerationRuleTriggerType,
     CacheType,
+    CategoryChannel,
+    ChannelType,
     Client, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
     MappedInteractionTypes,
     Message,
     MessageComponentInteraction,
     MessageComponentType,
+    OverwriteResolvable,
     PermissionResolvable, Role, Snowflake,
     TextChannel,
     User,
+    VoiceChannel,
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
 import { get_env_var, random_number, read_json_async } from "./utility_methods.js";
@@ -38,6 +42,7 @@ import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import fs from "graceful-fs";
 import { escapeRegex } from "./curate_data.js";
 import { regexClassifier } from "./regex_classifier.js";
+import ServerLogsIgnoreRepo from "../Repositories/serverlogsignore.js";
 
 /**
  * 
@@ -577,6 +582,19 @@ export async function anyBots(guild: Guild, userIds: string[]): Promise<boolean>
 }
 
 /**
+ * Iterate through a Snowflake array and return true if any of the ids is a guild member that has the staff server role
+ */
+export async function anyStaff(guild: Guild, userIds: string[]): Promise<boolean> {
+    const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
+    if(!staffRoleId) return false; // if no staff role is set, then there can't be any staff member no matter what
+    for(const id of userIds) {
+        const member = await fetchGuildMember(guild, id);
+        if(member && member.roles.cache.has(staffRoleId)) return true;
+    }
+    return false;
+}
+
+/**
  * Given an array of IDs, the method tries to resolve them to guild channels before deletion
  * 
  * All successful and failed resolutions are returned as an object with resolved/unresolved string arrays. 
@@ -601,4 +619,62 @@ export async function resolveAndDeleteChannels(
     }
 
     return response;
+}
+
+/**
+ * Handler for database.
+ * 
+ * Set a channel as the logs channel for the specified event.
+ * 
+ * If the event already has a channel, the method will handle that case too.
+ */
+export async function setLogChannel(guildId: Snowflake, channelId: Snowflake, event: EventGuildLogsString) {
+    const logChannelId = await ServerLogsRepo.getGuildEventChannel(guildId, event); // if the event already has a channel
+    // if set log channel is called on an event that is already set, the method will handle
+    // inserting the new channel in serverlogs instead and swapping the channels from ignore list
+    if(logChannelId !== null) await ServerLogsIgnoreRepo.stopIgnoringChannel(guildId, logChannelId);
+    
+    // insert the rows
+    await ServerLogsRepo.put(guildId, channelId, event);
+    await ServerLogsIgnoreRepo.put(guildId, channelId);
+}
+
+/**
+ * 
+ * @param guild Guild object
+ * @param categoryName The name of the category
+ * @param perms Array of permissions
+ * @param channelOptions Array of channel name and channel type objects
+ * @returns All channels created by calling this method, including the category
+ */
+export async function buildCategory(
+    guild: Guild, 
+    categoryName: string, 
+    perms: OverwriteResolvable[],
+    channelOptions: {
+        name: string,
+        type: ChannelType.GuildText | ChannelType.GuildVoice
+    }[]
+): Promise<(TextChannel | VoiceChannel | CategoryChannel)[]> {
+    const category = await guild.channels.create({
+        name: categoryName,
+        type: ChannelType.GuildCategory,
+        permissionOverwrites: perms
+    });
+
+    const channelsBuilt: (TextChannel | VoiceChannel | CategoryChannel)[] = [ category ];
+
+    for(const config of channelOptions) {
+        try{
+            const channel = await category.children.create({
+                name: config.name,
+                type: config.type
+            });
+            channelsBuilt.push(channel);
+        } catch(error) {
+            await errorLogHandle(error);
+        }
+    }
+
+    return channelsBuilt;
 }

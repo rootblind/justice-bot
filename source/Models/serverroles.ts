@@ -10,7 +10,8 @@ export default async function ServerRoles(): Promise<Result<ServerRoles>> {
                   id SERIAL PRIMARY KEY,
                   guild BIGINT NOT NULL,
                   roletype TEXT NOT NULL,
-                  role BIGINT NOT NULL
+                  role BIGINT NOT NULL,
+                  CONSTRAINT unique_guild_server_role_type UNIQUE (guild, roletype)
             )`
         );
         

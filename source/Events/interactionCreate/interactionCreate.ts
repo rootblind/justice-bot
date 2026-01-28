@@ -24,6 +24,7 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import GuildPlanRepo from "../../Repositories/guildplan.js";
+import ServerRolesRepo from "../../Repositories/serverroles.js";
 
 export type interactionCreateHook = (interaction: ChatInputCommandInteraction, client: Client) => Promise<void>;
 const hooks: interactionCreateHook[] = [];
@@ -70,16 +71,25 @@ const interactonCreate: Event = {
             }
 
             if (command.metadata.group === "premium") {
-                const isPremium = await PremiumMembersRepo.checkUserMembership(
-                    interaction.guild.id,
-                    interaction.member.id
-                );
-
-                if (!isPremium) {
+                const premiumRoleId = await ServerRolesRepo.getGuildPremiumRole(guild.id);
+                if(!premiumRoleId) {
                     return await interaction.reply({
-                        embeds: [embed_error("This command is for premium members only!")],
+                        embeds: [ embed_error("No server role was set as the premium role.", "server-role config required") ],
                         flags: MessageFlags.Ephemeral
-                    })
+                    });
+                }
+                if(command.metadata.category !== "Administrator") {
+                    const isPremium = await PremiumMembersRepo.checkUserMembership(
+                        interaction.guild.id,
+                        interaction.member.id
+                    );
+
+                    if (!isPremium) {
+                        return await interaction.reply({
+                            embeds: [ embed_error("This command is for premium members only!") ],
+                            flags: MessageFlags.Ephemeral
+                        });
+                    }
                 }
             }
 
@@ -185,7 +195,7 @@ const interactonCreate: Event = {
 
                     if (interaction.replied || interaction.deferred) {
                         await interaction.editReply({
-                            embeds: [embed_error(`Running ${command.data.name} threw and unexpected error!`)]
+                            embeds: [embed_error(`Running ${command.data.name} threw an unexpected error!`)]
                         });
                     }
                 }
