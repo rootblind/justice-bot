@@ -12,30 +12,29 @@ import {
     LfgPostWithChannelTable,
     LfgRole,
     LfgRoleTable,
-    LfgRoleType
+    LfgRoleType,
+    LfgSystemConfig
 } from "../Interfaces/lfg_system.js";
 import { SelfCache } from "../Config/SelfCache.js";
 import { timestampNow } from "../utility_modules/utility_methods.js";
 
-export interface LfgCooldown {
-    guild_id: Snowflake,
-    member_id: Snowflake,
-    game_id: number,
-    timestamp: number
-};
+///////////////// caches /////////////////
+const lfgSystemConfigCache = new SelfCache<string, LfgSystemConfig>(24 * 60 * 60); // 24h persistence key: guild_id
+//////////////////////////////////////////
 
-// TODO: ADD A WAY TO SET CUSTOM COOLDOWN PER GUILD
-export const LFG_COOLDOWN = 1 * 60; // 15min
-// cooldowns auto-expire as the cache life time is used
-export const lfgCooldowns = new SelfCache<string, LfgCooldown>(LFG_COOLDOWN * 1000); // SelfCache takes milliseconds
-function stringKey(guildId: Snowflake, memberId: Snowflake, gameId: number) {
-    return `${guildId}:${memberId}:${gameId}`;
-}
+export const DEFAULT_LFG_COOLDOWN = 15 * 60; // 15min
+export type LfgCooldownEntry = {
+    expiresAt: number;
+};
+export const lfgCooldowns = new Map<string, LfgCooldownEntry>();
 
 // TODO: ADD CACHING FOR THIS REPOSITORY
 
 class LfgSystemRepository {
     /// cooldowns
+    private key(guildId: Snowflake, memberId: Snowflake, gameId: number) {
+        return `${guildId}:${memberId}:${gameId}`;
+    }
     /**
      * Set the member on cooldown for the specific guild-game
      * 
@@ -43,29 +42,120 @@ class LfgSystemRepository {
      * 
      * @returns The expiration timestamp in seconds
      */
-    setCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number) {
-        lfgCooldowns.set(stringKey(guildId, memberId, gameId), {
-            guild_id: guildId,
-            member_id: memberId,
-            game_id: gameId,
-            timestamp: Math.floor(Date.now() / 1000) + LFG_COOLDOWN
-        });
+    async setCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number): Promise<number> {
+        const config = await this.getSystemConfigForGuild(guildId);
+        if(!config) return 0;
 
-        return Math.floor(Date.now() / 1000) + LFG_COOLDOWN
+        const expiresAt = timestampNow() + config.post_cooldown;
+        lfgCooldowns.set(this.key(guildId, memberId, gameId), {expiresAt: expiresAt});
+
+        return expiresAt;
     }
     /**
      * Remove the member's cooldown inside the guild-game
      */
     removeCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number) {
-        lfgCooldowns.delete(stringKey(guildId, memberId, gameId));
+        lfgCooldowns.delete(this.key(guildId, memberId, gameId));
     }
     /**
      * @returns The expiration timestamp in seconds or undefined if the member is not on cooldown 
      * for the specified guild-game 
      */
-    getCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number) {
-        return lfgCooldowns.get(stringKey(guildId, memberId, gameId))?.timestamp;
+    getCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number): number | undefined {
+        const entry = lfgCooldowns.get(this.key(guildId, memberId, gameId));
+        if(!entry) return undefined;
+
+        // clean up if the cooldown expired
+        if(entry.expiresAt <= timestampNow()) {
+            lfgCooldowns.delete(this.key(guildId, memberId, gameId));
+            return undefined;
+        }
+
+        return entry.expiresAt;
     }
+    ///////////////////////////////////////////
+    // lfg_system_config related repositories
+    ///////////////////////////////////////////
+    async initSystemConfig(guildId: Snowflake) {
+        await database.query(
+            `INSERT INTO lfg_system_config (guild_id)
+            VALUES ($1)
+            ON CONFLICT (guild_id)
+            DO UPDATE SET
+                force_voice = TRUE,
+                post_cooldown = ${DEFAULT_LFG_COOLDOWN};`,
+            [guildId]
+        );
+
+        // caching
+        lfgSystemConfigCache.set(guildId, {
+            guild_id: guildId,
+            force_voice: true,
+            post_cooldown: DEFAULT_LFG_COOLDOWN
+        });
+    }
+    async deleteSystemConfig(guildId: Snowflake) {
+        await database.query(`DELETE FROM lfg_system_config WHERE guild_id=$1`, [guildId]);
+    }
+    /**
+     * The cooldown must be in seconds
+     */
+    async updateSystemCooldown(guildId: Snowflake, cooldown: number): Promise<LfgSystemConfig> {
+        const {rows: data} = await database.query<LfgSystemConfig>(
+            `UPDATE lfg_system_config SET post_cooldown=$2 WHERE guild_id=$1
+            RETURNING *;`,
+            [guildId, cooldown]
+        );
+
+        lfgSystemConfigCache.set(guildId, {
+            guild_id: guildId,
+            force_voice: data[0]!.force_voice,
+            post_cooldown: data[0]!.post_cooldown
+        });
+        return data[0]!;
+    }
+
+    async toggleSystemForceVoice(guildId: Snowflake, force_voice: boolean): Promise<LfgSystemConfig> {
+        const {rows: data} = await database.query<LfgSystemConfig>(
+            `UPDATE lfg_system_config SET force_voice=$2 WHERE guild_id=$1
+            RETURNING *;`,
+            [guildId, force_voice]
+        )
+
+        lfgSystemConfigCache.set(guildId, {
+            guild_id: guildId,
+            force_voice: data[0]!.force_voice,
+            post_cooldown: data[0]!.post_cooldown
+        });
+
+        return data[0]!;
+    }
+
+    async getSystemConfigForGuild(guildId: Snowflake): Promise<LfgSystemConfig> {
+        const cache = lfgSystemConfigCache.get(guildId);
+        if(cache) return cache
+
+        const {rows : data} = await database.query<LfgSystemConfig>(
+            `SELECT * FROM lfg_system_config WHERE guild_id=$1`, [guildId]
+        );
+
+        if(data && data[0]) {
+            lfgSystemConfigCache.set(guildId, {
+                guild_id: guildId,
+                force_voice: data[0].force_voice,
+                post_cooldown: data[0].post_cooldown
+            });
+            return data[0];
+        } else {
+            await this.initSystemConfig(guildId);
+            return {
+                guild_id: guildId,
+                force_voice: true,
+                post_cooldown: DEFAULT_LFG_COOLDOWN
+            }
+        }
+    }
+
     ///////////////////////////////////
     // lfg_games related repositories
     ///////////////////////////////////
@@ -583,6 +673,23 @@ class LfgSystemRepository {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Fetch all the posts of a member in a guild, no matter the game
+     */
+    async getAllMemberPosts(guildId: string, ownerId: string): Promise<LfgPostWithChannelTable[]> {
+        const {rows: data} = await database.query<LfgPostWithChannelTable>(
+            `SELECT p.*, c.discord_channel_id
+            FROM lfg_posts p
+            JOIN lfg_channels c
+                ON c.id = p.channel_id
+            WHERE p.guild_id=$1
+                AND p.owner_id=$2`,
+            [guildId, ownerId]
+        );
+
+        return data;
     }
 
     /**

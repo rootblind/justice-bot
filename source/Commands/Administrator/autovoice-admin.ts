@@ -1,10 +1,10 @@
-import { ChannelType, GuildMember, MessageFlags, PermissionFlagsBits, SlashCommandBuilder, VoiceChannel } from "discord.js";
+import { ChannelType, EmbedBuilder, GuildMember, MessageFlags, PermissionFlagsBits, SlashCommandBuilder, VoiceChannel } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import AutoVoiceRoomRepo, { AUTOVOICE_COOLDOWN } from "../../Repositories/autovoiceroom.js";
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { AutoVoiceRoom } from "../../Interfaces/database_types.js";
-import { fetchGuildChannel, fetchGuildMember } from "../../utility_modules/discord_helpers.js";
+import { fetchGuildChannel, fetchGuildMember, fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { duration_timestamp, seconds_to_duration, time_unit_conversion } from "../../utility_modules/utility_methods.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import ServerRolesRepo from "../../Repositories/serverroles.js";
@@ -60,7 +60,6 @@ const autovoice_admin: ChatCommand = {
         )
         .toJSON(),
     async execute(interaction) {
-        // TODO: ONCE LOGS ARE SET UP, ADD LOGGING FOR THESE ACTIONS
         const interactionMember = interaction.member as GuildMember;
         const guild = interactionMember.guild;
         const options = interaction.options;
@@ -143,6 +142,21 @@ const autovoice_admin: ChatCommand = {
             }
         }
 
+        const voiceLogs = await fetchLogsChannel(guild, "voice");
+        const embedLogs = new EmbedBuilder()
+            .setColor("Red")
+            .setAuthor({
+                name: interaction.user.username,
+                iconURL: `${interaction.user.displayAvatarURL({extension: "jpg"})}`
+            })
+            .setFields({
+                name: "Executor",
+                value: `${interaction.member}`,
+                inline: true
+            })
+            .setTimestamp()
+            .setFooter({text: `Executor ID: ${interaction.user.id}`})
+
         switch (subcommand) {
             case "delete": {
                 if (voice === null && owner === null) {
@@ -166,6 +180,21 @@ const autovoice_admin: ChatCommand = {
                             embeds: [ embed_message("Green", `Successfully deleted **${voice.name}** autovoice.`) ],
                             flags: MessageFlags.Ephemeral
                         });
+                        if(voiceLogs) {
+                            await voiceLogs.send({
+                                embeds: [
+                                    embedLogs
+                                        .setTitle("Autovoice deleted")
+                                        .addFields(
+                                            {
+                                                name: "Channel ID",
+                                                value: `${voice.id}`,
+                                                inline: true
+                                            }
+                                        )
+                                ]
+                            });
+                        }
                         return;
                     } catch(error) {
                         await errorLogHandle(error);
@@ -201,6 +230,26 @@ const autovoice_admin: ChatCommand = {
                             embeds: [ embed_message("Green", `Successfully deleted **${channel.name}** autovoice.`) ],
                             flags: MessageFlags.Ephemeral
                         });
+                        if(voiceLogs) {
+                            await voiceLogs.send({
+                                embeds: [
+                                    embedLogs
+                                        .setTitle("Autovoice deleted")
+                                        .addFields(
+                                            {
+                                                name: "Room owner",
+                                                value: `${owner.username}`,
+                                                inline: true
+                                            },
+                                            {
+                                                name: "Channel ID",
+                                                value: `${channel.id}`,
+                                                inline: true
+                                            }
+                                        )
+                                ]
+                            });
+                        }
                         return;
                     } catch(error) {
                         await errorLogHandle(error);
@@ -237,6 +286,28 @@ const autovoice_admin: ChatCommand = {
                     embeds: [ embed_message("Green", `${newOwner} is now the owner of ${voice}`) ],
                     flags: MessageFlags.Ephemeral
                 });
+
+                if(voiceLogs) {
+                    await voiceLogs.send({
+                        embeds: [
+                            embedLogs
+                                .setColor("Aqua")
+                                .setTitle("Autovoice ownership transfer")
+                                .setFields(
+                                    {
+                                        name: "New owner",
+                                        value: `${newOwner}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: "Channel ID",
+                                        value: `${voice?.id}`,
+                                        inline: true
+                                    }
+                                )
+                        ]
+                    });
+                }
                 break;
             }
             case "timeout": {
@@ -292,6 +363,27 @@ const autovoice_admin: ChatCommand = {
                     embeds: [ embed_message("Green", `${user} was timed out until <t:${durationTimestamp}:f> from creating autovoice channels.`) ],
                     flags: MessageFlags.Ephemeral
                 });
+
+                if(voiceLogs) {
+                    await voiceLogs.send({
+                        embeds: [
+                            embedLogs
+                                .setTitle("Autovoice Time out")
+                                .addFields(
+                                    {
+                                        name: "Target",
+                                        value: `${user.toString()}`,
+                                        inline: true
+                                    },
+                                    {
+                                        name: "Expires",
+                                        value: `<t:${durationTimestamp}:f>`,
+                                        inline: true
+                                    }
+                                )
+                        ]
+                    });
+                }
 
                 break;
             }

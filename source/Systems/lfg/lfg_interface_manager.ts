@@ -182,8 +182,9 @@ export async function interface_manager_collector(message: Message) {
             }
 
             if (buttonInteraction.customId === "lfg-button" || buttonInteraction.customId === "bump-post-button") {
-                // force voice channel
-                if((buttonInteraction.member as GuildMember).voice.channelId === null) {
+                // check for force_voice
+                const systemConfig = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
+                if((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                     await buttonInteraction.reply({
                         embeds: [ embed_message("Red", "You need to be in a voice channel to do that!") ],
                         flags: MessageFlags.Ephemeral
@@ -205,8 +206,8 @@ export async function interface_manager_collector(message: Message) {
 
             switch (buttonInteraction.customId) {
                 case "lfg-button": {
-
-                    if ((buttonInteraction.member as GuildMember).voice.channelId === null) {
+                    const systemConfig = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
+                    if ((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                         // member must be on voice
                         await buttonInteraction.reply({
                             embeds: [

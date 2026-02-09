@@ -19,8 +19,17 @@ export default async function LfgSystem(): Promise<void> {
             END
             $$;
         `);
-
-
+        
+        // =========================
+        // SYSTEM-WIDE CONFIG
+        // =========================
+        await database.query(
+            `CREATE TABLE IF NOT EXISTS lfg_system_config (
+                guild_id BIGINT PRIMARY KEY,
+                force_voice BOOLEAN NOT NULL DEFAULT TRUE,
+                post_cooldown INT NOT NULL DEFAULT 900
+            );`
+        );
         // =========================
         // ROOT CONFIG (game per guild)
         // =========================

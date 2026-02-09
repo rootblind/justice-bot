@@ -30,7 +30,11 @@ const guildDelete: Event = {
         await runHooks(guild);
         
         const tables = await DatabaseRepo.getTablesWithColumnValue({column: "guild", value: guild.id});
+
+        // lfg system
         await LfgSystemRepo.deleteAllGamesFromGuild(guild.id);
+        await LfgSystemRepo.deleteSystemConfig(guild.id);
+
         for(const table of tables) {
             try {
                 await DatabaseRepo.wipeGuildFromTable(table, guild.id);

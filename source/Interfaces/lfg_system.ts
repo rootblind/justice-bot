@@ -1,3 +1,9 @@
+export interface LfgSystemConfig {
+    guild_id: string,
+    force_voice: boolean,
+    post_cooldown: number
+}
+
 export type PgBigInt = string;
 
 export type Snowflake = string;

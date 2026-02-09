@@ -236,7 +236,7 @@ export async function lfg_builder_collector(
     const ranks: string[] = [];
     const discordRoleLimit = 25; // select menus accept a maximum of 25 options
 
-    // TODO: ADD A WAY TO CLEAR THE ARRAYS IN CASE THE USER WISHES TO RECONFIGURE
+    // there is no reset, if the user wishes to correct their mistakes, they need to start another builder instance
 
     // inner button cooldowns
     const cooldowns = new Collection<string, number>();
@@ -472,6 +472,18 @@ export async function lfg_builder_collector(
                             flags: MessageFlags.Ephemeral
                         });
 
+                        return;
+                    }
+
+                    const checkGame = await LfgSystemRepo.getGame(buttonInteraction.guild!.id, game.game_name);
+                    if(checkGame && checkGame.manager_message_id !== null) { // safe guarding against building the same game more than once
+                        await buttonInteraction.reply({
+                            embeds: [embed_error(
+                                "It seems like another builder instance already built this game before the button was pressed.\n" +
+                                `Channel Id: ${checkGame.manager_channel_id}`
+                            )]
+                        });
+                        collector.stop();
                         return;
                     }
 

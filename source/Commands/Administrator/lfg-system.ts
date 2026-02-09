@@ -39,8 +39,6 @@ import {
     resolveSnowflakesToRoles 
 } from "../../utility_modules/discord_helpers.js";
 
-// TODO: MORE CONFIGURATION: ADD A TOGGLE TO EITHER FORCE VOICE STATE OR ALLOW MEMBERS TO POST LFG WITHOUT VOICE STATE
-
 const lfgSystem: ChatCommand = {
     data: new SlashCommandBuilder()
         .setName("lfg-system")
@@ -53,6 +51,34 @@ const lfgSystem: ChatCommand = {
         .addSubcommand(subcommand =>
             subcommand.setName("about")
                 .setDescription("Open a menu and select the game you want to see details about.")
+        )
+        .addSubcommandGroup(subcommandGroup =>
+            subcommandGroup.setName("config")
+                .setDescription("System-wide configuration for this guild")
+                .addSubcommand(subcommand =>
+                    subcommand.setName("force-voice")
+                        .setDescription("Toggle whether or not the bot will require members to be present in a voice channel.")
+                        .addBooleanOption(option => 
+                            option.setName("toggle-voice")
+                                .setDescription("Toggle true to force members on voice or false otherwise.")
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName("lfg-cooldown")
+                        .setDescription("Set the cooldown between LFG posts and BUMPS.")
+                        .addNumberOption(option =>
+                            option.setName("cooldown")
+                                .setDescription("The cooldown in seconds.")
+                                .setRequired(true)
+                                .setMinValue(60)
+                                .setMaxValue(86_400) // 1 day
+                        )
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName("info")
+                        .setDescription("Get the current configuration of the lfg system on this guild.")
+                )
         )
         .addSubcommandGroup(subcommandGroup =>
             subcommandGroup.setName("new")
@@ -143,7 +169,7 @@ const lfgSystem: ChatCommand = {
         group: "lfg"
     },
 
-    async execute(interaction) { // TODO: SET UP THE EVENTS SO THE DATABASE IS CLEANED UP UPON DELETION
+    async execute(interaction) {
         const admin = interaction.member as GuildMember;
         const guild = admin.guild;
         const options = interaction.options;
@@ -157,7 +183,11 @@ const lfgSystem: ChatCommand = {
             && row.manager_message_id !== null
         );
 
-        if ((subcommandGroup !== "new" || subcommand !== "game") && subcommand !== "instructions") {
+        if (
+            (subcommandGroup !== "new" || subcommand !== "game")
+            && subcommand !== "instructions" 
+            && subcommandGroup !== "config"
+        ) {
             // if the command is not "/lfg-system new game" or "/lfg-system instructions"
             // there must be at least one game registered in this guild
             if (guildGames.length === 0) {
@@ -975,6 +1005,52 @@ const lfgSystem: ChatCommand = {
                                 } catch {/* do nothing */ }
                             }
                         )
+                        break;
+                    }
+                }
+                break;
+            }
+            case "config": {
+                switch(subcommand) {
+                    case "force-voice": {
+                        const toggle = options.getBoolean("toggle-voice", true);
+                        await LfgSystemRepo.toggleSystemForceVoice(guild.id, toggle);
+                        await interaction.reply({
+                            embeds: [embed_message("Green", `Force voice was set to **${toggle}**.`)],
+                            flags: MessageFlags.Ephemeral
+                        });
+                        break;
+                    }
+                    case "lfg-cooldown": {
+                        const cooldown = options.getNumber("cooldown", true);
+                        await LfgSystemRepo.updateSystemCooldown(guild.id, cooldown);
+                        await interaction.reply({
+                            embeds: [embed_message("Green", `LFG cooldown was set to \`${cooldown} seconds\`.`)],
+                            flags: MessageFlags.Ephemeral
+                        });
+                        break;
+                    }
+                    case "info": {
+                        const config = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
+                        await interaction.reply({
+                            embeds: [
+                                new EmbedBuilder()
+                                    .setAuthor({name: `${guild.name} LFG Configuration`, iconURL: `${guild.iconURL({extension: "png"})}`})
+                                    .setColor("Purple")
+                                    .addFields(
+                                        {
+                                            name: "Force Voice",
+                                            value: `${config.force_voice}`.toUpperCase(),
+                                            inline: true
+                                        },
+                                        {
+                                            name: "LFG Cooldown",
+                                            value: `${config.post_cooldown} seconds`,
+                                            inline: true
+                                        }
+                                    )
+                            ]
+                        });
                         break;
                     }
                 }

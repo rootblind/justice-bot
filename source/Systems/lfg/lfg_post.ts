@@ -20,7 +20,8 @@ import {
     Collection,
     Snowflake,
     ComponentType,
-    GuildEmoji
+    GuildEmoji,
+    EmbedAuthorData
 } from "discord.js";
 import {
     LfgChannelTable,
@@ -77,6 +78,7 @@ export function embed_lfg_post(
     color: ColorResolvable = "DarkRed"
 ) {
     const fields: RestOrArray<APIEmbedField> = [];
+    const author: Omit<EmbedAuthorData, "proxyIconURL"> = {name: `🔊 LFG +${slots} ${gamemode}`};
     if (ranks) {
         fields.push({
             name: "Ranks",
@@ -89,16 +91,20 @@ export function embed_lfg_post(
             value: roles
         });
     }
-    fields.push({
-        name: "Channel",
-        value: `${member.voice.channel}`
-    });
+
+    if(member.voice.channel) {
+        author.url = member.voice.channel.url;
+        fields.push({
+            name: "Channel",
+            value: `${member.voice.channel}`
+        });
+    }
 
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTimestamp()
         .setFooter({ text: member.user.username, iconURL: member.displayAvatarURL({ extension: "jpg" }) })
-        .setAuthor({ name: `🔊 LFG +${slots} ${gamemode}`, url: `${member.voice.channel?.url}` })
+        .setAuthor(author)
         .setThumbnail(member.guild.iconURL({ extension: "png" }))
         .setFields(fields)
     if (details) embed.setDescription(details);
@@ -132,10 +138,13 @@ export function embed_lfg_post_log(
             value: roles
         });
     }
-    fields.push({
-        name: "Channel",
-        value: `${member.voice.channel?.name} (${member.voice.channel?.id})`
-    });
+
+    if(member.voice.channel) {
+        fields.push({
+            name: "Channel",
+            value: `${member.voice.channel?.name} (${member.voice.channel?.id})`
+        });
+    }
 
     const embed = new EmbedBuilder()
         .setColor(color)
@@ -192,7 +201,8 @@ export async function bump_lfg_post(message: Message, post: LfgPostTable): Promi
         }
 
         // set cooldown
-        return LfgSystemRepo.setCooldown(post.guild_id, post.owner_id, post.game_id);
+        const cooldown = await LfgSystemRepo.setCooldown(post.guild_id, post.owner_id, post.game_id);
+        return cooldown;
     } else {
         await errorLogHandle(new Error("bump_lfg_post was called on a non sendable message channel."));
         return 0; // the post couldn't be bumped
@@ -245,8 +255,8 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                         });
                         return;
                     }
-
-                    if ((buttonInteraction.member as GuildMember).voice.channelId === null) {
+                    const systemConfig = await LfgSystemRepo.getSystemConfigForGuild(buttonInteraction.guild!.id);
+                    if ((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                         // force voice presence
                         await buttonInteraction.reply({
                             embeds: [embed_message("Red", "You need to be in a voice channel to do that!")],
@@ -460,7 +470,7 @@ export async function lfg_post_builder(
         // attach the collector to the lfg post
         await lfg_post_collector(postMessage, lfgPostTable);
 
-        const expiresTimestamp = LfgSystemRepo.setCooldown(guild.id, member.id, game.id); // put poster on cooldown
+        const expiresTimestamp = await LfgSystemRepo.setCooldown(guild.id, member.id, game.id); // put poster on cooldown
         await submit.editReply({
             embeds: [
                 embed_message("Green", `Your post has been sent in ${channel}.\nYou can post again <t:${expiresTimestamp}:R>`)
