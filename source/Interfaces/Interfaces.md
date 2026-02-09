@@ -7,3 +7,4 @@ Sources for custom types and interfaces.
 - event: The interface used to build event sources and to handle event files
 - helper_types: Interfaces and types with a general scope or system specific scope, unrelated to database, server or Discord API
 - server_types: Interfaces and types specific for the REST API of the express application
+- lfg_system: Types specific to the LFG System

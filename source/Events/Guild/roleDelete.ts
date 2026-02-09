@@ -4,6 +4,7 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 
 export type roleDeleteHook = (role: Role) => Promise<void>;
 const hooks: roleDeleteHook[] = [];
@@ -44,7 +45,8 @@ const roleDelete: Event = {
         await PremiumMembersRepo.nullifyCustomRole(guild.id, role.id);
         await runHooks(role);
 
-
+        // clean lfg-system related roles
+        await LfgSystemRepo.deleteOneLfgRoleBySnowflake(role.id);
     }
 }
 

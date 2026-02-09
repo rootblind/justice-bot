@@ -28,6 +28,7 @@ export type ChatCommandGroup =
     | "premium"
     | "autovoice"
     | "block"
+    | "lfg"
 
 export type ChatCommandCategory = 
     | "Info"

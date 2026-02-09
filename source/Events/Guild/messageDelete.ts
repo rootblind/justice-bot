@@ -13,6 +13,7 @@ import DatabaseRepo from "../../Repositories/database_repository.js";
 import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 
 export type messageDeleteHook = (message: Message) => Promise<void>;
 const hooks: messageDeleteHook[] = [];
@@ -120,6 +121,10 @@ const messageDelete: Event = {
 
             // autovoicesystem
             await AutoVoiceSystemRepo.deleteSystem(guild.id, message.id); // if the message is of autovoicesystem, the system will be deleted from database.
+        
+            // lfg-system related messages (interfaces and posts)
+            await LfgSystemRepo.onGameComponentDelete(guild.id, message.id);
+            await LfgSystemRepo.deletePostBySnowflake(message.id);
         }
     }
 }

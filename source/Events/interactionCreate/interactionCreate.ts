@@ -171,8 +171,7 @@ const interactonCreate: Event = {
                 const expires = has_cooldown(interaction.user.id, timestamps, command.metadata.cooldown)
                 if (expires) {
                     return await interaction.reply({
-                        content: `Please wait, you are on cooldown for \`${command.data.name}\`.
-                        You can use it again <t:${expires}:R>`,
+                        content: `Please wait, you are on cooldown for \`${command.data.name}\`.\nYou can use it again <t:${expires}:R>`,
                         flags: MessageFlags.Ephemeral
                     });
                 }

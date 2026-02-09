@@ -27,6 +27,9 @@ export function get_env_var(name: string) {
 }
 
 /**
+ * Cooldowns must be set in seconds in the Collection.
+ * 
+ * @param userId The Snowflake of the user to be queried for
  * @param cd in seconds
  * @returns False if the user is not on cooldown, returns the cooldown in seconds otherwise
  */
@@ -58,7 +61,7 @@ export function set_cooldown(
     if (!has_cooldown(userId, cooldowns, cd)) {
         const now = Math.floor(Date.now() / 1000)
         cooldowns.set(userId, now);
-        setTimeout(() => cooldowns.delete(userId), cd)
+        setTimeout(() => cooldowns.delete(userId), cd * 1000) // timeout uses time in milliseconds
     }
 }
 
@@ -430,4 +433,27 @@ export function formatBytes(bytes: number, decimals = 2): string {
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))}${sizes[i]}`;
+}
+
+/**
+ * 
+ * @param id The id registered by the cooldowns collection
+ * @param cooldowns Collection of cooldowns
+ * @param cd The cooldown in milliseconds
+ * @returns true if the user has a cooldown, false otherwise
+ */
+export function hasCooldown(id: Snowflake, cooldowns: Collection<string, number>, cd: number) {
+    const now = Date.now();
+    if (cooldowns.has(id)) {
+        const expires = cooldowns.get(id)! + cd;
+        if (now < expires) return expires;
+    }
+    return false;
+}
+
+/**
+ * @returns Current time as unix timestamp in seconds 
+ */
+export function timestampNow(): number {
+    return Math.floor(Date.now() / 1000);
 }

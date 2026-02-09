@@ -126,9 +126,12 @@ const nuke_category: ChatCommand = {
                     }
                 }
 
-                await buttonInteraction.editReply({
-                    embeds: [ embed_message("Red", "Nuke complete!") ]
-                });
+                try { // the command might be called inside one of the categories to be deleted
+                    await buttonInteraction.editReply({
+                        embeds: [ embed_message("Red", "Nuke complete!") ]
+                    });
+                } catch { /* do nothing */}
+
                 selectCollector.stop();
             },
             async () => {}

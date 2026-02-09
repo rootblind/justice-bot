@@ -93,6 +93,7 @@ const clientReady: Event = {
         // re-using the on ready task logic
         // In order to add functionality to base sources, config_sources.event_hooks must implement them
         // in order to keep the base sources unchanged
+        /* NO EVENT HOOK TO BE LOADED AT THE MOMENT
         if(local_config.sources.event_hooks) {
             try {
                 const eventHooks = await load_onReady_tasks(local_config.sources.event_hooks);
@@ -102,7 +103,7 @@ const clientReady: Event = {
                 setTimeout(() => process.exit(1), 5_000);
             }
         }
-
+        */
         if(local_config.sources.attach_collectors) {
             try {
                 const collectors = await load_onReady_tasks(local_config.sources.attach_collectors);

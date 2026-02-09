@@ -2,6 +2,7 @@ import type { Guild } from "discord.js";
 import type { Event } from "../../Interfaces/event.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 
 export type guildDeleteHook = (guild: Guild) => Promise<void>;
 const hooks: guildDeleteHook[] = [];
@@ -29,7 +30,7 @@ const guildDelete: Event = {
         await runHooks(guild);
         
         const tables = await DatabaseRepo.getTablesWithColumnValue({column: "guild", value: guild.id});
-
+        await LfgSystemRepo.deleteAllGamesFromGuild(guild.id);
         for(const table of tables) {
             try {
                 await DatabaseRepo.wipeGuildFromTable(table, guild.id);

@@ -6,6 +6,7 @@ import DatabaseRepo from "../../Repositories/database_repository.js";
 import type { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 
 export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
 const hooks: channelDeleteHook[] = [];
@@ -39,6 +40,10 @@ const channelDelete: Event = {
         }
         // clean system if any channel is deleted from it
         await AutoVoiceSystemRepo.onChannelDelete(guild.id, channel.id);
+
+        // clean lfg-system related channels
+        await LfgSystemRepo.onGameComponentDelete(guild.id, channel.id);
+        await LfgSystemRepo.deleteChannelBySnowflake(channel.id);
 
         await runHooks(channel);
         // logging

@@ -4,6 +4,7 @@ import {
     GuildBasedChannel,
     GuildMember,
     OverwriteResolvable,
+    OverwriteType,
     PermissionFlagsBits,
     RestOrArray,
     SlashCommandBuilder,
@@ -104,12 +105,8 @@ const logsCommand: ChatCommand = {
             case "auto-setup": {
                 await interaction.deferReply();
 
-                let botRoleId = await ServerRolesRepo.getGuildBotRole(guild.id);
-                let staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
-
-                // if any of the roles are not set, replace them with a fallback value
-                if (!botRoleId) botRoleId = client.user.id; // if no bot role, the client grants itself perms
-                if (!staffRoleId) staffRoleId = member.id; // if no staff role, the client will grant the administrator-member perms
+                const botRoleId = await ServerRolesRepo.getGuildBotRole(guild.id);
+                const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
 
                 const allowPerms = [
                     PermissionFlagsBits.ViewChannel,
@@ -117,23 +114,37 @@ const logsCommand: ChatCommand = {
                     PermissionFlagsBits.ReadMessageHistory
                 ];
 
-                const denyPerms = [PermissionFlagsBits.ManageMessages];
+                const denyPerms = [ PermissionFlagsBits.ManageMessages ];
 
                 const channelPerms: OverwriteResolvable[] = [
                     {
-                        id: guild.roles.everyone,
+                        id: guild.roles.everyone.id,
                         deny: allowPerms
-                    },
-                    {
-                        id: botRoleId,
-                        allow: allowPerms
-                    },
-                    {
-                        id: staffRoleId,
-                        allow: allowPerms,
-                        deny: denyPerms
                     }
                 ];
+
+                // if any of the roles are not set, replace them with a fallback value
+                if (botRoleId) {
+                    channelPerms.push({
+                        id: botRoleId,
+                        allow: allowPerms
+                    });
+                } else {// if no bot role, the client grants itself perms
+                    channelPerms.push({
+                        id: client.user.id,
+                        type: OverwriteType.Member,
+                        allow: allowPerms
+                    });
+                }
+
+                if (staffRoleId) {
+                    channelPerms.push({
+                        id: member.id,
+                        type: OverwriteType.Member,
+                        allow: allowPerms,
+                        deny: denyPerms
+                    });
+                }// if no staff role, then add nothing since the member is already admin
 
                 const channelOptions = EVENT_GUILD_LOGS
                     .filter((e) => e !== "ticket-support") // ticket logs are set by the ticket system

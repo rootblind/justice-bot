@@ -46,6 +46,10 @@ export function embed_message(color: ColorResolvable, description: string, title
     return embed;
 }
 
+export function embed_interaction_expired() {
+    return embed_message("Aqua", "Interaction expired.");
+}
+
 /**
  * 
  * @param targetId The snowflake id of the user that gets unbanned

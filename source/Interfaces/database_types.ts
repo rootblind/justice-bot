@@ -208,7 +208,7 @@ export const EVENT_GUILD_LOGS = [
     "flagged-messages",
     "premium-activity",
     "justice-logs",
-    // "lfg-logs",
+    "lfg-logs",
     "ticket-support"
 ] as const;
 

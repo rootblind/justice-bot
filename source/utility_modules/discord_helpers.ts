@@ -18,8 +18,9 @@ import {
     Message,
     MessageComponentInteraction,
     MessageComponentType,
+    NonThreadGuildBasedChannel,
     OverwriteResolvable,
-    PermissionResolvable, Role, Snowflake,
+    PermissionResolvable, Role, SendableChannels, Snowflake,
     TextChannel,
     User,
     VoiceChannel,
@@ -330,6 +331,8 @@ export async function fetchPremiumRole(client: Client, guild: Guild | Snowflake)
     if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
         guildObject = await fetchGuild(client, guild);
 
+    } else {
+        guildObject = guild;
     }
 
     if (!guildObject) return null; // invalid guild
@@ -355,6 +358,8 @@ export async function fetchStaffRole(client: Client, guild: Guild | Snowflake): 
     if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
         guildObject = await fetchGuild(client, guild);
 
+    } else {
+        guildObject = guild;
     }
 
     if (!guildObject) return null; // invalid guild
@@ -384,6 +389,8 @@ export async function fetchMemberCustomRole(client: Client,
     if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
         guildObject = await fetchGuild(client, guild);
 
+    } else {
+        guildObject = guild;
     }
 
     if (!guildObject) return null; // invalid guild
@@ -677,4 +684,53 @@ export async function buildCategory(
     }
 
     return channelsBuilt;
+}
+
+/**
+ * @param ids Array of role snowflakes to be resolved 
+ * @returns Array of discord roles from the ids provided. Failed resolve will skip the ID
+ */
+export async function resolveSnowflakesToRoles(guild: Guild, ids: string[]): Promise<Role[]> {
+    const roles: Role[] = [];
+    for(const id of ids) {
+        const role = await fetchGuildRole(guild, id);
+        if(role) roles.push(role);
+    }
+
+    return roles;
+}
+
+/**
+ * 
+ * @param type one of NonThreadGuildBasedChannel types
+ * @returns Array of channels resolved from the ids. If any Id is invalid, it is skipped
+ */
+export async function resolveSnowflakesToChannels<
+    T extends NonThreadGuildBasedChannel
+>(
+    guild: Guild, 
+    ids: string[],
+    guard: (c: NonThreadGuildBasedChannel) => c is T
+): Promise<T[]> {
+    const channels = await guild.channels.fetch();
+
+    return ids.map(id => channels.get(id))
+        .filter(c => c !== null && c !== undefined)
+        .filter(guard);
+}
+
+/**
+ * Messages fetched this way are not guaranteed to have the guild non-null.
+ * 
+ * @param channel The channel where the message is sent.
+ * @param messageId The Snowflake of the message to be fetched
+ * @returns The message or null if the fetch failed
+ */
+export async function fetchMessage(channel: SendableChannels, messageId: Snowflake): Promise<Message | null> {
+    let message: Message | null = null;
+    try {
+        message = await channel.messages.fetch(messageId);
+    } catch {/* do nothing */}
+
+    return message;
 }

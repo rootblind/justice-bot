@@ -1,20 +1,31 @@
-import { ChannelType, SlashCommandBuilder, VoiceChannel } from "discord.js";
+import { EmbedBuilder, Role, RoleMention, SlashCommandBuilder } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 
 const test: ChatCommand = {
     data: new SlashCommandBuilder()
         .setName("test")
         .setDescription("test")
-        .addChannelOption(option =>
-            option.setName("voice")
-                .setDescription("voice")
-                .addChannelTypes(ChannelType.GuildVoice)
+        .addRoleOption(option =>
+            option.setName("role")
+                .setDescription("role")
+                .setRequired(true)
         )
         .toJSON(),
     async execute(interaction) {
         const options = interaction.options;
-        const voice = options.getChannel("voice", true) as VoiceChannel;
-        await interaction.reply(`${voice.userLimit}`)
+        const role = options.getRole("role", true) as Role;
+        const normalize = (s: string) => s.toLocaleLowerCase().replace(/\s+/g, "-");
+        let roleIcon: string | null | RoleMention = null;
+        if (role.unicodeEmoji) roleIcon = role.unicodeEmoji;
+        const emojis = await role.guild.emojis.fetch();
+        const emoji = emojis.find(e => normalize(e.name) === normalize(role.name));
+        if (emoji) {
+            roleIcon = emoji.toString();
+        }
+        if(roleIcon === null) roleIcon = role.toString();
+
+        await interaction.reply({embeds: [ new EmbedBuilder().setFields({name: "test", value: `${roleIcon}`}) ]})
+
     },
 
     metadata: {

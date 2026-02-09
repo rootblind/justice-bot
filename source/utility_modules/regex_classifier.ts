@@ -14,6 +14,7 @@ export function regexGen(word: string) {
 
 export function buildTriggerRegex(triggerWords: string[]): RegExp {
     const pattern = triggerWords
+        .map(regexGen)
         .join("|");
 
     return new RegExp(pattern, "i");
