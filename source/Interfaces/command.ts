@@ -29,9 +29,11 @@ export type ChatCommandGroup =
     | "autovoice"
     | "block"
     | "lfg"
+    | "moderation"
 
 export type ChatCommandCategory = 
     | "Info"
     | "Administrator"
     | "Owner"
     | "Social"
+    | "Staff"

@@ -3,6 +3,7 @@ import { embed_ban, embed_ban_dm } from "../../utility_modules/embed_builders.js
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import PunishLogsRepo from "../../Repositories/punishlogs.js";
 import BanListRepo from "../../Repositories/banlist.js";
+import { timestampNow } from "../../utility_modules/utility_methods.js";
 
 /**
  * Build the embed to send in logChannel if it exists and register the punishment in punishlogs
@@ -58,7 +59,7 @@ export async function log_ban(
  * @param moderator The executor of the ban
  * @param punishmentType 2- tempban; 3- indefinite ban; 4- permanent ban
  * @param reason The reason of the ban
- * @param duration The duration if punishmentType = 2
+ * @param duration The duration in seconds if punishmentType = 2; DO NOT GIVE A DURATION FOR PERMANENT BANS
  * @param logChannel The moderation logs channel if it exists
  * @param no_punishlog Boolean whether to register punishlogs. True = no registration
  * @param send_dm Boolean whether to DM the target about the ban. True = send dm
@@ -80,8 +81,12 @@ export async function ban_handler(
     if(punishmentType === 2 && !duration) {
         throw new Error("punishmentType = 2 (tempban) but no duration provided");
     }
+    if(punishmentType === 4 && typeof duration === "string") {
+        throw new Error("punishmentType = 4 (permanent ban) can not be given a duration")
+    }
 
     const deletionTime = deleteMessages ? 604800 : 0;
+
 
     if(send_dm) {
         // try to dm the user about the ban
@@ -94,7 +99,7 @@ export async function ban_handler(
                         punishmentType,
                         reason,
                         undefined,
-                        duration
+                        duration ? `${Number(duration) + timestampNow()}` : undefined
                     )
                 ]
             });
@@ -108,7 +113,7 @@ export async function ban_handler(
         punishmentType,
         reason,
         logChannel,
-        duration,
+        duration ? `${Number(duration) + timestampNow()}` : undefined,
         no_punishlog
     );
 
@@ -124,7 +129,7 @@ export async function ban_handler(
     // registering the ban in banlist
     if(no_update === false && (punishmentType === 2 || punishmentType === 4)) {
         // tempban or permaban
-        const expires = duration ?? 0;
+        const expires = duration ? Number(duration) + timestampNow() : 0;
         await BanListRepo.push(
             guild.id,
             target.id,

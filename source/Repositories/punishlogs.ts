@@ -45,6 +45,8 @@ class PunishLogsRepository {
      * @param punishment_type Punishment index: 0- warn; 1- timeout; 2- tempban; 3- indefinite ban; 4- permanent ban
      * @param reason The reason for the punishment
      * @param timestamp The timestamp of the punishment
+     * 
+     * @returns The inserted row
      */
     async insertLog(
         guildId: Snowflake,
@@ -53,7 +55,7 @@ class PunishLogsRepository {
         punishment_type: number,
         reason: string,
         timestamp: string
-    ): Promise<void> {
+    ): Promise<PunishLogs & {id: number}> {
         const key = `${guildId}:${targetId}`;
         const log: PunishLogs = {
             id: 0,
@@ -72,11 +74,31 @@ class PunishLogsRepository {
             punishLogsCache.set(key, [ log ]);
         }
 
-        await database.query(
+        const {rows: data} = await database.query<PunishLogs & {id: number}>(
             `INSERT INTO punishlogs (guild, target, moderator, punishment_type, reason, timestamp)
-                VALUES($1, $2, $3, $4, $5, $6)`,
+                VALUES($1, $2, $3, $4, $5, $6)
+                RETURNING *;`,
             [guildId, targetId, moderatorId, punishment_type, reason, timestamp]
         );
+
+        return data[0]!;
+    }
+
+    async deleteLogById(id: number) {
+        // updating cache
+        const cache = punishLogsCache.getByValue((value) => {
+            if(value.find((v) => v.id === id)) return true;
+            return false;
+        });
+
+        if(cache && cache[0] && cache[0].length) {
+            const updatedCache = cache[0].filter(p => p.id !== id);
+            const log = cache[0][0]!; // since cache[0].length > 0 there is an index 0 element
+            punishLogsCache.set(`${log.guild}:${log.target}`, updatedCache);
+        }
+
+        // removing row
+        await database.query(`DELETE FROM punishlogs WHERE id=$1`, [id]);
     }
 }
 

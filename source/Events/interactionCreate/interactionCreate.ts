@@ -70,6 +70,30 @@ const interactonCreate: Event = {
                 }
             }
 
+            // check for staff commands
+            if(command.metadata.category === "Staff") {
+                const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
+                if(staffRoleId && !interaction.member.roles.cache.has(staffRoleId)) {
+                    // if staff role is set and the member doesn't have the staff role, reject
+                    return await interaction.reply({
+                        embeds: [
+                            embed_error("This action is restricted to STAFF members only.", "Lack of permission")
+                        ],
+                        flags: MessageFlags.Ephemeral
+                    });
+                }
+
+                if(!staffRoleId) {
+                    return await interaction.reply({
+                        embeds: [
+                            embed_error("This action requires setting up the staff role through `/server-roles`", "Missing server role")
+                        ],
+                        flags: MessageFlags.Ephemeral
+                    });
+                }
+            }
+
+            // check for premium command
             if (command.metadata.group === "premium") {
                 const premiumRoleId = await ServerRolesRepo.getGuildPremiumRole(guild.id);
                 if(!premiumRoleId) {
@@ -93,6 +117,7 @@ const interactonCreate: Event = {
                 }
             }
 
+            // check for owner command
             if (command.metadata.ownerOnly === true && interaction.user.id !== get_env_var("OWNER")) {
                 return await interaction.reply({
                     embeds: [embed_error("This command requires Owner privileges!")],
@@ -100,6 +125,7 @@ const interactonCreate: Event = {
                 });
             }
 
+            // check if the user meets the required permissions
             if (command.metadata.userPermissions.length) {
                 for (const permission of command.metadata.userPermissions) {
                     if (interaction.member?.permissions.has(permission)) {
@@ -115,6 +141,7 @@ const interactonCreate: Event = {
                 }
             }
 
+            // check if the bot meets the required permissions
             if (command.metadata.botPermissions.length) {
                 for (const permission of command.metadata.botPermissions) {
                     if (botMember.permissions.has(permission)) {
@@ -130,7 +157,7 @@ const interactonCreate: Event = {
                 }
             }
 
-            try {
+            try { // limit the bot to owner only
                 const botAppData = await BotConfigRepo.getConfig();
                 if (botAppData) {
                     if (botAppData.application_scope === "test" && interaction.user.id !== get_env_var("OWNER")) {
@@ -149,6 +176,7 @@ const interactonCreate: Event = {
                 return;
             }
 
+            // check for commands that can be used only in the home/test server
             if (command.metadata.testOnly && interaction.guild.id !== get_env_var("HOME_SERVER_ID")) {
                 return await interaction.reply({
                     embeds: [embed_error("This command cannot be ran outside the Test Server!")],

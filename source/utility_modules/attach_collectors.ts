@@ -30,7 +30,7 @@ export const autoVoiceManagerCollectors: OnReadyTaskBuilder = {
                 const manager = await managerchannel.messages.fetch(row.message);
                 await attach_autovoice_manager_collector(manager);
             } catch(error) {
-                await errorLogHandle(error, `Something went wrong while attaching the collector at guild id ${row.guild}`);
+                await errorLogHandle(error, collectorErrorMessage(row.guild));
                 await AutoVoiceSystemRepo.deleteSystem(row.guild, row.message); // deleting the system as good measure
                 continue;
             }

@@ -424,6 +424,21 @@ export function duration_timestamp(durationString: string): number | null {
 }
 
 /**
+ * 
+ * @param durationString durationRegex compatible string ex: "3h"
+ * @returns Duration in seconds or null if the string given is invalid.
+ */
+export function duration_to_seconds(durationString: string): number | null {
+    const match = durationString.match(durationRegex);
+    if(match && match[1] && match[2]) {
+        const value = Number(match[1]);
+        const unit = match[2].toLowerCase() as TimeStringUnit;
+        return value * time_unit_conversion(unit);
+    }
+    return null;
+}
+
+/**
  * Calculates the size in bytes of the number given and returns a string of the value and unit
  */
 export function formatBytes(bytes: number, decimals = 2): string {

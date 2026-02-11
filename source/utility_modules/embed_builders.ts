@@ -41,7 +41,7 @@ export function embed_error(description: string, title?: string): EmbedBuilder {
 
 export function embed_message(color: ColorResolvable, description: string, title?: string): EmbedBuilder {
     const embed = new EmbedBuilder().setColor(color).setDescription(description);
-    if(title) embed.setTitle(title);
+    if (title) embed.setTitle(title);
 
     return embed;
 }
@@ -743,12 +743,12 @@ export function embed_message_delete(
     return new EmbedBuilder()
         .setAuthor({
             name: `${author.username}`,
-            iconURL: author.displayAvatarURL({extension: "jpg"})
+            iconURL: author.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setTitle("🧹Message deleted")
         .setTimestamp()
-        .setFooter({text: `Author ID: ${author.id}`})
+        .setFooter({ text: `Author ID: ${author.id}` })
 }
 
 export function embed_message_action_context(
@@ -779,7 +779,7 @@ export function embed_message_action_context(
             }
         )
         .setTimestamp()
-        .setFooter({text: `Message Log ID: ${logID}`});
+        .setFooter({ text: `Message Log ID: ${logID}` });
 }
 
 /**
@@ -831,13 +831,13 @@ export function embed_message_update(
     return new EmbedBuilder()
         .setAuthor({
             name: author.username,
-            iconURL: author.displayAvatarURL({extension: "jpg"})
+            iconURL: author.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setTitle("📝 Message Edited")
         .setDescription(description)
         .setTimestamp()
-        .setFooter({text: `Author ID: ${author.id}`});
+        .setFooter({ text: `Author ID: ${author.id}` });
 }
 
 /**
@@ -857,7 +857,7 @@ export function embed_member_voice_channel_state(
     const embed = new EmbedBuilder()
         .setAuthor({
             name: `${member.user.username}`,
-            iconURL: member.user.displayAvatarURL({extension: "jpg"})
+            iconURL: member.user.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setFields({
@@ -865,25 +865,25 @@ export function embed_member_voice_channel_state(
             value: `${member}`
         })
         .setTimestamp()
-        .setFooter({text: `Member ID: ${member.id}`});
+        .setFooter({ text: `Member ID: ${member.id}` });
 
-    if(!oldState.channel && newState.channel) {
+    if (!oldState.channel && newState.channel) {
         embed
             .setDescription("Member joined voice")
             .addFields({
                 name: "Joined",
                 value: `${newState.channel} [${newState.channel.name}] [${newState.channel.id}]`
             })
-    } else if(oldState.channel && !newState.channel) {
+    } else if (oldState.channel && !newState.channel) {
         embed
             .setDescription("Member left voice")
             .addFields({
                 name: "Left",
                 value: `${oldState.channel} [${oldState.channel.name}] [${oldState.channel.id}]`
             });
-    } else if(
-        oldState.channel && 
-        newState.channel && 
+    } else if (
+        oldState.channel &&
+        newState.channel &&
         oldState.channel.id !== newState.channel.id
     ) {
         embed
@@ -922,7 +922,7 @@ export function embed_member_voice_state(
     const embed = new EmbedBuilder()
         .setAuthor({
             name: member.user.username,
-            iconURL: member.user.displayAvatarURL({extension: "jpg"})
+            iconURL: member.user.displayAvatarURL({ extension: "jpg" })
         })
         .setColor(color)
         .setDescription("Member voice state updated")
@@ -937,20 +937,20 @@ export function embed_member_voice_state(
             }
         )
         .setTimestamp()
-        .setFooter({text: `Member ID: ${member.id}`});
+        .setFooter({ text: `Member ID: ${member.id}` });
 
     let state = "None";
 
-    if(!oldState.serverMute && newState.serverMute) state = "Muted";
-    if(oldState.serverMute && !newState.serverMute) state = "Unmuted";
-    if(!oldState.serverDeaf && newState.serverDeaf) state = "Deafened";
-    if(oldState.serverDeaf && !newState.serverDeaf) state = "Undeafened";
-    if(!oldState.selfVideo && newState.selfVideo) state = "Camera ON";
-    if(oldState.selfVideo && !newState.selfVideo) state = "Camera OFF";
-    if(!oldState.streaming && newState.streaming) state = "Stream ON";
-    if(oldState.streaming && !newState.streaming) state = "Stream OFF";
+    if (!oldState.serverMute && newState.serverMute) state = "Muted";
+    if (oldState.serverMute && !newState.serverMute) state = "Unmuted";
+    if (!oldState.serverDeaf && newState.serverDeaf) state = "Deafened";
+    if (oldState.serverDeaf && !newState.serverDeaf) state = "Undeafened";
+    if (!oldState.selfVideo && newState.selfVideo) state = "Camera ON";
+    if (oldState.selfVideo && !newState.selfVideo) state = "Camera OFF";
+    if (!oldState.streaming && newState.streaming) state = "Stream ON";
+    if (oldState.streaming && !newState.streaming) state = "Stream OFF";
 
-    embed.addFields({ name: "Current state", value: state});
+    embed.addFields({ name: "Current state", value: state });
     return embed;
 }
 
@@ -974,33 +974,33 @@ export function embed_manual_command_pages(
         .setColor(color)
 
     let embedDesc = data.description + "\n";
-    
-    if(metadata.group) {
+
+    if (metadata.group) {
         embedDesc += `**Group**: ${metadata.group}\n`;
     }
 
-    if(metadata.category) {
+    if (metadata.category) {
         embedDesc += `**Category**: ${metadata.category}\n`;
     }
 
-    if(metadata.cooldown) {
+    if (metadata.cooldown) {
         embedDesc += `**Cooldown**: ${metadata.cooldown} seconds\n`;
     }
 
-    if(metadata.ownerOnly) {
-        embed.setFooter({text: "**BOT OWNER COMMAND**"});
+    if (metadata.ownerOnly) {
+        embed.setFooter({ text: "**BOT OWNER COMMAND**" });
     }
 
     embed.setDescription(embedDesc);
 
     let fieldCount = 0;
 
-    if(metadata.botPermissions.length || metadata.userPermissions.length) {
+    if (metadata.botPermissions.length || metadata.userPermissions.length) {
         let permissionsRequired = "";
 
-        permissionsRequired += metadata.botPermissions.length ? 
+        permissionsRequired += metadata.botPermissions.length ?
             `**Bot**: ${permission_names(metadata.botPermissions).join(", ")}\n` : "";
-        permissionsRequired += metadata.userPermissions.length ? 
+        permissionsRequired += metadata.userPermissions.length ?
             `**User**: ${permission_names(metadata.userPermissions).join(", ")}\n` : "";
 
         embed.addFields({
@@ -1059,7 +1059,7 @@ export function embed_manual_command_pages(
                 `**${option.name}** — ${option.description}`
             );
 
-            if(option.options) {
+            if (option.options) {
                 for (const sub of option.options) {
                     addField(
                         "Subcommand",
@@ -1079,9 +1079,9 @@ export function embed_manual_command_pages(
  */
 export function embed_current_logs_list(
     guild: Guild,
-    embedChannels: {channel: TextChannel, event: EventGuildLogsString}[]
+    embedChannels: { channel: TextChannel, event: EventGuildLogsString }[]
 ): EmbedBuilder {
-    const fields: RestOrArray<APIEmbedField> = 
+    const fields: RestOrArray<APIEmbedField> =
         embedChannels.map((row) => {
             return {
                 name: row.event.replace("-", " ").toUpperCase(),
@@ -1093,8 +1093,111 @@ export function embed_current_logs_list(
         .setColor("Aqua")
         .setAuthor({
             name: `${guild.name} logs configuration`,
-            iconURL: `${guild.iconURL({extension: "png"})}`
+            iconURL: `${guild.iconURL({ extension: "png" })}`
         })
         .addFields(...fields);
 
+}
+
+/**
+ * 
+ * @param duration the duration string ex: 5m
+ * @returns Embed
+ */
+export function embed_timeout_dm(
+    duration: string,
+    guild: Guild,
+    moderator: User,
+    reason: string,
+    apply_warn: boolean = false,
+    color: ColorResolvable = "Red"
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setColor(color)
+        .setAuthor({
+            name: `You got timed out for ${duration} from ${guild.name}`,
+            iconURL: `${guild.iconURL({ extension: "png" })}`
+        })
+        .addFields(
+            {
+                name: "Moderator",
+                value: moderator.username,
+                inline: true
+            },
+            {
+                name: "Reason",
+                value: reason,
+                inline: true
+            },
+            {
+                name: "Warned",
+                value: `${apply_warn}`.toUpperCase(),
+                inline: true
+            }
+        )
+        .setTimestamp()
+}
+
+/**
+ * @param duration as string with value and time units ex: 5m
+ * @param expiresAt The expiration timestamp in seconds
+ * @returns Embed
+ */
+export function embed_timeout(
+    target: GuildMember,
+    moderator: GuildMember,
+    duration: string,
+    expiresAt: number,
+    reason: string = "No reason",
+    apply_warn: boolean = false,
+    color: ColorResolvable = "Red"
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setColor(color)
+        .setAuthor({
+            name: `${target.user.username} got timed out for ${duration}`,
+            iconURL: target.displayAvatarURL({ extension: "jpg" })
+        })
+        .addFields(
+            {
+                name: "Target",
+                value: `${target}`,
+                inline: true
+            },
+            {
+                name: "Moderator",
+                value: `${moderator}`,
+                inline: true
+            },
+            {
+                name: "Expires",
+                value: `<t:${expiresAt}:R>`
+            },
+            {
+                name: "Reason",
+                value: reason
+            },
+            {
+                name: "Warned",
+                value: `${apply_warn}`.toUpperCase()
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Target ID: ${target.id}` })
+}
+
+export function embed_new_autorule(
+    admin: GuildMember,
+    ruleMessage: string,
+    color: ColorResolvable = "Purple"
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setColor(color)
+        .setAuthor({ name: `${admin.user.username} added a new autorule`, iconURL: admin.displayAvatarURL({ extension: "jpeg" }) })
+        .setFields({
+            name: "Rule",
+            value: ruleMessage
+        })
+        .setTimestamp()
+        .setFooter({ text: `Admin ID: ${admin.id}` });
 }

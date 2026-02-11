@@ -5,7 +5,7 @@ import { get_env_var } from "../../utility_modules/utility_methods.js";
 import BanListRepo from "../../Repositories/banlist.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_unban } from "../../utility_modules/embed_builders.js";
-import { ban_handler } from "../../Systems/ban/ban_system.js";
+import { ban_handler } from "../../Systems/moderation/ban_system.js";
 
 export type guildBanRemoveHook = (ban: GuildBan) => Promise<void>;
 const hooks: guildBanRemoveHook[] = [];

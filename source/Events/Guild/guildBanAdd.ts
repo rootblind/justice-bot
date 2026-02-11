@@ -2,7 +2,7 @@ import type { Event } from "../../Interfaces/event.js";
 import { AuditLogEvent, type User, type Guild, type GuildBan } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { get_env_var } from "../../utility_modules/utility_methods.js";
-import { log_ban } from "../../Systems/ban/ban_system.js";
+import { log_ban } from "../../Systems/moderation/ban_system.js";
 import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import { remove_premium_from_member } from "../../Systems/premium/premium_system.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";

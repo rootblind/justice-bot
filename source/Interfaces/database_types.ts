@@ -101,9 +101,12 @@ export interface PunishLogs extends GuildTable {
 export interface AutoPunishRule extends GuildTable {
     warncount: number,
     duration: Snowflake,
-    punishment_type: number,
+    punishment_type: 1 | 2 | 3,
     punishment_duration: Snowflake | number
 }
+
+export type AutoPunishRuleWithWarnCounter =
+    AutoPunishRule & {activewarns: number}
 
 
 export interface RankRole extends GuildTable {

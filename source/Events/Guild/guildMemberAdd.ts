@@ -2,7 +2,7 @@ import type { Event } from "../../Interfaces/event.js";
 import type { Guild, GuildMember } from "discord.js";
 import BanListRepo from "../../Repositories/banlist.js";
 import { welcome_handler } from "../../Systems/welcome/welcome_system.js";
-import { ban_handler } from "../../Systems/ban/ban_system.js";
+import { ban_handler } from "../../Systems/moderation/ban_system.js";
 import { fetchLogsChannel, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_member_joined } from "../../utility_modules/embed_builders.js";
