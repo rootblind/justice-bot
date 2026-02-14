@@ -9,6 +9,14 @@ export type InfractionsListType =
     | "timeout"
     | "ban";
 
+export const punishDict: Record<0 | 1 | 2 | 3 | 4, string> = {
+    0: "Warn",
+    1: "Timeout",
+    2: "Tempban",
+    3: "Indefinite Ban",
+    4: "Permaban"
+}
+
 /**
  * Do note: the PunishLogs array is taken as is, no sorting, no filtering is being done by this method.
  * 
@@ -77,13 +85,7 @@ export function embedInfractionsShortList(
     infractions: PunishLogs[],
     color: ColorResolvable = "Purple"
 ): EmbedBuilder {
-    const punishDict = {
-        0: "Warn",
-        1: "Timeout",
-        2: "Tempban",
-        3: "Indefinite Ban",
-        4: "Permaban"
-    }
+
     const page = type === "full" ? "overview" : type;
     const embed = new EmbedBuilder()
         .setColor(color)
@@ -136,3 +138,39 @@ export const punishDictFilter: Record<
 }
 
 export const pageTypes: InfractionsListType[] = ["full", "ban", "timeout", "warn"];
+
+export function embed_infraction(
+    target: User,
+    moderator: User,
+    infraction: PunishLogs,
+    color: ColorResolvable = "Aqua"
+): EmbedBuilder {
+    const embed = new EmbedBuilder()
+        .setAuthor({
+            name: `${target.username} - ID [${infraction.id}]`,
+            iconURL: target.displayAvatarURL({ extension: "jpg" })
+        })
+        .setColor(color)
+        .setTitle("Infraction Lookup")
+        .addFields(
+            {
+                name: "Type",
+                value: punishDict[infraction.punishment_type]
+            },
+            {
+                name: "Applied by",
+                value: moderator.username
+            },
+            {
+                name: "Reason",
+                value: infraction.reason
+            },
+            {
+                name: "Date",
+                value: `<t:${infraction.timestamp}:R>`
+            }
+        )
+        .setFooter({ text: `Target ID: ${target.id}` })
+
+    return embed;
+}

@@ -2,6 +2,7 @@ import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import type { PunishLogs } from "../Interfaces/database_types.js";
 import { PunishmentType } from "../objects/enums.js";
+import { InfractionsListType } from "../Systems/moderation/infractions.js";
 
 
 class PunishLogsRepository {
@@ -135,6 +136,64 @@ class PunishLogsRepository {
         )
 
         return data
+    }
+
+    /**
+     * In order to block access cross-server, guild is used in the query
+     */
+    async getLogByIdGuild(guildId: string, id: number): Promise<PunishLogs | null> {
+        const { rows: data } = await database.query<PunishLogs>(
+            `SELECT * FROM punishlogs WHERE guild=$1 AND id=$2`,
+            [guildId, id]
+        );
+
+        if (data && data[0]) return data[0];
+        return null;
+    }
+
+    /**
+     * The safer version to avoid cross-server actions
+     */
+    async deleteLogByIdGuild(guildId: Snowflake, id: number) {
+        await database.query(`DELETE FROM punishlogs WHERE guild=$1 AND id=$2`, [guildId, id]);
+    }
+
+    /**
+     * Delete target's rows in bulk based on type.
+     * 
+     * "full" removes all logs about the target in that guild
+     * 
+     * "ban" removes all logs about the target in a guild regarding tempban, indefinite ban and permaban
+     */
+    async deleteInfractionPage(
+        guildId: string,
+        userId: string,
+        type: InfractionsListType
+    ): Promise<number> {
+        let query = "DELETE FROM punishlogs WHERE guild=$1 AND target=$2";
+
+        switch (type) {
+            case "full": {
+                query += ";";
+                break;
+            }
+            case "warn": {
+                query += " AND punishment_type = 0;";
+                break;
+            }
+            case "timeout": {
+                query += " AND punishment_type = 1;";
+                break;
+            }
+            case "ban": {
+                query += " AND punishment_type >= 2;"
+                break;
+            }
+        }
+
+        const result = await database.query(query, [guildId, userId]);
+
+        return result.rowCount ?? 0;
     }
 }
 
