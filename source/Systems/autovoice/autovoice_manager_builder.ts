@@ -36,7 +36,7 @@ export async function guild_exceeds_autovoice_limits(guild: Guild) {
     const maxSystems = autoVoiceGuildRule[guildPlan.plan].autoVoiceSystem.maxSlots;
     const autoVoiceSystemCount = await AutoVoiceSystemRepo.guildSystemsCount(guild.id);
 
-    return  maxSystems <= autoVoiceSystemCount;
+    return maxSystems <= autoVoiceSystemCount;
 }
 
 export async function autovoice_manager_builder_collector(
@@ -54,7 +54,7 @@ export async function autovoice_manager_builder_collector(
     const collector = await message_collector<ComponentType.Button>(message,
         {
             componentType: ComponentType.Button,
-            lifetime: 300_000,
+            time: 300_000,
             filter: (i) => i.user.id === member.id
         },
         async (buttonInteraction) => {
@@ -62,10 +62,10 @@ export async function autovoice_manager_builder_collector(
                 await buttonInteraction.deferReply();
                 // check if the guild exceeds the limit
                 const guildExceedsLimits = await guild_exceeds_autovoice_limits(guild);
-                if(guildExceedsLimits) {
+                if (guildExceedsLimits) {
                     await buttonInteraction.editReply({
-                        embeds: [ 
-                            embed_error("You already have the maximum number of autovoice systems for your current plan!\nMake room to add a new one.") 
+                        embeds: [
+                            embed_error("You already have the maximum number of autovoice systems for your current plan!\nMake room to add a new one.")
                         ]
                     });
 
@@ -86,7 +86,7 @@ export async function autovoice_manager_builder_collector(
 
                             // fields
                             const buttonField = AUTOVOICE_BUTTONS.find((button) => button.id === component.customId);
-                            if(buttonField) {
+                            if (buttonField) {
                                 fields.push(
                                     {
                                         name: `${buttonField.emoji} ${buttonField.name}`,
@@ -96,7 +96,7 @@ export async function autovoice_manager_builder_collector(
                             }
                         }
                     });
-                
+
                 enabledButtons.push(
                     new ButtonBuilder()
                         .setCustomId("autovoice-status-button")
@@ -126,7 +126,7 @@ export async function autovoice_manager_builder_collector(
                 }
                 if (channels?.autovoice) {
                     autovoice = channels.autovoice;
-                    if(autovoice.parentId !== category.id) {
+                    if (autovoice.parentId !== category.id) {
                         await autovoice.edit({ parent: category });
                     }
                 } else {
@@ -147,7 +147,7 @@ export async function autovoice_manager_builder_collector(
                 }
                 if (channels?.managerchannel) {
                     managerchannel = channels.managerchannel;
-                    if(managerchannel.parentId !== category.id) {
+                    if (managerchannel.parentId !== category.id) {
                         await managerchannel.edit({ parent: category });
                     }
                 } else {
@@ -168,7 +168,7 @@ export async function autovoice_manager_builder_collector(
 
                 // send the interface in managerchannel
                 const manager = await managerchannel.send({
-                    embeds: [embed_autovoice_manager( fields )],
+                    embeds: [embed_autovoice_manager(fields)],
                     components: enabledFeatures
                 });
 
@@ -178,7 +178,7 @@ export async function autovoice_manager_builder_collector(
                 await attach_autovoice_manager_collector(manager);
                 // respond
                 await buttonInteraction.editReply({
-                    embeds: [ embed_message("Green", `Autovoice system setup successfully using the interface with ID ${manager.id}`) ]
+                    embeds: [embed_message("Green", `Autovoice system setup successfully using the interface with ID ${manager.id}`)]
                 });
                 collector.stop();
             } else {

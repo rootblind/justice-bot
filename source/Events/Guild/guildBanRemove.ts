@@ -1,11 +1,10 @@
 import type { Event } from "../../Interfaces/event.js";
-import { AuditLogEvent, type Guild, type GuildBan } from "discord.js";
+import { AuditLogEvent, User, type Guild, type GuildBan } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { get_env_var } from "../../utility_modules/utility_methods.js";
 import BanListRepo from "../../Repositories/banlist.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import { embed_unban } from "../../utility_modules/embed_builders.js";
-import { ban_handler } from "../../Systems/moderation/ban_system.js";
+import { ban_handler, unban_log } from "../../Systems/moderation/ban_system.js";
 
 export type guildBanRemoveHook = (ban: GuildBan) => Promise<void>;
 const hooks: guildBanRemoveHook[] = [];
@@ -14,10 +13,10 @@ export function extend_guildBanRemove(hook: guildBanRemoveHook) {
 }
 
 async function runHooks(ban: GuildBan) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(ban);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -27,11 +26,7 @@ const guildBanRemove: Event = {
     name: "guildBanRemove",
     async execute(ban: GuildBan) {
         const guild: Guild = ban.guild;
-
         await runHooks(ban);
-        
-        const logChannel = await fetchLogsChannel(guild, "moderation");
-        if (!logChannel) return;
 
         const unbanAudit = await guild.fetchAuditLogs({
             type: AuditLogEvent.MemberBanRemove,
@@ -43,6 +38,8 @@ const guildBanRemove: Event = {
         if (!entry || !entry.target || !entry.executor) return;
         if (entry.executor.id === get_env_var("CLIENT_ID")) return;
         if (entry.target.id !== ban.user.id) return; // ignore if the entry's target is not the unban user
+
+        const logChannel = await fetchLogsChannel(guild, "moderation");
 
         // check if the user is permabanned; Permabanned users must be unbanned by an admin through command
         // a violation of this rule will result in keeping the user banned
@@ -73,23 +70,13 @@ const guildBanRemove: Event = {
         }
 
         // passing the if above means the unban is legitimate
-        await BanListRepo.deleteBan(guild.id, ban.user.id);
-
-        const reason = entry.reason ?? "No reason specified";
-
-        try {
-            await logChannel.send({
-                embeds: [
-                    embed_unban(
-                        ban.user.id,
-                        entry.executor.username ?? `${entry.executor.id}`,
-                        reason
-                    )
-                ]
-            });
-        } catch(error) {
-            await errorLogHandle(error, `Failed to log guildBanRemove event from ${guild.name}[${guild.id}]`);
-        }
+        await unban_log(
+            guild,
+            ban.user,
+            entry.executor as User,
+            logChannel,
+            ban.reason ?? "No reason specified"
+        );
     }
 }
 

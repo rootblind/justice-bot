@@ -24,7 +24,7 @@ export const report_modapi_downtime: CronTaskBuilder = {
     schedule: "0 * * * *",
     job: async () => {
         const isOnline = await check_api_status(get_env_var("MOD_API_URL"));
-        if(!isOnline) {
+        if (!isOnline) {
             const now = new Date();
             console.log(
                 `Connection to ${get_env_var("MOD_API_URL")} was lost - ${formatDate(now)} | [${formatTime(now)}]`
@@ -50,9 +50,9 @@ export const tempban_expired_clear: CronTaskBuilder = {
     schedule: "0 * * * *",
     job: async () => {
         const banListData = await BanListRepo.getExpiredTempBans();
-        if(!banListData) return; // if there is no tempban to clear, do nothing
+        if (!banListData) return; // if there is no tempban to clear, do nothing
         const client = getClient();
-        for(const banData of banListData) {
+        for (const banData of banListData) {
             let guild: Guild | null = null;
 
             try {
@@ -60,23 +60,28 @@ export const tempban_expired_clear: CronTaskBuilder = {
 
                 try { // unbanning the users whom their ban expired
                     await guild.bans.remove(String(banData.target), "Temporary ban expired.");
-                } catch(error) {
+                } catch (error) {
                     await errorLogHandle(error, `Failed to unban user[${banData.target}] from ${guild.name}[${banData.guild}]`);
                 }
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error, `Failed to fetch guild id ${banData.guild}`);
             }
 
-            if(!guild) continue; // skip invalid guilds
+            if (!guild) continue; // skip invalid guilds
 
             const channel = await fetchLogsChannel(guild, "moderation");
-            if(channel) {
-                // if everything succeeded, log the event
-                await channel.send({
-                    embeds: [
-                        embed_unban(String(banData.target), client.user!.username, "Temporary ban expired")
-                    ]
-                });
+            if (channel) {
+                try {
+                    // if everything succeeded, log the event
+                    const target = await client.users.fetch(banData.target);
+                    await channel.send({
+                        embeds: [
+                            embed_unban(target, client.user!, "Temporary ban expired")
+                        ]
+                    });
+                } catch (error) {
+                    await errorLogHandle(error);
+                }
             }
         }
 
@@ -92,15 +97,15 @@ export const expiredPremium: CronTaskBuilder = {
     schedule: "0 * * * *",
     job: async () => {
         const expiredMembers = await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
-        if(!expiredMembers) return; // if no membership is expired, there is nothing to execute
+        if (!expiredMembers) return; // if no membership is expired, there is nothing to execute
 
         const client = getClient();
-        for(const expiredUser of expiredMembers) { // handling members whom codes expired
+        for (const expiredUser of expiredMembers) { // handling members whom codes expired
             const guild = await fetchGuild(client, expiredUser.guild);
-            if(!guild) continue; // invalid guild
+            if (!guild) continue; // invalid guild
 
             const member = await fetchGuildMember(guild, expiredUser.member);
-            if(member && member.premiumSince) {
+            if (member && member.premiumSince) {
                 // if the member is boosting the server while premium expired
                 // replace its code with a from_boosting one
 
@@ -110,7 +115,7 @@ export const expiredPremium: CronTaskBuilder = {
                     await PremiumKeyRepo.newKey(code, guild.id, client.user!.id, 0, 0, member.id);
                     await PremiumMembersRepo.updateMemberCode(guild.id, member.id, code, true);
                     continue;
-                } catch(error) {
+                } catch (error) {
                     await errorLogHandle(error, "There was a problem while trying to insert a new premium key");
                 }
             }

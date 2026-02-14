@@ -78,7 +78,7 @@ export function embed_lfg_post(
     color: ColorResolvable = "DarkRed"
 ) {
     const fields: RestOrArray<APIEmbedField> = [];
-    const author: Omit<EmbedAuthorData, "proxyIconURL"> = {name: `🔊 LFG +${slots} ${gamemode}`};
+    const author: Omit<EmbedAuthorData, "proxyIconURL"> = { name: `🔊 LFG +${slots} ${gamemode}` };
     if (ranks) {
         fields.push({
             name: "Ranks",
@@ -92,7 +92,7 @@ export function embed_lfg_post(
         });
     }
 
-    if(member.voice.channel) {
+    if (member.voice.channel) {
         author.url = member.voice.channel.url;
         fields.push({
             name: "Channel",
@@ -139,7 +139,7 @@ export function embed_lfg_post_log(
         });
     }
 
-    if(member.voice.channel) {
+    if (member.voice.channel) {
         fields.push({
             name: "Channel",
             value: `${member.voice.channel?.name} (${member.voice.channel?.id})`
@@ -230,7 +230,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
     const collector = await message_collector<ComponentType.Button>(message,
         {
             componentType: ComponentType.Button,
-            lifetime: 6 * 60 * 60_000, // 6 hours
+            time: 6 * 60 * 60_000, // 6 hours
             filter: (i) => i.user.id === post.owner_id
         },
         async (buttonInteraction) => {
@@ -296,7 +296,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
             if (message.deletable) {
                 try {
                     await message.delete();
-                } catch {/* do nothing */ }
+                } catch { /* do nothing */ }
             }
         }
     );
@@ -344,13 +344,13 @@ export async function lfg_post_builder(
     const gameRoles = await LfgSystemRepo.getGameRoles(game.id);
     if (gameRoles.length) {
         const roles = await resolveSnowflakesToRoles(guild, gameRoles.map(row => row.role_id));
-        if(roles.length) modal.addLabelComponents(select_roles_label(roles));
+        if (roles.length) modal.addLabelComponents(select_roles_label(roles));
     }
 
     const gameRanks = await LfgSystemRepo.getGameRanks(game.id);
     if (gameRanks.length) {
         const ranks = await resolveSnowflakesToRoles(guild, gameRanks.map(row => row.role_id));
-        if(ranks.length) modal.addLabelComponents(select_rank_label(ranks));
+        if (ranks.length) modal.addLabelComponents(select_rank_label(ranks));
     }
 
     // additional details
@@ -390,17 +390,17 @@ export async function lfg_post_builder(
         let roleIdsSelected: string[] = [];
         if (gameRoles.length) {
             roleIdsSelected = Array.from(submit.fields.getStringSelectValues("select-roles-menu"));
-            if(roleIdsSelected.length) rolesSelected = await resolveSnowflakesToRoles(guild, roleIdsSelected);
+            if (roleIdsSelected.length) rolesSelected = await resolveSnowflakesToRoles(guild, roleIdsSelected);
         }
 
         let ranksSelected: Role[] = [];
         let rankIdsSelected: string[] = []
         if (gameRanks.length) {
             rankIdsSelected = Array.from(submit.fields.getStringSelectValues("select-ranks-menu"));
-            if(rankIdsSelected.length) ranksSelected = await resolveSnowflakesToRoles(guild, rankIdsSelected);
+            if (rankIdsSelected.length) ranksSelected = await resolveSnowflakesToRoles(guild, rankIdsSelected);
         }
 
-        
+
         const guildEmojis = await guild.emojis.fetch();
 
         const stringRoles = stringifyRoles(rolesSelected, guildEmojis);

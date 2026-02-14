@@ -50,37 +50,29 @@ export function embed_interaction_expired() {
     return embed_message("Aqua", "Interaction expired.");
 }
 
-/**
- * 
- * @param targetId The snowflake id of the user that gets unbanned
- * @param moderatorUsername The username of the moderator that unbans the target
- * @param reason The reason for the unban
- * @param color Optional the color of the embed
- * @returns Embed
- */
 export function embed_unban(
-    targetId: Snowflake,
-    moderatorUsername: string,
+    target: User,
+    moderator: User,
     reason: string,
     color: ColorResolvable = 0x00ff01
 
 ): EmbedBuilder {
     return new EmbedBuilder()
         .setAuthor({
-            name: `[UNBAN] <@${targetId}>`
+            name: `[UNBAN] ${target.username}`
         })
         .setColor(color)
         .setTimestamp()
-        .setFooter({ text: `Target ID: ${targetId}` })
+        .setFooter({ text: `Target ID: ${target.id}` })
         .addFields(
             {
                 name: "User",
-                value: `<@${targetId}>`,
+                value: `${target}`,
                 inline: true
             },
             {
                 name: "Moderator",
-                value: moderatorUsername,
+                value: `${moderator}`,
                 inline: true
             },
             {
@@ -271,91 +263,6 @@ export function embed_message_moderated(
         )
         .setTimestamp()
         .setFooter({ text: `Author ID: ${target.id}` })
-}
-
-/**
- * 
- * @param moderator User object of the executor
- * @param targetMember GuildMember object of the target
- * @param reason The reason for timeout
- * @param color The color of the embed
- * @returns Embed
- */
-export function embed_member_timeout(
-    moderator: User,
-    targetMember: GuildMember,
-    reason: string = "No reason specified",
-    color: ColorResolvable = 0xff0005
-): EmbedBuilder {
-    return new EmbedBuilder()
-        .setTitle("Member timed out")
-        .setAuthor({
-            name: `${targetMember.user.username}`,
-            iconURL: targetMember.displayAvatarURL({ extension: "jpg" })
-        })
-        .setColor(color)
-        .addFields(
-            {
-                name: "Moderator",
-                value: `${moderator}`,
-                inline: true
-            },
-            {
-                name: "Target",
-                value: `${targetMember}`,
-                inline: true
-            },
-            {
-                name: "Expiration",
-                value: `<t:${targetMember.communicationDisabledUntilTimestamp}:R>`
-            },
-            {
-                name: "Reason",
-                value: reason
-            }
-        )
-        .setTimestamp()
-        .setFooter({ text: `Target ID: ${targetMember.id}` });
-}
-
-/**
- * @param target The user object of the target
- * @param moderator The user object of the executor
- * @param reason The reason for the removal of the timeout
- * @param color The color of the embed
- * @returns Embed
- */
-export function embed_timeout_removed(
-    target: User,
-    moderator: User,
-    reason: string = "No reason specified",
-    color: ColorResolvable = 0x2596be
-): EmbedBuilder {
-    return new EmbedBuilder()
-        .setTitle("Timeout removed")
-        .setAuthor({
-            name: `${target.username}`,
-            iconURL: target.displayAvatarURL({ extension: "jpg" })
-        })
-        .setColor(color)
-        .setFields(
-            {
-                name: "Target",
-                value: `${target}`,
-                inline: true
-            },
-            {
-                name: "Moderator",
-                value: `${moderator}`,
-                inline: true
-            },
-            {
-                name: "Reason",
-                value: reason
-            }
-        )
-        .setTimestamp()
-        .setFooter({ text: `Target ID: ${target.id}` })
 }
 
 /**
@@ -1185,6 +1092,48 @@ export function embed_timeout(
         .setTimestamp()
         .setFooter({ text: `Target ID: ${target.id}` })
 }
+
+
+/**
+ * @param target The user object of the target
+ * @param moderator The user object of the executor
+ * @param reason The reason for the removal of the timeout
+ * @param color The color of the embed
+ * @returns Embed
+ */
+export function embed_timeout_removed(
+    target: User,
+    moderator: User,
+    reason: string = "No reason specified",
+    color: ColorResolvable = 0x2596be
+): EmbedBuilder {
+    return new EmbedBuilder()
+        .setTitle("Timeout removed")
+        .setAuthor({
+            name: `${target.username}`,
+            iconURL: target.displayAvatarURL({ extension: "jpg" })
+        })
+        .setColor(color)
+        .setFields(
+            {
+                name: "Target",
+                value: `${target}`,
+                inline: true
+            },
+            {
+                name: "Moderator",
+                value: `${moderator}`,
+                inline: true
+            },
+            {
+                name: "Reason",
+                value: reason
+            }
+        )
+        .setTimestamp()
+        .setFooter({ text: `Target ID: ${target.id}` })
+}
+
 
 export function embed_new_autorule(
     admin: GuildMember,

@@ -1,10 +1,10 @@
-import { 
-    ColorResolvable, 
-    EmbedBuilder, 
-    Guild, 
-    GuildMember, 
-    TextChannel, 
-    User 
+import {
+    ColorResolvable,
+    EmbedBuilder,
+    Guild,
+    GuildMember,
+    TextChannel,
+    User
 } from "discord.js";
 import PunishLogsRepo from "../../Repositories/punishlogs.js";
 import { seconds_to_duration, timestampNow } from "../../utility_modules/utility_methods.js";
@@ -25,7 +25,7 @@ export function embed_warn_dm(
         .setColor(color)
         .setAuthor({
             name: `${moderatorUsername} gave you a warning`,
-            iconURL: `${guild.iconURL({extension: "png"})}`
+            iconURL: `${guild.iconURL({ extension: "png" })}`
         })
         .setDescription(`You have been warned on **${guild.name}**!`)
         .addFields(
@@ -46,12 +46,12 @@ export function embed_warn(
     moderator: GuildMember,
     reason: string,
     color: ColorResolvable = "Red"
-): EmbedBuilder{
+): EmbedBuilder {
     return new EmbedBuilder()
         .setColor(color)
         .setAuthor({
             name: `${target.user.username} has been warned`,
-            iconURL: target.displayAvatarURL({extension: "jpg"})
+            iconURL: target.displayAvatarURL({ extension: "jpg" })
         })
         .addFields(
             {
@@ -70,7 +70,7 @@ export function embed_warn(
             }
         )
         .setTimestamp()
-        .setFooter({text: `Target ID: ${target.id}`})
+        .setFooter({ text: `Target ID: ${target.id}` })
 }
 
 export function embed_unwarn(
@@ -80,7 +80,7 @@ export function embed_unwarn(
 ): EmbedBuilder {
     return new EmbedBuilder()
         .setColor(color)
-        .setAuthor({name: `${moderator.user.username} removed a warning`})
+        .setAuthor({ name: `${moderator.user.username} removed a warning` })
         .addFields(
             {
                 name: "Target",
@@ -94,7 +94,7 @@ export function embed_unwarn(
             }
         )
         .setTimestamp()
-        .setFooter({text: `Moderator ID: ${moderator.id}`})
+        .setFooter({ text: `Moderator ID: ${moderator.id}` })
 }
 
 /**
@@ -119,22 +119,21 @@ export async function warn_handler(
     // handle autopunish rules
     // fetch the rules that could be triggered by the count of target's warns
     const rulesData = await AutopunishRuleRepo.getActiveRulesForTarget(guild.id, target.id);
-
     // if this warn came from a ban, the rules won't trigger
     const ban = await fetchGuildBan(guild, target.id);
-    if(ban) return punishLog.id; // stop the execution here
+    if (ban) return punishLog.id; // stop the execution here
     const targetMember = await fetchGuildMember(guild, target.id);
-    if(!targetMember) return punishLog.id; // the rule doesn't trigger if the targeted member is not currently a member
+    if (!targetMember) return punishLog.id; // the rule doesn't trigger if the targeted member is not currently a member
     const botMember = await guild.members.fetchMe();
 
-    for(const rule of rulesData) {
-        if(rule.activewarns >= rule.warncount) {
+    for (const rule of rulesData) {
+        if (rule.activewarns >= rule.warncount) {
             // when the member has >= active warns than the threshold of the rule
             // then the rule is triggered
-            switch(rule.punishment_type) {
+            switch (rule.punishment_type) {
                 case 1: {
                     // 1 - timeout
-                    if(targetMember.communicationDisabledUntil !== null) {
+                    if (targetMember.isCommunicationDisabled()) {
                         // if the warn was given through timeout, the rule shouldn't override the timeout
                         break;
                     }
@@ -158,17 +157,20 @@ export async function warn_handler(
                                 )
                             ]
                         });
-                    } catch { /* do nothing */}
+                    } catch { /* do nothing */ }
 
-                    if(logChannel) {
-                        await logChannel.send({embeds: [
-                            embed_timeout(
-                                targetMember, 
-                                botMember, 
-                                seconds_to_duration(Number(rule.punishment_duration)) ?? "unknown",
-                                timestampNow() + Number(rule.punishment_duration)
-                            )
-                        ]});
+                    if (logChannel) {
+                        await logChannel.send({
+                            embeds: [
+                                embed_timeout(
+                                    targetMember,
+                                    botMember,
+                                    seconds_to_duration(Number(rule.punishment_duration)) ?? "unknown",
+                                    timestampNow() + Number(rule.punishment_duration),
+                                    `Autorule triggered | Last warn: ${reason}`
+                                )
+                            ]
+                        });
                     }
 
                     // register the punishment
@@ -195,7 +197,7 @@ export async function warn_handler(
                             String(rule.punishment_duration),
                             logChannel
                         );
-                    } catch(error) {
+                    } catch (error) {
                         await errorLogHandle(error);
                     }
                     break;
@@ -211,9 +213,9 @@ export async function warn_handler(
                             `Autorule triggered | Last warn: ${reason}`,
                             true, // delete messages
                             undefined, // no duration for indefinite ban
-                            logChannel 
+                            logChannel
                         );
-                    } catch(error) {
+                    } catch (error) {
                         await errorLogHandle(error);
                     }
                     break;

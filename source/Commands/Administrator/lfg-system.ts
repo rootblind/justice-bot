@@ -31,12 +31,12 @@ import {
     select_lfg_channel_label,
     select_lfg_roles_label,
 } from "../../Systems/lfg/lfg_modals.js";
-import { 
-    fetchGuildChannel, 
-    fetchMessage, 
-    message_collector, 
-    resolveAndDeleteChannels, 
-    resolveSnowflakesToRoles 
+import {
+    fetchGuildChannel,
+    fetchMessage,
+    message_collector,
+    resolveAndDeleteChannels,
+    resolveSnowflakesToRoles
 } from "../../utility_modules/discord_helpers.js";
 
 const lfgSystem: ChatCommand = {
@@ -58,7 +58,7 @@ const lfgSystem: ChatCommand = {
                 .addSubcommand(subcommand =>
                     subcommand.setName("force-voice")
                         .setDescription("Toggle whether or not the bot will require members to be present in a voice channel.")
-                        .addBooleanOption(option => 
+                        .addBooleanOption(option =>
                             option.setName("toggle-voice")
                                 .setDescription("Toggle true to force members on voice or false otherwise.")
                                 .setRequired(true)
@@ -185,7 +185,7 @@ const lfgSystem: ChatCommand = {
 
         if (
             (subcommandGroup !== "new" || subcommand !== "game")
-            && subcommand !== "instructions" 
+            && subcommand !== "instructions"
             && subcommandGroup !== "config"
         ) {
             // if the command is not "/lfg-system new game" or "/lfg-system instructions"
@@ -209,7 +209,7 @@ const lfgSystem: ChatCommand = {
                     embeds: [
                         new EmbedBuilder()
                             .setTitle("Instructions")
-                            .setAuthor({name: "Setup LFG System"})
+                            .setAuthor({ name: "Setup LFG System" })
                             .setDescription("This is a short guide to walk you through the steps to be taken in creating an LFG system for your desired game.")
                             .addFields(
                                 {
@@ -264,16 +264,16 @@ const lfgSystem: ChatCommand = {
                     {
                         componentType: ComponentType.StringSelect,
                         filter: (i) => i.user.id == interaction.user.id,
-                        lifetime: 120_000
+                        time: 120_000
                     },
                     async (selectInteraction) => {
-                        await selectInteraction.deferReply({flags: MessageFlags.Ephemeral});
+                        await selectInteraction.deferReply({ flags: MessageFlags.Ephemeral });
                         const gameId = Number(selectInteraction.values[0]);
                         const gameSelected = guildGames.find(g => g.id === gameId)!;
                         const embed = new EmbedBuilder().setColor("Purple").setTitle(`LFG ${gameSelected.game_name}`);
-                        if(
-                            gameSelected.category_channel_id === null 
-                            || gameSelected.manager_channel_id === null 
+                        if (
+                            gameSelected.category_channel_id === null
+                            || gameSelected.manager_channel_id === null
                             || gameSelected.manager_message_id === null
                         ) {
                             await selectInteraction.editReply({
@@ -284,7 +284,7 @@ const lfgSystem: ChatCommand = {
 
                         const category = await fetchGuildChannel(guild, gameSelected.category_channel_id);
                         const interfaceChannel = await fetchGuildChannel(guild, gameSelected.manager_channel_id);
-                        if(!(category instanceof CategoryChannel) || !(interfaceChannel instanceof TextChannel)) {
+                        if (!(category instanceof CategoryChannel) || !(interfaceChannel instanceof TextChannel)) {
                             await selectInteraction.editReply({
                                 embeds: [embed_error("Something went wrong while fetching the game-related channels...")]
                             });
@@ -293,7 +293,7 @@ const lfgSystem: ChatCommand = {
                         }
 
                         const interfaceMessage = await fetchMessage(interfaceChannel, gameSelected.manager_message_id);
-                        if(interfaceMessage === null) {
+                        if (interfaceMessage === null) {
                             await selectInteraction.editReply({
                                 embeds: [embed_error("Something went wrong while fetching the interface message...")]
                             });
@@ -306,7 +306,7 @@ const lfgSystem: ChatCommand = {
                         const lfgRoles = await LfgSystemRepo.getGameRoles(gameId);
                         const lfgRanks = await LfgSystemRepo.getGameRanks(gameId);
                         const postsCounter = await LfgSystemRepo.postGameCounter(gameId);
-                        
+
                         embed.setDescription(`Game Category: ${category}\nInterface channel: ${interfaceChannel}\nInterface Message: ${interfaceMessage.url}`)
                             .addFields(
                                 {
@@ -316,7 +316,7 @@ const lfgSystem: ChatCommand = {
                                 {
                                     name: "Gamemodes",
                                     value: lfgGamemodes.length > 0 ?
-                                        ( lfgGamemodes.length > 10 ? 
+                                        (lfgGamemodes.length > 10 ?
                                             lfgGamemodes.map(gm => gm.name)
                                                 .slice(0, 10)
                                                 .join(" ") + `... and ${lfgGamemodes.length - 10} more`
@@ -329,7 +329,7 @@ const lfgSystem: ChatCommand = {
                                     // the indication that there are more, if the game has [0,10] channels, just print the channels
                                     name: "Channels",
                                     value: lfgChannels.length > 0 ?
-                                        ( lfgChannels.length > 10 ? 
+                                        (lfgChannels.length > 10 ?
                                             lfgChannels.map(c => `<#${c.discord_channel_id}>`)
                                                 .slice(0, 10)
                                                 .join(" ") + `... and ${lfgChannels.length - 10} more`
@@ -351,13 +351,13 @@ const lfgSystem: ChatCommand = {
                                 }
                             )
 
-                        await selectInteraction.editReply({embeds: [embed]});
+                        await selectInteraction.editReply({ embeds: [embed] });
                         collector.stop();
                     },
                     async () => {
                         try {
-                            await reply.edit({embeds: [embed_interaction_expired()], components: []});
-                        } catch { /* do nothing */}
+                            await reply.edit({ embeds: [embed_interaction_expired()], components: [] });
+                        } catch { /* do nothing */ }
                     }
                 )
                 break;
@@ -372,7 +372,7 @@ const lfgSystem: ChatCommand = {
                 const gameLimit = 40;
                 switch (subcommand) {
                     case "game": {
-                        if(guildGames.length >= gameLimit) {
+                        if (guildGames.length >= gameLimit) {
                             await interaction.reply({
                                 embeds: [embed_error("The maximum number of LFG games has been reached", "Limit")],
                                 flags: MessageFlags.Ephemeral
@@ -430,7 +430,7 @@ const lfgSystem: ChatCommand = {
                             // fetch the channels of the game to ensure unique name
                             const lfgChannels = await LfgSystemRepo.getLfgChannelsByGame(gameId);
 
-                            if(lfgChannels.length >= channelLimit) {
+                            if (lfgChannels.length >= channelLimit) {
                                 await submit.reply({
                                     embeds: [embed_error("The maximum number of LFG channels has been reached for this game", "Limit")],
                                     flags: MessageFlags.Ephemeral
@@ -503,7 +503,7 @@ const lfgSystem: ChatCommand = {
                             const gamemodeName = submit.fields.getTextInputValue("gamemode-input").toUpperCase();
 
                             const gamemodes = await LfgSystemRepo.getGamemodesOfGameId(gameId);
-                            if(gamemodes.length >= gamemodeLimit) {
+                            if (gamemodes.length >= gamemodeLimit) {
                                 await submit.reply({
                                     embeds: [embed_error("The maximum number of gamemodes has been reached for this game", "Limit")],
                                     flags: MessageFlags.Ephemeral
@@ -558,7 +558,7 @@ const lfgSystem: ChatCommand = {
                         const collector = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                lifetime: 120_000,
+                                time: 120_000,
                                 filter: (i) => i.user.id === interaction.user.id
                             },
                             async (selectInteraction) => {
@@ -658,7 +658,7 @@ const lfgSystem: ChatCommand = {
                                 }
                             });
 
-                            if(selectedRoles.length >= discordRoleLimit) {
+                            if (selectedRoles.length >= discordRoleLimit) {
                                 await submit.reply({
                                     embeds: [embed_error(`The selection of roles is limited to ${discordRoleLimit}`, "Limit")],
                                     flags: MessageFlags.Ephemeral
@@ -700,7 +700,7 @@ const lfgSystem: ChatCommand = {
                             {
                                 componentType: ComponentType.StringSelect,
                                 filter: (i) => i.user.id === interaction.user.id,
-                                lifetime: 120_000
+                                time: 120_000
                             },
                             async (selectInteraction) => {
                                 const ids = selectInteraction.values.map(v => Number(v)).filter(id => !Number.isNaN(id));
@@ -721,7 +721,7 @@ const lfgSystem: ChatCommand = {
                                         embeds: [embed_message("Green", "Deletion executed successfully.")],
                                         flags: MessageFlags.Ephemeral
                                     });
-                                } catch { /* do nothing */}
+                                } catch { /* do nothing */ }
                                 collector.stop();
                             },
                             async () => {
@@ -736,7 +736,7 @@ const lfgSystem: ChatCommand = {
                         const collector = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                lifetime: 120_000,
+                                time: 120_000,
                                 filter: (i) => i.user.id === interaction.user.id
                             },
                             async (selectInteraction) => {
@@ -786,7 +786,7 @@ const lfgSystem: ChatCommand = {
                                     console.error(error); // remove after dev
                                     await selectInteraction.followUp({ embeds: [embed_interaction_expired()], flags: MessageFlags.Ephemeral });
                                 }
-                                
+
                             },
                             async () => {
                                 try {
@@ -801,7 +801,7 @@ const lfgSystem: ChatCommand = {
                             {
                                 componentType: ComponentType.StringSelect,
                                 filter: (i) => i.user.id === interaction.user.id,
-                                lifetime: 120_000
+                                time: 120_000
                             },
                             async (selectInteraction) => {
                                 const gameId = Number(selectInteraction.values[0]);
@@ -843,7 +843,7 @@ const lfgSystem: ChatCommand = {
                                     await selectInteraction.followUp({ embeds: [embed_interaction_expired()], flags: MessageFlags.Ephemeral })
                                 }
 
-                                
+
                             },
                             async () => {
                                 try {
@@ -859,13 +859,13 @@ const lfgSystem: ChatCommand = {
                         const collector = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                lifetime: 300_000,
+                                time: 300_000,
                                 filter: (i) => i.user.id === interaction.user.id
                             },
                             async (selectInteraction) => {
                                 const gameId = Number(selectInteraction.values[0]);
                                 const lfgRoles = await LfgSystemRepo.getGameLfgRolesByType(gameId, roleType);
-                                if(lfgRoles.length === 0) {
+                                if (lfgRoles.length === 0) {
                                     await selectInteraction.reply({
                                         embeds: [embed_message("Red", "This game has no lfg roles of that type.")],
                                         flags: MessageFlags.Ephemeral
@@ -892,12 +892,12 @@ const lfgSystem: ChatCommand = {
                                         flags: MessageFlags.Ephemeral
                                     });
                                     collector.stop();
-                                } catch(error) {
+                                } catch (error) {
                                     console.error(error); // remove after dev
-                                    await selectInteraction.followUp({embeds: [embed_interaction_expired()], flags: MessageFlags.Ephemeral})
+                                    await selectInteraction.followUp({ embeds: [embed_interaction_expired()], flags: MessageFlags.Ephemeral })
                                 }
 
-                                
+
                             },
                             async () => {
                                 try {
@@ -911,13 +911,13 @@ const lfgSystem: ChatCommand = {
                         const collector = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                lifetime: 120_000,
+                                time: 120_000,
                                 filter: (i) => i.user.id === interaction.user.id
                             },
                             async (selectInteraction) => {
                                 const gameId = Number(selectInteraction.values[0]);
                                 const channels = await LfgSystemRepo.getLfgChannelsByGame(gameId);
-                                if(channels.length === 0) {
+                                if (channels.length === 0) {
                                     await selectInteraction.reply({
                                         embeds: [embed_message("Red", "This game has no channels.")],
                                         flags: MessageFlags.Ephemeral
@@ -925,7 +925,7 @@ const lfgSystem: ChatCommand = {
                                     return;
                                 }
                                 const gamemodes = await LfgSystemRepo.getGamemodesOfGameId(gameId);
-                                if(gamemodes.length === 0) {
+                                if (gamemodes.length === 0) {
                                     await selectInteraction.reply({
                                         embeds: [embed_message("Red", "This game has no gamemodes.")],
                                         flags: MessageFlags.Ephemeral
@@ -951,7 +951,7 @@ const lfgSystem: ChatCommand = {
                                     .setLabel("Channels")
                                     .setDescription("The channels to have gamemodes removed.")
                                     .setStringSelectMenuComponent(channelSelectMenu);
-                                
+
                                 const gamemodeOptions: RestOrArray<APISelectMenuOption> =
                                     gamemodes.map((gm) => {
                                         return {
@@ -993,11 +993,11 @@ const lfgSystem: ChatCommand = {
                                         flags: MessageFlags.Ephemeral
                                     });
                                     collector.stop();
-                                } catch(error) {
+                                } catch (error) {
                                     console.error(error); // remove after dev
                                 }
-                                
-                                
+
+
                             },
                             async () => {
                                 try {
@@ -1011,7 +1011,7 @@ const lfgSystem: ChatCommand = {
                 break;
             }
             case "config": {
-                switch(subcommand) {
+                switch (subcommand) {
                     case "force-voice": {
                         const toggle = options.getBoolean("toggle-voice", true);
                         await LfgSystemRepo.toggleSystemForceVoice(guild.id, toggle);
@@ -1035,7 +1035,7 @@ const lfgSystem: ChatCommand = {
                         await interaction.reply({
                             embeds: [
                                 new EmbedBuilder()
-                                    .setAuthor({name: `${guild.name} LFG Configuration`, iconURL: `${guild.iconURL({extension: "png"})}`})
+                                    .setAuthor({ name: `${guild.name} LFG Configuration`, iconURL: `${guild.iconURL({ extension: "png" })}` })
                                     .setColor("Purple")
                                     .addFields(
                                         {

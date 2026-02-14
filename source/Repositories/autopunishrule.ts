@@ -1,7 +1,7 @@
 import { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import { AutoPunishRule, AutoPunishRuleWithWarnCounter } from "../Interfaces/database_types.js";
-import { seconds_to_duration, timestampNow } from "../utility_modules/utility_methods";
+import { seconds_to_duration, timestampNow } from "../utility_modules/utility_methods.js";
 
 class AutopunishRuleRepository {
     /**
@@ -17,8 +17,8 @@ class AutopunishRuleRepository {
         }
 
         let ruleMessage = `\`${punishmentDict[rule.punishment_type]}\` `;
-        if(rule.punishment_type < 3) {
-            ruleMessage += `for \`${seconds_to_duration(Number(rule.punishment_duration))}\``;
+        if (rule.punishment_type < 3) {
+            ruleMessage += `for \`${seconds_to_duration(Number(rule.punishment_duration))}\` `;
         }
         ruleMessage += `when someone has \`${rule.warncount} warns\` or more in the last \`${seconds_to_duration(Number(rule.duration))}\``;
         return ruleMessage;
@@ -30,7 +30,7 @@ class AutopunishRuleRepository {
      * @returns autopunishrules and "activewarns" as a counter for the number of punishlog warns that fit the autorule duration 
      */
     async getActiveRulesForTarget(guildId: string, targetId: string) {
-        const {rows: data} = await database.query<AutoPunishRuleWithWarnCounter>(
+        const { rows: data } = await database.query<AutoPunishRuleWithWarnCounter>(
             `SELECT ar.*, COUNT (pl.id) AS activewarns
             FROM autopunishrule ar
             LEFT JOIN punishlogs pl
@@ -51,7 +51,7 @@ class AutopunishRuleRepository {
      * The number of rules in a guild
      */
     async count(guildId: Snowflake): Promise<number> {
-        const {rows: [{count}]} = await database.query(
+        const { rows: [{ count }] } = await database.query(
             `SELECT COUNT (*) AS count FROM autopunishrule WHERE guild=$1`, [guildId]
         );
 
@@ -62,7 +62,7 @@ class AutopunishRuleRepository {
      * @returns If the guild-warncount-duration combination is valid (unique) 
      */
     async isRuleValid(guildId: Snowflake, warncount: number, duration: number): Promise<boolean> {
-        const {rows: valid} = await database.query(
+        const { rows: valid } = await database.query(
             `SELECT EXISTS
             (SELECT 1 FROM autopunishrule WHERE guild=$1 AND warncount=$2 AND duration=$3)`,
             [guildId, warncount, duration]
@@ -76,18 +76,18 @@ class AutopunishRuleRepository {
      * @returns The row inserted or updated
      */
     async insert(
-        guildId: Snowflake, 
-        warnCount: number, 
-        duration: number, 
-        punishment_type: number, 
+        guildId: Snowflake,
+        warnCount: number,
+        duration: number,
+        punishment_type: number,
         punishment_duration: number
-    ): Promise<AutoPunishRule & {id: number}> {
-        const {rows: data} = await database.query<AutoPunishRule & {id: number}>(
+    ): Promise<AutoPunishRule & { id: number }> {
+        const { rows: data } = await database.query<AutoPunishRule & { id: number }>(
             `INSERT INTO autopunishrule(guild, warncount, duration, punishment_type, punishment_duration)
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (guild, warncount, duration)
                 DO UPDATE SET
-                    punishment_type = EXCLUDED.punishment_type
+                    punishment_type = EXCLUDED.punishment_type,
                     punishment_duration = EXCLUDED.punishment_duration
                 RETURNING *;`,
             [guildId, warnCount, duration, punishment_type, punishment_duration]
@@ -99,8 +99,8 @@ class AutopunishRuleRepository {
     /**
      * Fetch all autorules from the guild
      */
-    async getRules(guildId: Snowflake): Promise<(AutoPunishRule & {id: number})[]> {
-        const {rows: data} = await database.query<AutoPunishRule & {id: number}>(
+    async getRules(guildId: Snowflake): Promise<(AutoPunishRule & { id: number })[]> {
+        const { rows: data } = await database.query<AutoPunishRule & { id: number }>(
             `SELECT * FROM autopunishrule WHERE guild=$1
                 ORDER BY warncount DESC, duration ASC`,
             [guildId]

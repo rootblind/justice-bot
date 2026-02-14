@@ -7,7 +7,7 @@ export interface GuildTable {
     guild: Snowflake
 }
 
-export interface GuildChannelTable extends GuildTable{
+export interface GuildChannelTable extends GuildTable {
     channel: Snowflake
 }
 
@@ -16,7 +16,7 @@ export interface GuildRolePair {
     role: Snowflake
 }
 
-export type GuildMessageTable = 
+export type GuildMessageTable =
     | (GuildChannelTable & { messageid: Snowflake })
     | (GuildChannelTable & { message: Snowflake })
 
@@ -31,15 +31,15 @@ export interface ColumnValuePair {
 }
 
 export interface WelcomeScheme {
-  id: Snowflake,
-  guild: string | null,
-  active: boolean,
-  channel: string | null,
-  message: string | null,
-  author: boolean | null,
-  title: string | null,
-  colorcode: string | null,
-  imagelink: string | null
+    id: Snowflake,
+    guild: string | null,
+    active: boolean,
+    channel: string | null,
+    message: string | null,
+    author: boolean | null,
+    title: string | null,
+    colorcode: string | null,
+    imagelink: string | null
 }
 
 export interface PanelScheme extends GuildTable {
@@ -93,7 +93,7 @@ export interface BanList extends GuildTable {
 export interface PunishLogs extends GuildTable {
     target: Snowflake,
     moderator: Snowflake,
-    punishment_type: number,
+    punishment_type: 0 | 1 | 2 | 3 | 4,
     reason: string,
     timestamp: Snowflake
 }
@@ -106,7 +106,7 @@ export interface AutoPunishRule extends GuildTable {
 }
 
 export type AutoPunishRuleWithWarnCounter =
-    AutoPunishRule & {activewarns: number}
+    AutoPunishRule & { activewarns: number }
 
 
 export interface RankRole extends GuildTable {
@@ -126,7 +126,7 @@ export interface PartyBaseScheme extends GuildTable {
     maxrank: number | null,
     reqroles: string[] | null,
     description: string | null,
-    hexcolor: number | null, 
+    hexcolor: number | null,
 }
 
 export interface PartyHistory extends PartyBaseScheme {
@@ -138,7 +138,7 @@ export interface PartyDraft extends PartyBaseScheme {
     draftname: string,
 }
 
-export interface PartyRoom extends PartyHistory {  
+export interface PartyRoom extends PartyHistory {
     channel: Snowflake,
     message: Snowflake,
 }
@@ -200,7 +200,7 @@ export const GUILD_ROLE_TYPE = [
 ] as const;
 
 export type GuildRoleTypeString = typeof GUILD_ROLE_TYPE[number];
-    
+
 
 export const EVENT_GUILD_LOGS = [
     "moderation",

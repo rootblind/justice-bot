@@ -36,7 +36,7 @@ export async function add_block_collector(
             message,
             {
                 componentType: ComponentType.UserSelect,
-                lifetime: 120_000,
+                time: 120_000,
                 filter: (i) => i.user.id === member.id
             },
             async (selectInteraction) => {
@@ -152,7 +152,7 @@ export async function remove_block_collector(
             message,
             {
                 componentType: ComponentType.StringSelect,
-                lifetime: 120_000,
+                time: 120_000,
                 filter: (i) => i.user.id === member.id
             },
             async (selectInteraction) => {

@@ -31,9 +31,10 @@ export type ChatCommandGroup =
     | "lfg"
     | "moderation"
 
-export type ChatCommandCategory = 
+export type ChatCommandCategory =
     | "Info"
     | "Administrator"
     | "Owner"
     | "Social"
     | "Staff"
+    | "Moderator"

@@ -2,22 +2,22 @@
 
 import {
   CacheType,
-  MessageComponentInteraction, 
+  MessageComponentInteraction,
   ReadonlyCollection,
 
 } from "discord.js";
 
 
 interface PresenceConfig {
-    status: string,
-    delay: number, // in seconds
-    type: number
+  status: string,
+  delay: number, // in seconds
+  type: number
 }
 
 interface PresencePreset {
-    Playing: string[],
-    Listening: string[],
-    Watching: string[]
+  Playing: string[],
+  Listening: string[],
+  Watching: string[]
 }
 
 type PresencePresetKey = keyof PresencePreset
@@ -41,7 +41,7 @@ interface CronTaskBuilder {
   schedule: CronString;
   job: () => Promise<void>;
   runCondition: () => Promise<boolean>
-  
+
 }
 
 /**
@@ -75,9 +75,9 @@ interface ClassifierResponse {
   labels: string[]
 }
 
-export type CollectorCollectHandler<T extends MessageComponentInteraction<CacheType>> = 
+export type CollectorCollectHandler<T extends MessageComponentInteraction<CacheType>> =
   (interaction: T) => Promise<void>;
-export type CollectorStopHandler<T extends MessageComponentInteraction<CacheType>> = 
+export type CollectorStopHandler<T extends MessageComponentInteraction<CacheType>> =
   (collected: ReadonlyCollection<string, T>) => Promise<void> | void;
 
 export type CollectorFilterCustom = (interaction: MessageComponentInteraction<CacheType>) => boolean;
@@ -88,21 +88,26 @@ export type CacheEntry<T> = {
 }
 
 interface AutomodResponse {
-    labels: string[],
-    text: string
+  labels: string[],
+  text: string
 }
 
 export type TimeStringUnit = "m" | "h" | "d" | "w" | "y";
 
+export interface ValidatorResponseType {
+  value: boolean,
+  message: string
+}
+
 export type {
-    PresenceConfig,
-    PresencePreset,
-    PresencePresetKey,
-    CronString,
-    CronTaskBuilder,
-    OnReadyTaskBuilder,
-    TriggerWordsObject,
-    LabelsClassification,
-    ClassifierResponse,
-    AutomodResponse
+  PresenceConfig,
+  PresencePreset,
+  PresencePresetKey,
+  CronString,
+  CronTaskBuilder,
+  OnReadyTaskBuilder,
+  TriggerWordsObject,
+  LabelsClassification,
+  ClassifierResponse,
+  AutomodResponse
 };

@@ -209,8 +209,8 @@ const autoPunishRule: ChatCommand = {
 
                 await interaction.editReply({
                     embeds: [
-                        embed_message("Green", 
-                            `**Rule ID[${newRule.id}]**: ${AutopunishRuleRepo.stringifyRule(newRule)}`, "Rule added successfully"
+                        embed_message("Green",
+                            `**Rule ID [${newRule.id}]**: ${AutopunishRuleRepo.stringifyRule(newRule)}`, "Rule added successfully"
                         )
                     ]
                 });
@@ -266,7 +266,7 @@ const autoPunishRule: ChatCommand = {
                     {
                         componentType: ComponentType.Button,
                         filter: (i) => i.user.id === interaction.user.id,
-                        lifetime: 600_000
+                        time: 600_000
                     },
                     async (buttonInteraction) => {
                         switch (buttonInteraction.customId) {
@@ -312,7 +312,7 @@ const autoPunishRule: ChatCommand = {
                                                 embeds: [emptyList],
                                                 components: []
                                             });
-                                        } catch(error) {
+                                        } catch (error) {
                                             await errorLogHandle(error);
                                         }
                                     } else {
@@ -320,26 +320,26 @@ const autoPunishRule: ChatCommand = {
                                             await reply.edit({
                                                 embeds: [buildListEmbed(updatedRules)]
                                             });
-                                        } catch(error) {
+                                        } catch (error) {
                                             await errorLogHandle(error);
                                         }
                                     }
-                                } catch(error) {
+                                } catch (error) {
                                     console.error(error); // remove after dev
-                                    await buttonInteraction.followUp({flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired()]});
+                                    await buttonInteraction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired()] });
                                 }
                                 break;
                             }
                             case "remove-all-rules": {
                                 await AutopunishRuleRepo.cleanGuildRules(guild.id);
                                 try {
-                                    await reply.edit({embeds: [emptyList], components: []});
-                                } catch(error) {
+                                    await reply.edit({ embeds: [emptyList], components: [] });
+                                } catch (error) {
                                     await errorLogHandle(error);
                                 }
 
                                 await buttonInteraction.reply({
-                                    embeds: [embed_message("Green","All rules have been deleted.")],
+                                    embeds: [embed_message("Green", "All rules have been deleted.")],
                                     flags: MessageFlags.Ephemeral
                                 });
                                 break;

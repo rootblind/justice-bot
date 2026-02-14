@@ -44,7 +44,7 @@ class ServerLogsIgnoreRepository {
     async put(guildId: Snowflake, channelId: Snowflake) {
         const key = `${guildId}:${channelId}`;
         logsIgnoreCache.set(key, true);
-        await database.query(`INSERT INTO serverlogsingore (guild, channel) VALUES($1, $2)`, [ guildId, channelId ]);
+        await database.query(`INSERT INTO serverlogsignore (guild, channel) VALUES($1, $2)`, [ guildId, channelId ]);
     }
 
     /**

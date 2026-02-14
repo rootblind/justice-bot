@@ -10,12 +10,12 @@ class BanListRepository {
      * The row about a specific user ban from a guild
      * @param guildId The guild snowflake
      * @param userId The user snowflake
-     * @returns BanList object
+     * @returns BanList object or null if there is no database record
      */
     async getGuildBan(guildId: Snowflake, userId: Snowflake): Promise<BanList | null> {
         const key = `${guildId}:${userId}`;
         const cache = banlistCache.get(key);
-        if(cache !== undefined) return cache;
+        if (cache !== undefined) return cache;
 
         const { rows: banData } = await database.query(
             `SELECT moderator, expires, reason 
@@ -76,9 +76,9 @@ class BanListRepository {
     ): Promise<boolean> {
         const key = `${guildId}${targetId}`;
         const cache = banlistCache.get(key);
-        if(cache !== undefined) {
+        if (cache !== undefined) {
             // if the ban is cached, check the cache
-            if(cache && cache.expires === 0) return true;
+            if (cache && cache.expires === 0) return true;
             return false; // if cached and cache === null or cache.expires !== 0 => not perma banned
         }
 
@@ -125,27 +125,29 @@ class BanListRepository {
         reason: string
     ) {
         const key = `${guildId}:${targetId}`;
-        banlistCache.set(
-            key,
-            {
-                id: 0,
-                guild: guildId,
-                target: targetId,
-                moderator: moderatorId,
-                expires: Number(expires),
-                reason: reason
-            }
-        );
 
-        await database.query(
+
+        const { rows: data } = await database.query<BanList>(
             `INSERT INTO banlist (guild, target, moderator, expires, reason)
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (guild, target)
                 DO UPDATE SET
                     moderator = EXCLUDED.moderator,
                     expires   = EXCLUDED.expires,
-                    reason    = EXCLUDED.reason;`,
+                    reason    = EXCLUDED.reason
+                RETURNING *;`,
             [guildId, targetId, moderatorId, expires, reason]
+        );
+        banlistCache.set(
+            key,
+            {
+                id: data[0]!.id!,
+                guild: guildId,
+                target: targetId,
+                moderator: moderatorId,
+                expires: Number(expires),
+                reason: reason
+            }
         );
     }
 }

@@ -84,7 +84,7 @@ export async function attach_flagged_message_collector(message: Message, respons
                     await buttonInteraction.editReply({
                         content: `Confirmed labels: ${response.labels.join(", ")}\nMessage ID: ${message.id}`
                     });
-                    if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                    if (local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                     break;
                 case "adjust": {
                     const tags = ["Aggro", "Violence", "Sexual", "Hateful"];
@@ -117,10 +117,10 @@ export async function attach_flagged_message_collector(message: Message, respons
                         selectFlagsReply,
                         {
                             componentType: ComponentType.StringSelect,
-                            lifetime: 300_000
+                            time: 300_000
                         },
                         async (selectInteraction) => {
-                            for(const label of selectInteraction.values) {
+                            for (const label of selectInteraction.values) {
                                 flagTags[label] = 1;
                             }
                             await selectInteraction.reply({
@@ -133,9 +133,9 @@ export async function attach_flagged_message_collector(message: Message, respons
                         async () => {
                             try {
                                 await selectFlagsReply.delete();
-                            } catch {/* Do nothing */}
+                            } catch {/* Do nothing */ }
 
-                            if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                            if (local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                             buttonCollector.stop();
                         }
                     );
@@ -146,15 +146,15 @@ export async function attach_flagged_message_collector(message: Message, respons
                     await buttonInteraction.editReply({
                         content: `You have flagged this message as being OK as the flags were a false positive.\nMessage ID: ${message.id}`
                     });
-                    if(local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                    if (local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
                     buttonCollector.stop();
-                break;
+                    break;
             }
 
-            if(justiceLogs) {
+            if (justiceLogs) {
                 // log the action
                 await justiceLogs.send({
-                    embeds: [ 
+                    embeds: [
                         embed_justicelogs_flagged_message(
                             message,
                             buttonInteraction.user,
@@ -168,8 +168,8 @@ export async function attach_flagged_message_collector(message: Message, respons
         async () => {
             // remove the buttons
             try {
-                await message.edit({components: []});
-            } catch(error) {
+                await message.edit({ components: [] });
+            } catch (error) {
                 console.error(error);
             }
         }

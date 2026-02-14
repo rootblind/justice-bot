@@ -1,39 +1,41 @@
 import type { Snowflake } from "discord.js";
 import database from "../Config/database.js";
 import type { PunishLogs } from "../Interfaces/database_types.js";
-import { SelfCache } from "../Config/SelfCache.js";
+import { PunishmentType } from "../objects/enums.js";
 
-const punishLogsCache = new SelfCache<string, PunishLogs[]>();
 
 class PunishLogsRepository {
-    /**
-     * Fetch the logs of a user from a specific guild in the desired chronological order
-     * @param order Order the array ascending or descending based on the chronological factor
-     * @param guildId Snowflake of the guild
-     * @param userId Snowflake of the user
-     * @returns Array (possibly empty) of all punishlogs of a user
-     */
-    async getUserLogsOrder(order: string, guildId: Snowflake, userId: Snowflake): Promise<PunishLogs[]> {
-        const key = `${guildId}:${userId}`;
-        const cache = punishLogsCache.get(key);
-        if(cache !== undefined) {
-            if(order.toUpperCase() === "DESC") {
-                return cache.sort((a, b) => Number(b.timestamp) - Number(a.timestamp));
-            } else {
-                return cache.sort((a, b) => Number(a.timestamp) - Number(b.timestamp));
-            }
-        }
+    key(guildId: string, userId: string): string {
+        return `${guildId}:${userId}`;
+    }
 
-        const {rows: punishLogsData} = await database.query(
-            `SELECT timestamp FROM punishlogs
+    /**
+     * Fetches a single punishment log entry (oldest or most recent) for a user in a guild.
+     *
+     * The result is ordered chronologically based on the provided order parameter.
+     * If an invalid order is provided, it defaults to ascending ("ASC").
+     *
+     * @param order Either "ASC" or "DESC" to determine chronological order.
+     * @param guildId Snowflake identifier of the guild.
+     * @param userId Snowflake identifier of the user.
+     * @param limit Optionally limit the getter to a specific amount
+     * @returns Promise resolving to an array containing at most one punishment log entry (possibly empty).
+     */
+    async getUserLogsOrder(
+        order: "ASC" | "DESC",
+        guildId: Snowflake,
+        userId: Snowflake,
+        limit?: number
+    ): Promise<PunishLogs[]> {
+        const { rows: punishLogsData } = await database.query<PunishLogs>(
+            `SELECT * FROM punishlogs
                 WHERE guild=$1
                     AND target=$2
                 ORDER BY timestamp ${order.toUpperCase() == "DESC" ? "DESC" : "ASC"}
-                LIMIT 1`,
+                ${limit !== undefined ? `LIMIT ${limit}` : ""}`,
             [guildId, userId]
         ); // default to  ASC if the programmer messes up
 
-        punishLogsCache.set(key, punishLogsData);
         return punishLogsData;
     }
 
@@ -52,29 +54,11 @@ class PunishLogsRepository {
         guildId: Snowflake,
         targetId: Snowflake,
         moderatorId: Snowflake,
-        punishment_type: number,
+        punishment_type: 0 | 1 | 2 | 3 | 4,
         reason: string,
         timestamp: string
-    ): Promise<PunishLogs & {id: number}> {
-        const key = `${guildId}:${targetId}`;
-        const log: PunishLogs = {
-            id: 0,
-            guild: guildId,
-            target: targetId,
-            moderator: moderatorId,
-            punishment_type: punishment_type,
-            reason: reason,
-            timestamp: timestamp
-        }
-
-        const cache = punishLogsCache.get(key);
-        if(cache !== undefined) {
-            punishLogsCache.set(key, cache);
-        } else {
-            punishLogsCache.set(key, [ log ]);
-        }
-
-        const {rows: data} = await database.query<PunishLogs & {id: number}>(
+    ): Promise<PunishLogs & { id: number }> {
+        const { rows: data } = await database.query<PunishLogs & { id: number }>(
             `INSERT INTO punishlogs (guild, target, moderator, punishment_type, reason, timestamp)
                 VALUES($1, $2, $3, $4, $5, $6)
                 RETURNING *;`,
@@ -85,20 +69,72 @@ class PunishLogsRepository {
     }
 
     async deleteLogById(id: number) {
-        // updating cache
-        const cache = punishLogsCache.getByValue((value) => {
-            if(value.find((v) => v.id === id)) return true;
-            return false;
-        });
-
-        if(cache && cache[0] && cache[0].length) {
-            const updatedCache = cache[0].filter(p => p.id !== id);
-            const log = cache[0][0]!; // since cache[0].length > 0 there is an index 0 element
-            punishLogsCache.set(`${log.guild}:${log.target}`, updatedCache);
-        }
-
         // removing row
         await database.query(`DELETE FROM punishlogs WHERE id=$1`, [id]);
+    }
+
+    /**
+     * Fetch the punishlogs of a member by punishment type
+     * 
+     * @param type Fetch the logs based on punishment type
+     * @param order How the logs should be ordered by timestamp. Defaults to DESC
+     * @param limit Optionally limit the results
+     */
+    async fetchLogsByType(
+        guildId: Snowflake,
+        userId: Snowflake,
+        type: PunishmentType,
+        order: "ASC" | "DESC" = "DESC",
+        limit?: number
+    ): Promise<PunishLogs[]> {
+        const { rows: data } = await database.query<PunishLogs>(
+            `SELECT * 
+            FROM punishlogs 
+            WHERE guild=$1 
+                AND target=$2 
+                AND punishment_type=$3
+            ORDER BY timestamp ${order}
+            ${limit !== undefined ? `LIMIT ${limit}` : ""}`,
+            [guildId, userId, type]
+        );
+        return data;
+    }
+
+    /**
+     * Fetch the last log about the target's ban (tempban, indefinite ban, perma ban)
+     */
+    async fetchLastBan(guildId: string, targetId: string): Promise<PunishLogs | null> {
+        const { rows: data } = await database.query<PunishLogs>(
+            `SELECT * FROM punishlogs
+            WHERE guild=$1
+                AND target=$2
+                AND punishment_type >= $3
+            ORDER BY timestamp DESC
+            LIMIT 1`,
+            [guildId, targetId, PunishmentType.TEMPBAN]
+        )
+
+        if (data && data[0]) {
+            return data[0];
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Fetch the target's bans (tempban, indefinite ban, perma ban)
+     */
+    async fetchBans(guildId: string, targetId: string): Promise<PunishLogs[]> {
+        const { rows: data } = await database.query<PunishLogs>(
+            `SELECT * FROM punishlogs
+            WHERE guild=$1
+                AND target=$2
+                AND punishment_type >= $3
+            ORDER BY timestamp DESC`,
+            [guildId, targetId, PunishmentType.TEMPBAN]
+        )
+
+        return data
     }
 }
 

@@ -12,7 +12,7 @@ import {
     CacheType,
     CategoryChannel,
     ChannelType,
-    Client, Guild, GuildBan, GuildBasedChannel, GuildMember,
+    Client, Collection, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
     MappedInteractionTypes,
     Message,
@@ -445,7 +445,7 @@ export async function message_collector<T extends MessageComponentType>(
     options: {
         componentType: T,
         filter?: CollectorFilterCustom,
-        lifetime?: number
+        time?: number
     },
     onStart: CollectorCollectHandler<MappedInteractionTypes[T]>,
     onStop: CollectorStopHandler<MappedInteractionTypes[T]>,
@@ -528,24 +528,24 @@ export function automodRegex(word: string): string {
     return escapeRegex(word.toLocaleLowerCase())
 }
 
-export async function getAutoModWords(guild: Guild): Promise<{ words: string[]; ruleName: string }[]> { 
-    const manager = guild.autoModerationRules; 
-    const rawRules = await manager.fetch(); 
-    const rules = Array.from( 
+export async function getAutoModWords(guild: Guild): Promise<{ words: string[]; ruleName: string }[]> {
+    const manager = guild.autoModerationRules;
+    const rawRules = await manager.fetch();
+    const rules = Array.from(
         rawRules
-            .filter( 
-                rule => { 
-                    return rule.triggerType === AutoModerationRuleTriggerType.Keyword && rule.enabled; 
-                } 
-            ) .values() 
-    ); 
-    const list = rules.map(r => ({ words: r.triggerMetadata.keywordFilter, ruleName: r.name })); 
-    return JSON.parse(JSON.stringify(list)); 
+            .filter(
+                rule => {
+                    return rule.triggerType === AutoModerationRuleTriggerType.Keyword && rule.enabled;
+                }
+            ).values()
+    );
+    const list = rules.map(r => ({ words: r.triggerMetadata.keywordFilter, ruleName: r.name }));
+    return JSON.parse(JSON.stringify(list));
 }
 
-export async function fetchAutoModList(guild: Guild): Promise<string[]> { 
-    const rules = await getAutoModWords(guild); 
-    return rules.flatMap(r => r.words); 
+export async function fetchAutoModList(guild: Guild): Promise<string[]> {
+    const rules = await getAutoModWords(guild);
+    return rules.flatMap(r => r.words);
 }
 
 export async function getAllTriggerPatterns(
@@ -580,9 +580,9 @@ export async function hasBlockedContent(
  * Iterate through a Snowflake array and return true if any of the ids is a bot in the guild.
  */
 export async function anyBots(guild: Guild, userIds: string[]): Promise<boolean> {
-    for(const id of userIds) {
+    for (const id of userIds) {
         const member = await fetchGuildMember(guild, id);
-        if(member && member.user.bot) return true;
+        if (member && member.user.bot) return true;
     }
 
     return false;
@@ -593,10 +593,10 @@ export async function anyBots(guild: Guild, userIds: string[]): Promise<boolean>
  */
 export async function anyStaff(guild: Guild, userIds: string[]): Promise<boolean> {
     const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
-    if(!staffRoleId) return false; // if no staff role is set, then there can't be any staff member no matter what
-    for(const id of userIds) {
+    if (!staffRoleId) return false; // if no staff role is set, then there can't be any staff member no matter what
+    for (const id of userIds) {
         const member = await fetchGuildMember(guild, id);
-        if(member && member.roles.cache.has(staffRoleId)) return true;
+        if (member && member.roles.cache.has(staffRoleId)) return true;
     }
     return false;
 }
@@ -610,11 +610,11 @@ export async function resolveAndDeleteChannels(
     guild: Guild,
     channels: string[]
 ): Promise<{ resolved: string[], unresolved: string[] }> {
-    const response: { resolved: string[], unresolved: string[]} = { resolved: [], unresolved: []};
-    for(const id of channels) {
+    const response: { resolved: string[], unresolved: string[] } = { resolved: [], unresolved: [] };
+    for (const id of channels) {
         try {
             const channel = await guild.channels.fetch(id);
-            if(channel) { 
+            if (channel) {
                 await channel.delete();
                 response.resolved.push(id);
             } else {
@@ -639,8 +639,8 @@ export async function setLogChannel(guildId: Snowflake, channelId: Snowflake, ev
     const logChannelId = await ServerLogsRepo.getGuildEventChannel(guildId, event); // if the event already has a channel
     // if set log channel is called on an event that is already set, the method will handle
     // inserting the new channel in serverlogs instead and swapping the channels from ignore list
-    if(logChannelId !== null) await ServerLogsIgnoreRepo.stopIgnoringChannel(guildId, logChannelId);
-    
+    if (logChannelId !== null) await ServerLogsIgnoreRepo.stopIgnoringChannel(guildId, logChannelId);
+
     // insert the rows
     await ServerLogsRepo.put(guildId, channelId, event);
     await ServerLogsIgnoreRepo.put(guildId, channelId);
@@ -655,8 +655,8 @@ export async function setLogChannel(guildId: Snowflake, channelId: Snowflake, ev
  * @returns All channels created by calling this method, including the category
  */
 export async function buildCategory(
-    guild: Guild, 
-    categoryName: string, 
+    guild: Guild,
+    categoryName: string,
     perms: OverwriteResolvable[],
     channelOptions: {
         name: string,
@@ -669,16 +669,16 @@ export async function buildCategory(
         permissionOverwrites: perms
     });
 
-    const channelsBuilt: (TextChannel | VoiceChannel | CategoryChannel)[] = [ category ];
+    const channelsBuilt: (TextChannel | VoiceChannel | CategoryChannel)[] = [category];
 
-    for(const config of channelOptions) {
-        try{
+    for (const config of channelOptions) {
+        try {
             const channel = await category.children.create({
                 name: config.name,
                 type: config.type
             });
             channelsBuilt.push(channel);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -692,9 +692,9 @@ export async function buildCategory(
  */
 export async function resolveSnowflakesToRoles(guild: Guild, ids: string[]): Promise<Role[]> {
     const roles: Role[] = [];
-    for(const id of ids) {
+    for (const id of ids) {
         const role = await fetchGuildRole(guild, id);
-        if(role) roles.push(role);
+        if (role) roles.push(role);
     }
 
     return roles;
@@ -708,7 +708,7 @@ export async function resolveSnowflakesToRoles(guild: Guild, ids: string[]): Pro
 export async function resolveSnowflakesToChannels<
     T extends NonThreadGuildBasedChannel
 >(
-    guild: Guild, 
+    guild: Guild,
     ids: string[],
     guard: (c: NonThreadGuildBasedChannel) => c is T
 ): Promise<T[]> {
@@ -730,7 +730,29 @@ export async function fetchMessage(channel: SendableChannels, messageId: Snowfla
     let message: Message | null = null;
     try {
         message = await channel.messages.fetch(messageId);
-    } catch {/* do nothing */}
+    } catch {/* do nothing */ }
 
     return message;
+}
+
+/**
+ * Fetch all guild bans. Attention as this function ban be API intensive.
+ * @returns A collection of GuildBan objects
+ */
+export async function fetchAllBans(guild: Guild): Promise<Collection<string, GuildBan>> {
+    const allBans = new Collection<string, GuildBan>();
+    let lastBanId: string = "";
+    try {
+        let banBatch = await guild.bans.fetch({ limit: 1000 });
+        while (true) {
+            banBatch.forEach((ban, id) => allBans.set(id, ban));
+            if (banBatch.size < 1) break;
+            lastBanId = banBatch.lastKey()!;
+            banBatch = await guild.bans.fetch({ limit: 1000, after: lastBanId });
+        }
+    } catch (error) {
+        await errorLogHandle(error);
+    }
+
+    return allBans;
 }

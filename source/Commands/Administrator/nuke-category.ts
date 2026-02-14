@@ -52,12 +52,12 @@ const nuke_category: ChatCommand = {
         await interaction.reply({
             embeds: [
                 embed_message(
-                    "Red", 
+                    "Red",
                     "Nuking a category will permanently delete it, its channels and their contents.",
                     "Select the categories to be nuked"
                 )
             ],
-            components: [ selectActionRow ]
+            components: [selectActionRow]
         });
 
         const reply = await interaction.fetchReply();
@@ -67,11 +67,11 @@ const nuke_category: ChatCommand = {
             reply,
             {
                 componentType: ComponentType.ChannelSelect,
-                lifetime: 120_000,
+                time: 120_000,
                 filter: (i) => i.user.id === member.id
             },
             async (selectInteraction) => {
-                for(const id of selectInteraction.values) {
+                for (const id of selectInteraction.values) {
                     const category = await fetchGuildChannel(guild, id) as CategoryChannel;
                     categoriesSelected.push(category);
                 }
@@ -85,16 +85,16 @@ const nuke_category: ChatCommand = {
                 await reply.edit({
                     embeds: [
                         embed_message(
-                            "Red", 
+                            "Red",
                             `Proceed with nuking the categories and their channels by pressing the button.\nCategories to be nuked: ${categoriesSelected.join(", ")}`)
                     ],
-                    components: [ buttonActionRow ]
+                    components: [buttonActionRow]
                 });
             },
             async () => {
                 try {
                     await reply.delete();
-                } catch(error) {
+                } catch (error) {
                     await errorLogHandle(error);
                 }
             }
@@ -104,37 +104,38 @@ const nuke_category: ChatCommand = {
             reply,
             {
                 componentType: ComponentType.Button,
-                lifetime: 120_000,
+                time: 120_000,
                 filter: (i) => i.user.id === member.id
             },
             async (buttonInteraction) => {
                 await buttonInteraction.deferReply();
 
-                for(const category of categoriesSelected) { // iterate through categories to be deleted
-                    for(const child of category.children.cache.values()) { // iterate through each channel child
+                for (const category of categoriesSelected) { // iterate through categories to be deleted
+                    for (const child of category.children.cache.values()) { // iterate through each channel child
+                        if (child.id === buttonInteraction.channelId) continue; // skip the channel if this command is run inside the category to be nuked
                         try {
                             await child.delete();
-                        } catch(error) {
+                        } catch (error) {
                             await errorLogHandle(error);
                         }
                     }
 
                     try {
                         await category.delete();
-                    } catch(error) {
+                    } catch (error) {
                         await errorLogHandle(error);
                     }
                 }
 
                 try { // the command might be called inside one of the categories to be deleted
                     await buttonInteraction.editReply({
-                        embeds: [ embed_message("Red", "Nuke complete!") ]
+                        embeds: [embed_message("Red", "Nuke complete!")]
                     });
-                } catch { /* do nothing */}
+                } catch { /* do nothing */ }
 
                 selectCollector.stop();
             },
-            async () => {}
+            async () => { }
         )
     },
     metadata: {

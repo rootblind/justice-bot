@@ -1,12 +1,12 @@
-import { 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    ComponentType, 
-    GuildMember, 
-    MessageFlags, 
-    PermissionFlagsBits, 
-    SlashCommandBuilder 
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ComponentType,
+    GuildMember,
+    MessageFlags,
+    PermissionFlagsBits,
+    SlashCommandBuilder
 } from "discord.js";
 
 import { ChatCommand } from "../../Interfaces/command.js";
@@ -36,7 +36,7 @@ const warnCommand: ChatCommand = {
     metadata: {
         cooldown: 10,
         userPermissions: [],
-        botPermissions: [ PermissionFlagsBits.Administrator ],
+        botPermissions: [PermissionFlagsBits.Administrator],
         scope: "guild",
         group: "moderation",
         category: "Staff"
@@ -49,7 +49,7 @@ const warnCommand: ChatCommand = {
         const user = options.getUser("user", true)
         const reason = options.getString("reason", true);
         const member = await fetchGuildMember(guild, user.id);
-        if(!member) {
+        if (!member) {
             await interaction.reply({
                 embeds: [embed_error("Failed to fetch the member provided...")],
                 flags: MessageFlags.Ephemeral
@@ -58,7 +58,7 @@ const warnCommand: ChatCommand = {
         }
 
         const staffRole = await fetchStaffRole(client, guild);
-        if(!staffRole) {
+        if (!staffRole) {
             // the row is validated inside interactionCreate
             // faulty row
             await interaction.reply({
@@ -70,12 +70,31 @@ const warnCommand: ChatCommand = {
         }
 
         // staff members are immune to warnings
-        if(member.roles.cache.has(staffRole.id)) {
+        if (member.roles.cache.has(staffRole.id)) {
             await interaction.reply({
                 embeds: [embed_message("Red", "You can not take that action against another staff member!")],
                 flags: MessageFlags.Ephemeral
             });
 
+            return;
+        }
+
+        if (member.user.bot) {
+            await interaction.reply({
+                embeds: [embed_message("Red", "You can not target bots with this action!")],
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        if (
+            member.permissions.has(PermissionFlagsBits.BanMembers)
+            || member.permissions.has(PermissionFlagsBits.MuteMembers)
+        ) {
+            await interaction.reply({
+                embeds: [embed_message("Red", "This member has moderation permissions!")],
+                flags: MessageFlags.Ephemeral
+            });
             return;
         }
 
@@ -96,11 +115,11 @@ const warnCommand: ChatCommand = {
         });
 
         try { // notify the targeted user if possible
-            await member.send({embeds: [embed_warn_dm(interactionMember.user.username, guild, reason)]})
-        } catch { /* do nothing */}
+            await member.send({ embeds: [embed_warn_dm(interactionMember.user.username, guild, reason)] })
+        } catch { /* do nothing */ }
 
-        if(modLogs) { // log the event
-            await modLogs.send({embeds: [embed_warn(member, interactionMember, reason)]})
+        if (modLogs) { // log the event
+            await modLogs.send({ embeds: [embed_warn(member, interactionMember, reason)] })
         }
 
         // if the warning was a mistake, the moderator has 5 minutes to remove the warning by themselves
@@ -110,7 +129,7 @@ const warnCommand: ChatCommand = {
             {
                 componentType: ComponentType.Button,
                 filter: (i) => i.user.id === interaction.user.id,
-                lifetime: 300_000
+                time: 300_000
             },
             async (buttonInteraction) => {
                 await PunishLogsRepo.deleteLogById(warnId); // remove the row
@@ -119,11 +138,11 @@ const warnCommand: ChatCommand = {
                         embeds: [embed_message("Green", "Warn removed.")],
                         components: []
                     });
-                } catch {/* do nothing */}
+                } catch {/* do nothing */ }
 
                 // log the removal if possible
-                if(modLogs) {
-                    await modLogs.send({embeds: [embed_unwarn(member.user.username, interactionMember)]});
+                if (modLogs) {
+                    await modLogs.send({ embeds: [embed_unwarn(member.user.username, interactionMember)] });
                 }
 
                 await buttonInteraction.reply({
@@ -133,8 +152,8 @@ const warnCommand: ChatCommand = {
             },
             async () => {
                 try {
-                    if(reply.deletable) await reply.delete();
-                } catch { /* do nothing */}
+                    if (reply.deletable) await reply.delete();
+                } catch { /* do nothing */ }
             }
         )
     }

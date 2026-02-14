@@ -64,12 +64,12 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
     // TODO: ADD FILTERS FOR RANKS, ROLES AND GAMEMODES
     const activePostsEmbed = new EmbedBuilder().setColor("Purple").setDescription("There is no active post at the moment.");
     const posts: LfgPostFullRow[] = await LfgSystemRepo.getPostsFullByGame(guild.id, game.id);
-    if(!posts.length) {
+    if (!posts.length) {
         return activePostsEmbed;
     }
 
     activePostsEmbed
-        .setAuthor({name: guild.name, iconURL: `${guild.iconURL({extension: "png"})}`})
+        .setAuthor({ name: guild.name, iconURL: `${guild.iconURL({ extension: "png" })}` })
         .setTitle("Active LFG Posts");
 
     const activePostStrings: string[] = [];
@@ -80,17 +80,17 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
     const rankRows = await LfgSystemRepo.getGameRanks(game.id);
     const ranksResolved: Role[] = await resolveSnowflakesToRoles(guild, rankRows.map(r => r.role_id));
 
-    for(const row of posts) {
-        if(index === 25) break; // limit the unfiltered list to 25 results
+    for (const row of posts) {
+        if (index === 25) break; // limit the unfiltered list to 25 results
         try {
             const lfg = await fetchPostMessage(guild, game.id, row.owner_id);
-            if(!lfg) continue;
+            if (!lfg) continue;
 
             const owner = await fetchGuildMember(guild, row.owner_id); // the member that posted the lfg
-            if(!owner) continue;
-            if(!owner.voice.channel) continue;
-            if(
-                owner.voice.channel.userLimit 
+            if (!owner) continue;
+            if (!owner.voice.channel) continue;
+            if (
+                owner.voice.channel.userLimit
                 && owner.voice.channel.userLimit < owner.voice.channel.members.size + 1
             ) {
                 // userLimit === 0 means the room has no limit
@@ -100,13 +100,13 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
 
             // filter out hidden or locked rooms to the member
             const permsForMember = owner.voice.channel.permissionsFor(member);
-            if(!permsForMember) continue;
+            if (!permsForMember) continue;
 
             const canJoinAndSpeak = permsForMember.has(PermissionFlagsBits.ViewChannel)
                 && permsForMember.has(PermissionFlagsBits.Connect)
                 && permsForMember.has(PermissionFlagsBits.Speak);
 
-            if(!canJoinAndSpeak) continue;
+            if (!canJoinAndSpeak) continue;
 
             // array of resolved role ranks attached to this post
             const postRanks: Role[] = ranksResolved.filter(role => row.roles.map(r => r.role_id).includes(role.id));
@@ -118,7 +118,7 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
 
         } catch { continue; }
     }
-    activePostsEmbed.setDescription(activePostStrings.join("\n"));
+    if (activePostStrings.length > 0) activePostsEmbed.setDescription(activePostStrings.join("\n"));
     return activePostsEmbed;
 }
 
@@ -131,7 +131,7 @@ export function info_lfg(): EmbedBuilder {
             "\n- **BUMP** and **Delete** are post-related buttons. By bumping, you are using your cooldown to re-post your currently active LFG." +
             "- By pressing delete, you are removing your post from the channel."
         )
-    .setFooter({text: "Do note that deleting your post won't refresh your cooldown"})
+        .setFooter({ text: "Do note that deleting your post won't refresh your cooldown" })
 }
 
 /**
@@ -151,7 +151,7 @@ export async function interface_manager_collector(message: Message) {
             const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, cooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
-                    embeds: [ embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)],
+                    embeds: [embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)],
                     flags: MessageFlags.Ephemeral
                 });
                 return;
@@ -184,9 +184,9 @@ export async function interface_manager_collector(message: Message) {
             if (buttonInteraction.customId === "lfg-button" || buttonInteraction.customId === "bump-post-button") {
                 // check for force_voice
                 const systemConfig = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
-                if((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
+                if ((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                     await buttonInteraction.reply({
-                        embeds: [ embed_message("Red", "You need to be in a voice channel to do that!") ],
+                        embeds: [embed_message("Red", "You need to be in a voice channel to do that!")],
                         flags: MessageFlags.Ephemeral
                     });
                     return;
@@ -252,10 +252,10 @@ export async function interface_manager_collector(message: Message) {
                         });
                         const reply = await buttonInteraction.fetchReply();
 
-                        await message_collector<ComponentType.StringSelect>(reply,
+                        const coll = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                lifetime: 120_000,
+                                time: 120_000,
                                 filter: (i) => i.user.id === buttonInteraction.user.id
                             },
                             async (selectInteraction) => {
@@ -268,10 +268,11 @@ export async function interface_manager_collector(message: Message) {
                                     gameTable,
                                     selectedChannel
                                 );
+                                coll.stop();
                             },
                             async () => {
                                 try {
-                                    await reply.edit({
+                                    await buttonInteraction.editReply({
                                         embeds: [embed_interaction_expired()],
                                         components: []
                                     });
@@ -282,17 +283,17 @@ export async function interface_manager_collector(message: Message) {
                     break;
                 }
                 case "active-lfg-posts": {
-                    await buttonInteraction.deferReply({flags: MessageFlags.Ephemeral});
+                    await buttonInteraction.deferReply({ flags: MessageFlags.Ephemeral });
                     const activeLFGs = await active_lfg_posts(guild, gameTable, (buttonInteraction.member as GuildMember));
                     await buttonInteraction.editReply({
-                        embeds: [ activeLFGs ]
+                        embeds: [activeLFGs]
                     });
                     break;
                 }
 
                 case "info-lfg-button": {
                     await buttonInteraction.reply({
-                        embeds: [ info_lfg() ],
+                        embeds: [info_lfg()],
                         flags: MessageFlags.Ephemeral
                     });
                     break;
@@ -371,8 +372,6 @@ export async function interface_manager_collector(message: Message) {
                 }
             }
         },
-        async () => {
-            console.log(`${message.guild?.name ?? "Unknown guild"} | ${channel.name} | ${message.id} - lfg interface manager collector stopped.`)
-        }
+        async () => { }
     )
 }

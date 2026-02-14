@@ -63,7 +63,7 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     }
 
     const order = (await AutoVoiceRoomRepo.getLastOrder(guild.id)) + 1;
-    
+
     const perms: OverwriteResolvable[] = [
         {
             id: member.id,
@@ -71,7 +71,7 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
         }
     ];
     const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
-    if(staffRoleId) {
+    if (staffRoleId) {
         // if there is a staff role set, then grant permission to staff members
         perms.push({
             id: staffRoleId,
@@ -349,7 +349,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.StringSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -429,7 +429,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.UserSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -490,7 +490,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             }
 
                             const staffSelected = await anyStaff(guild, selectInteraction.values);
-                            if(staffSelected) {
+                            if (staffSelected) {
                                 await selectInteraction.reply({
                                     embeds: [embed_error("You can not target staff members!")],
                                     flags: MessageFlags.Ephemeral
@@ -569,7 +569,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.UserSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -630,7 +630,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             }
 
                             const staffSelected = await anyStaff(guild, selectInteraction.values);
-                            if(staffSelected) {
+                            if (staffSelected) {
                                 await selectInteraction.reply({
                                     embeds: [embed_error("You can not target staff members!")],
                                     flags: MessageFlags.Ephemeral
@@ -859,7 +859,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.StringSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -982,7 +982,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [ embed ]
+                        embeds: [embed]
                     });
 
                     break;

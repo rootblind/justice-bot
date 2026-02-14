@@ -44,10 +44,10 @@ class LfgSystemRepository {
      */
     async setCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number): Promise<number> {
         const config = await this.getSystemConfigForGuild(guildId);
-        if(!config) return 0;
+        if (!config) return 0;
 
         const expiresAt = timestampNow() + config.post_cooldown;
-        lfgCooldowns.set(this.key(guildId, memberId, gameId), {expiresAt: expiresAt});
+        lfgCooldowns.set(this.key(guildId, memberId, gameId), { expiresAt: expiresAt });
 
         return expiresAt;
     }
@@ -63,10 +63,10 @@ class LfgSystemRepository {
      */
     getCooldown(guildId: Snowflake, memberId: Snowflake, gameId: number): number | undefined {
         const entry = lfgCooldowns.get(this.key(guildId, memberId, gameId));
-        if(!entry) return undefined;
+        if (!entry) return undefined;
 
         // clean up if the cooldown expired
-        if(entry.expiresAt <= timestampNow()) {
+        if (entry.expiresAt <= timestampNow()) {
             lfgCooldowns.delete(this.key(guildId, memberId, gameId));
             return undefined;
         }
@@ -101,7 +101,7 @@ class LfgSystemRepository {
      * The cooldown must be in seconds
      */
     async updateSystemCooldown(guildId: Snowflake, cooldown: number): Promise<LfgSystemConfig> {
-        const {rows: data} = await database.query<LfgSystemConfig>(
+        const { rows: data } = await database.query<LfgSystemConfig>(
             `UPDATE lfg_system_config SET post_cooldown=$2 WHERE guild_id=$1
             RETURNING *;`,
             [guildId, cooldown]
@@ -116,7 +116,7 @@ class LfgSystemRepository {
     }
 
     async toggleSystemForceVoice(guildId: Snowflake, force_voice: boolean): Promise<LfgSystemConfig> {
-        const {rows: data} = await database.query<LfgSystemConfig>(
+        const { rows: data } = await database.query<LfgSystemConfig>(
             `UPDATE lfg_system_config SET force_voice=$2 WHERE guild_id=$1
             RETURNING *;`,
             [guildId, force_voice]
@@ -133,13 +133,13 @@ class LfgSystemRepository {
 
     async getSystemConfigForGuild(guildId: Snowflake): Promise<LfgSystemConfig> {
         const cache = lfgSystemConfigCache.get(guildId);
-        if(cache) return cache
+        if (cache) return cache
 
-        const {rows : data} = await database.query<LfgSystemConfig>(
+        const { rows: data } = await database.query<LfgSystemConfig>(
             `SELECT * FROM lfg_system_config WHERE guild_id=$1`, [guildId]
         );
 
-        if(data && data[0]) {
+        if (data && data[0]) {
             lfgSystemConfigCache.set(guildId, {
                 guild_id: guildId,
                 force_voice: data[0].force_voice,
@@ -206,12 +206,12 @@ class LfgSystemRepository {
      * Fetch the game row by id
      */
     async getGameById(gameId: number): Promise<LfgGameTable | null> {
-        const {rows: data} = await database.query<LfgGameTable>(
+        const { rows: data } = await database.query<LfgGameTable>(
             `SELECT * FROM lfg_games WHERE id=$1`,
             [gameId]
         );
 
-        if(data && data[0]) {
+        if (data && data[0]) {
             return data[0];
         } else {
             return null;
@@ -231,7 +231,7 @@ class LfgSystemRepository {
     }
 
     async deleteGamesBulk(ids: number[]) {
-        if(ids.length === 0) return;
+        if (ids.length === 0) return;
         await database.query(`DELETE FROM lfg_games WHERE id = ANY($1)`, [ids])
     }
 
@@ -357,7 +357,7 @@ class LfgSystemRepository {
     }
 
     async getGamemodesOfGameId(gameId: number): Promise<LfgGamemodeTable[]> {
-        const {rows: data} = await database.query<LfgGamemodeTable>(
+        const { rows: data } = await database.query<LfgGamemodeTable>(
             `SELECT * FROM lfg_gamemodes WHERE game_id=$1`,
             [gameId]
         )
@@ -398,9 +398,9 @@ class LfgSystemRepository {
         if (roles.length === 0) return [];
 
         const guildIds = roles.map(r => r.guild_id);
-        const gameIds  = roles.map(r => r.game_id);
-        const roleIds  = roles.map(r => r.role_id);
-        const types    = roles.map(r => r.type);
+        const gameIds = roles.map(r => r.game_id);
+        const roleIds = roles.map(r => r.role_id);
+        const types = roles.map(r => r.type);
 
         const { rows } = await database.query<LfgRoleTable>(
             `
@@ -449,7 +449,7 @@ class LfgSystemRepository {
     }
 
     async getGameLfgRolesByType(gameId: number, type: LfgRoleType): Promise<LfgRoleTable[]> {
-        const {rows: data} = await database.query<LfgRoleTable>(
+        const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1 AND type=$2`,
             [gameId, type]
         );
@@ -458,7 +458,7 @@ class LfgSystemRepository {
     }
 
     async getAllGameLfgRoles(gameId: number): Promise<LfgRoleTable[]> {
-        const {rows: data} = await database.query<LfgRoleTable>(
+        const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1`,
             [gameId]
         );
@@ -501,6 +501,13 @@ class LfgSystemRepository {
                     (guild_id, game_id, channel_id, gamemode_id,
                      message_id, owner_id, slots, description)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                ON CONFLICT (guild_id, game_id, owner_id)
+                DO UPDATE SET
+                    channel_id = EXCLUDED.channel_id,
+                    gamemode_id = EXCLUDED.gamemode_id,
+                    message_id = EXCLUDED.message_id,
+                    slots = EXCLUDED.slots,
+                    description = EXCLUDED.description
                 RETURNING *;`,
             [
                 post.guild_id,
@@ -535,7 +542,7 @@ class LfgSystemRepository {
     }
 
     async postGameCounter(gameId: number): Promise<number> {
-        const {rows: [{count}]} = await database.query(`SELECT COUNT(*) as count FROM lfg_posts WHERE game_id=$1`, [gameId]);
+        const { rows: [{ count }] } = await database.query(`SELECT COUNT(*) as count FROM lfg_posts WHERE game_id=$1`, [gameId]);
 
         return count;
     }
@@ -572,7 +579,7 @@ class LfgSystemRepository {
     }
 
     async getAllPosts(): Promise<LfgPostTable[]> {
-        const {rows: data} = await database.query<LfgPostTable>(
+        const { rows: data } = await database.query<LfgPostTable>(
             `SELECT * FROM lfg_posts;`
         );
         return data;
@@ -583,7 +590,7 @@ class LfgSystemRepository {
      * @returns All posts with their discord channel snowflake attached
      */
     async getAllPostsWithChannel(): Promise<LfgPostWithChannelTable[]> {
-        const {rows: data} = await database.query<LfgPostWithChannelTable>(
+        const { rows: data } = await database.query<LfgPostWithChannelTable>(
             `SELECT
                 p.*,
                 c.discord_channel_id
@@ -679,7 +686,7 @@ class LfgSystemRepository {
      * Fetch all the posts of a member in a guild, no matter the game
      */
     async getAllMemberPosts(guildId: string, ownerId: string): Promise<LfgPostWithChannelTable[]> {
-        const {rows: data} = await database.query<LfgPostWithChannelTable>(
+        const { rows: data } = await database.query<LfgPostWithChannelTable>(
             `SELECT p.*, c.discord_channel_id
             FROM lfg_posts p
             JOIN lfg_channels c

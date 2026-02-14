@@ -245,14 +245,14 @@ export async function lfg_builder_collector(
     const collector = await message_collector<ComponentType.Button>(message,
         {
             componentType: ComponentType.Button,
-            lifetime: 60 * 60_000,
+            time: 60 * 60_000,
             filter: (i) => i.user.id === interaction.user.id
         },
         async (buttonInteraction) => {
             const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, cooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
-                    embeds: [ embed_message("Red",`You are pressing buttons too fast! <t:${userCooldown}:R>`)],
+                    embeds: [embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)],
                     flags: MessageFlags.Ephemeral
                 });
                 return;
@@ -385,7 +385,7 @@ export async function lfg_builder_collector(
                     const selectCollector = await message_collector<ComponentType.RoleSelect>(response,
                         {
                             componentType: ComponentType.RoleSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === buttonInteraction.user.id
                         },
                         async (selectInteraction) => {
@@ -431,7 +431,7 @@ export async function lfg_builder_collector(
                     const selectCollector = await message_collector<ComponentType.RoleSelect>(response,
                         {
                             componentType: ComponentType.RoleSelect,
-                            lifetime: 120_000,
+                            time: 120_000,
                             filter: (i) => i.user.id === buttonInteraction.user.id
                         },
                         async (selectInteraction) => {
@@ -476,7 +476,7 @@ export async function lfg_builder_collector(
                     }
 
                     const checkGame = await LfgSystemRepo.getGame(buttonInteraction.guild!.id, game.game_name);
-                    if(checkGame && checkGame.manager_message_id !== null) { // safe guarding against building the same game more than once
+                    if (checkGame && checkGame.manager_message_id !== null) { // safe guarding against building the same game more than once
                         await buttonInteraction.reply({
                             embeds: [embed_error(
                                 "It seems like another builder instance already built this game before the button was pressed.\n" +
@@ -566,7 +566,7 @@ export async function lfg_game_builder(
         const collector = await message_collector<ComponentType.StringSelect>(reply,
             {
                 componentType: ComponentType.StringSelect,
-                lifetime: 120_000,
+                time: 120_000,
                 filter: (i) => i.user.id === interaction.user.id
             },
             async (selectInteraction) => {
@@ -588,10 +588,10 @@ export async function lfg_game_builder(
                 collector.stop();
             },
             async () => {
-                if(reply.deletable) {
+                if (reply.deletable) {
                     try {
                         await reply.delete();
-                    } catch { /* do nothing */}
+                    } catch { /* do nothing */ }
                 }
             }
         )

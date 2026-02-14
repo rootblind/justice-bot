@@ -371,32 +371,24 @@ const secondsMap: Record<TimeStringUnit, number> = {
 
 /**
  * Converts seconds into the closest duration string (ex 119 -> "2m")
+ * 
+ * It returns null if the number is infinite or negative (less than 0)
  */
 export function seconds_to_duration(seconds: number): string | null {
-    if (!Number.isFinite(seconds) || seconds <= 0) {
-        return null;
-    }
+    if (!Number.isFinite(seconds) || seconds <= 0) return null;
 
-    let bestUnit: TimeStringUnit = "m";
-    let bestValue = 1;
-    let smallestError = Infinity;
+    const units: TimeStringUnit[] = ["y", "w", "d", "h", "m"];
 
-    for (const unit of Object.keys(secondsMap) as TimeStringUnit[]) {
+    for (const unit of units) {
         const unitSeconds = secondsMap[unit];
         const value = Math.round(seconds / unitSeconds);
 
-        if (value <= 0) continue;
-
-        const error = Math.abs(seconds - value * unitSeconds);
-
-        if (error < smallestError) {
-            smallestError = error;
-            bestUnit = unit;
-            bestValue = value;
+        if (value >= 1) {
+            return `${value}${unit}`;
         }
     }
 
-    return `${bestValue}${bestUnit}`;
+    return `0m`; // fallback
 }
 
 /**
@@ -430,7 +422,7 @@ export function duration_timestamp(durationString: string): number | null {
  */
 export function duration_to_seconds(durationString: string): number | null {
     const match = durationString.match(durationRegex);
-    if(match && match[1] && match[2]) {
+    if (match && match[1] && match[2]) {
         const value = Number(match[1]);
         const unit = match[2].toLowerCase() as TimeStringUnit;
         return value * time_unit_conversion(unit);
@@ -471,4 +463,20 @@ export function hasCooldown(id: Snowflake, cooldowns: Collection<string, number>
  */
 export function timestampNow(): number {
     return Math.floor(Date.now() / 1000);
+}
+
+/**
+ * 
+ * @param array Array of the elements to be split into chunks
+ * @param size The size of chunking
+ * @returns Array of arrays composed out of the elements of the given array grouped into size chunks. 
+ * The last chunk may be of a shorter size if the length of the input array is not divisible by the size.
+ */
+export function chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunks.push(array.slice(i, i + size));
+    }
+
+    return chunks;
 }

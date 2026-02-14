@@ -47,7 +47,7 @@ const interactonCreate: Event = {
     async execute(interaction: ChatInputCommandInteraction, client: Client) {
         if (interaction.isChatInputCommand() && interaction.member instanceof GuildMember && interaction.guild) {
             const botMember = await fetch_bot_member(interaction.guild);
-            const guild = interaction.guild as Guild; 
+            const guild = interaction.guild as Guild;
 
             if (!botMember) return; // do nothing if the member object of the client couldn't be fetched
 
@@ -56,13 +56,13 @@ const interactonCreate: Event = {
 
             if (command.metadata.disabled) return; // if somehow a disabled command is reached, do not execute it
 
-            if(command.metadata.premiumPlanOnly === true) {
+            if (command.metadata.premiumPlanOnly === true) {
                 const guildPlan = await GuildPlanRepo.getGuildPlan(guild.id);
-                if(guildPlan.plan === "free") {
+                if (guildPlan.plan === "free") {
                     return await interaction.reply({
-                        embeds: [ 
+                        embeds: [
                             embed_error(
-                                "This command requires a premium plan or higher for this guild!", 
+                                "This command requires a premium plan or higher for this guild!",
                                 "Command is not for free plan"
                             )
                         ]
@@ -71,9 +71,9 @@ const interactonCreate: Event = {
             }
 
             // check for staff commands
-            if(command.metadata.category === "Staff") {
+            if (command.metadata.category === "Staff" || command.metadata.category === "Moderator") {
                 const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
-                if(staffRoleId && !interaction.member.roles.cache.has(staffRoleId)) {
+                if (staffRoleId && !interaction.member.roles.cache.has(staffRoleId)) {
                     // if staff role is set and the member doesn't have the staff role, reject
                     return await interaction.reply({
                         embeds: [
@@ -83,7 +83,7 @@ const interactonCreate: Event = {
                     });
                 }
 
-                if(!staffRoleId) {
+                if (!staffRoleId) {
                     return await interaction.reply({
                         embeds: [
                             embed_error("This action requires setting up the staff role through `/server-roles`", "Missing server role")
@@ -96,13 +96,13 @@ const interactonCreate: Event = {
             // check for premium command
             if (command.metadata.group === "premium") {
                 const premiumRoleId = await ServerRolesRepo.getGuildPremiumRole(guild.id);
-                if(!premiumRoleId) {
+                if (!premiumRoleId) {
                     return await interaction.reply({
-                        embeds: [ embed_error("No server role was set as the premium role.", "server-role config required") ],
+                        embeds: [embed_error("No server role was set as the premium role.", "server-role config required")],
                         flags: MessageFlags.Ephemeral
                     });
                 }
-                if(command.metadata.category !== "Administrator") {
+                if (command.metadata.category !== "Administrator") {
                     const isPremium = await PremiumMembersRepo.checkUserMembership(
                         interaction.guild.id,
                         interaction.member.id
@@ -110,7 +110,7 @@ const interactonCreate: Event = {
 
                     if (!isPremium) {
                         return await interaction.reply({
-                            embeds: [ embed_error("This command is for premium members only!") ],
+                            embeds: [embed_error("This command is for premium members only!")],
                             flags: MessageFlags.Ephemeral
                         });
                     }

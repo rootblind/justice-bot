@@ -1,12 +1,13 @@
 import { GuildMember, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import ServerRolesRepo from "../../Repositories/serverroles.js";
-import { embed_error, embed_message, embed_timeout, embed_timeout_dm, embed_timeout_removed } from "../../utility_modules/embed_builders";
-import { fetchGuildMember, fetchLogsChannel } from "../../utility_modules/discord_helpers";
-import { duration_to_seconds, seconds_to_duration, timestampNow } from "../../utility_modules/utility_methods";
+import { embed_error, embed_message, embed_timeout, embed_timeout_dm, embed_timeout_removed } from "../../utility_modules/embed_builders.js";
+import { fetchGuildMember, fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
+import { duration_to_seconds, seconds_to_duration, timestampNow } from "../../utility_modules/utility_methods.js";
 import PunishLogsRepo from "../../Repositories/punishlogs.js";
 import { PunishmentType } from "../../objects/enums.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import { warn_handler } from "../../Systems/moderation/warning.js";
 
 const timeoutCommand: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -119,6 +120,22 @@ const timeoutCommand: ChatCommand = {
             return;
         }
 
+        if (target.permissions.has(PermissionFlagsBits.MuteMembers)) {
+            await interaction.reply({
+                embeds: [embed_message("Red", "This member has moderation permissions!")],
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        if (target.user.bot) {
+            await interaction.reply({
+                embeds: [embed_message("Red", "You can not target bots with this action!.")],
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
         const modLogs = await fetchLogsChannel(guild, "moderation");
         await interaction.deferReply();
 
@@ -136,7 +153,6 @@ const timeoutCommand: ChatCommand = {
                     });
                     return;
                 }
-
                 const applyWarn = options.getBoolean("apply-warn") ?? true; // if not specified, defaults to true
                 const embedLog = embed_timeout(
                     target,
@@ -165,6 +181,7 @@ const timeoutCommand: ChatCommand = {
                     String(timestampNow())
                 );
 
+                if (applyWarn) await warn_handler(guild, target.user, moderator.user, reason, modLogs);
                 try { // try to notify the user
                     await target.send({
                         embeds: [
@@ -183,7 +200,7 @@ const timeoutCommand: ChatCommand = {
                 break;
             }
             case "remove": {
-                if (target.communicationDisabledUntil === null) {
+                if (target.isCommunicationDisabled()) {
                     await interaction.editReply({
                         embeds: [embed_message("Red", "The member is not currently in timeout.")]
                     });
