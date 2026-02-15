@@ -14,7 +14,7 @@ const test: ChatCommand = {
     async execute(interaction) {
         const options = interaction.options;
         const role = options.getRole("role", true) as Role;
-        const normalize = (s: string) => s.toLocaleLowerCase().replace(/\s+/g, "-");
+        const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "-");
         let roleIcon: string | null | RoleMention = null;
         if (role.unicodeEmoji) roleIcon = role.unicodeEmoji;
         const emojis = await role.guild.emojis.fetch();
@@ -22,9 +22,9 @@ const test: ChatCommand = {
         if (emoji) {
             roleIcon = emoji.toString();
         }
-        if(roleIcon === null) roleIcon = role.toString();
+        if (roleIcon === null) roleIcon = role.toString();
 
-        await interaction.reply({embeds: [ new EmbedBuilder().setFields({name: "test", value: `${roleIcon}`}) ]})
+        await interaction.reply({ embeds: [new EmbedBuilder().setFields({ name: "test", value: `${roleIcon}` })] })
 
     },
 

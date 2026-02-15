@@ -7,6 +7,7 @@ import type { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
+import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 
 export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
 const hooks: channelDeleteHook[] = [];
@@ -15,10 +16,10 @@ export function extend_channelDelete(hook: channelDeleteHook) {
 }
 
 async function runHooks(channel: GuildChannel) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(channel);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -28,14 +29,14 @@ const channelDelete: Event = {
     name: "channelDelete",
     async execute(channel: GuildChannel) {
         const guild: Guild = channel.guild;
-        
+
         /**
          * Deleting a channel used or registered by one or more database tables must be curated
          */
 
-        const property: ColumnValuePair = {column: "channel", value: channel.id}
+        const property: ColumnValuePair = { column: "channel", value: channel.id }
         const tablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
-        for(const table of tablesToBeCleaned) {
+        for (const table of tablesToBeCleaned) {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
         // clean system if any channel is deleted from it
@@ -45,10 +46,13 @@ const channelDelete: Event = {
         await LfgSystemRepo.onGameComponentDelete(guild.id, channel.id);
         await LfgSystemRepo.deleteChannelBySnowflake(channel.id);
 
+        // clean ticket system
+        await TicketSystemRepo.onManagerDelete(guild.id, channel.id);
+
         await runHooks(channel);
         // logging
         const logChannel = await fetchLogsChannel(guild, "server-activity");
-        if(!logChannel) return;
+        if (!logChannel) return;
 
         const channelDeleteAudit = await guild.fetchAuditLogs({
             type: AuditLogEvent.ChannelDelete,
@@ -57,16 +61,16 @@ const channelDelete: Event = {
 
         const entry = channelDeleteAudit.entries.first();
 
-        if(!entry || !entry.executor || entry.executor.bot) return;
-        if(entry.target.id !== channel.id) return; // ignore if the audit log doesn't target the channel
+        if (!entry || !entry.executor || entry.executor.bot) return;
+        if (entry.target.id !== channel.id) return; // ignore if the audit log doesn't target the channel
 
-        try{
+        try {
             await logChannel.send({
                 embeds: [
                     embed_channel_event(channel, entry.executor as User, "deleted", "Red")
                 ]
             });
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error, `Failed to channelDelete event from ${guild.name}[${guild.id}]`);
         }
     }

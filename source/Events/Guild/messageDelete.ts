@@ -14,6 +14,7 @@ import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
+import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 
 export type messageDeleteHook = (message: Message) => Promise<void>;
 const hooks: messageDeleteHook[] = [];
@@ -22,10 +23,10 @@ export function extend_messageDelete(hook: messageDeleteHook) {
 }
 
 async function runHooks(message: Message) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(message);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -105,26 +106,30 @@ const messageDelete: Event = {
         }
 
         // clean up for database tables
-        if(message.author.id === guild.client.user.id) {
+        if (message.author.id === guild.client.user.id) {
             // if the deleted message is sent by justice bot
             // perform database clean up
-            const property: ColumnValuePair = { column: "messageid", value: message.id};
+            const property: ColumnValuePair = { column: "messageid", value: message.id };
             const tablesWithMessageIdColumn = await DatabaseRepo.getTablesWithColumnValue(property);
-            for(const table of tablesWithMessageIdColumn) {
+            for (const table of tablesWithMessageIdColumn) {
                 await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
             }
             property.column = "message"; // there are tables that use "message" instead
             const tablesWithMessageColumn = await DatabaseRepo.getTablesWithColumnValue(property);
-            for(const table of tablesWithMessageColumn) {
+            for (const table of tablesWithMessageColumn) {
                 await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
             }
 
             // autovoicesystem
             await AutoVoiceSystemRepo.deleteSystem(guild.id, message.id); // if the message is of autovoicesystem, the system will be deleted from database.
-        
+
             // lfg-system related messages (interfaces and posts)
             await LfgSystemRepo.onGameComponentDelete(guild.id, message.id);
             await LfgSystemRepo.deletePostBySnowflake(message.id);
+
+            // ticket system
+            await TicketSystemRepo.onManagerDelete(guild.id, message.id);
+            await TicketSystemRepo.deleteTicketBySnowflake(message.id);
         }
     }
 }

@@ -2,6 +2,8 @@
  * In this source file will be implemented cron tasks.
  * Cron tasks are recurring executions of blocks of code at the designated schedule.
  * Useful when the program needs to perform periodics checks and take actions accordingly
+ * 
+ * ATTENTION: Do not cluster too many cron tasks on the same scheduler, or some tasks might execute late
  */
 
 import { CronTaskBuilder } from "../Interfaces/helper_types.js";
@@ -94,7 +96,7 @@ export const tempban_expired_clear: CronTaskBuilder = {
 // Handling premium membership expiration
 export const expiredPremium: CronTaskBuilder = {
     name: "Expired premium handle",
-    schedule: "0 * * * *",
+    schedule: "1 * * * *",
     job: async () => {
         const expiredMembers = await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
         if (!expiredMembers) return; // if no membership is expired, there is nothing to execute

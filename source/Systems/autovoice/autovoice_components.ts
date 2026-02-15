@@ -1,16 +1,16 @@
-import { 
-    ActionRowBuilder, 
-    APIEmbedField, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    ColorResolvable, 
-    EmbedBuilder, 
-    LabelBuilder, 
-    ModalBuilder, 
-    RestOrArray, 
-    StringSelectMenuBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
+import {
+    ActionRowBuilder,
+    APIEmbedField,
+    ButtonBuilder,
+    ButtonStyle,
+    ColorResolvable,
+    EmbedBuilder,
+    LabelBuilder,
+    ModalBuilder,
+    RestOrArray,
+    StringSelectMenuBuilder,
+    TextInputBuilder,
+    TextInputStyle,
 } from "discord.js";
 
 // embeds, buttons and other components related to the autovoice system
@@ -25,7 +25,7 @@ type AutoVoiceButtonConfig = {
 };
 
 export const AUTOVOICE_BUTTONS: AutoVoiceButtonConfig[] = [
-    { id: "name-channel-button", emoji: "🏷️", style: ButtonStyle.Success, name: "NAME", value: "Rename room"},
+    { id: "name-channel-button", emoji: "🏷️", style: ButtonStyle.Success, name: "NAME", value: "Rename room" },
     { id: "limit-channel-button", emoji: "👥", style: ButtonStyle.Success, name: "LIMIT", value: "Limit room" },
     { id: "hide-channel-button", emoji: "🛡️", style: ButtonStyle.Success, name: "HIDE", value: "Hide/unhide room" },
     { id: "lock-channel-button", emoji: "🔒", style: ButtonStyle.Success, name: "LOCK", value: "Lock/unlock room" },
@@ -83,7 +83,7 @@ export function embed_autovoice_manager_builder(
 ): EmbedBuilder {
     const fields: RestOrArray<APIEmbedField> = [];
     AUTOVOICE_BUTTONS.forEach((b) => {
-        if(b.id !== "send-interface-button") {
+        if (b.id !== "send-interface-button") {
             fields.push({
                 name: `${b.emoji} ${b.name}`,
                 value: `${b.value}`
@@ -96,7 +96,7 @@ export function embed_autovoice_manager_builder(
         .addFields(
             ...fields
         )
-        .setFooter({text: "Use Send Interface when you're done."})
+        .setFooter({ text: "Use Send Interface when you're done." })
 }
 
 export function embed_autovoice_manager(fields: RestOrArray<APIEmbedField>, color: ColorResolvable = "Purple") {
@@ -104,7 +104,7 @@ export function embed_autovoice_manager(fields: RestOrArray<APIEmbedField>, colo
         .setColor(color)
         .setFields(...fields)
         .setDescription("# Autovoice manager\nUse this interface to manage your autovoice channel.\nBy default, autovoice channels are unlimited, visible and open to everyone (except blocked members).")
-        .setFooter({text: "Autovoice channels are deleted when they get empty."})
+        .setFooter({ text: "Autovoice channels are deleted when they get empty." })
 }
 
 // modals
@@ -123,7 +123,7 @@ export const channelNameModal = new ModalBuilder()
     .setTitle("Channel Name")
     .addLabelComponents(channelNameLabel);
 
-export const channelLimitInput = new TextInputBuilder() 
+export const channelLimitInput = new TextInputBuilder()
     .setCustomId("channel-limit-input")
     .setRequired(true)
     .setMinLength(1)
@@ -140,16 +140,16 @@ export const channelLimitModal = new ModalBuilder()
 
 // select menu
 const voiceRegions = [
-    "Automatic", 'Brazil', 'HongKong', 'India', 'Japan', 'Rotterdam', 
-    'Singapore', 'South-Korea', 'SouthAfrica', 'Sydney', 'US-Central', 
+    "Automatic", 'Brazil', 'HongKong', 'India', 'Japan', 'Rotterdam',
+    'Singapore', 'South-Korea', 'SouthAfrica', 'Sydney', 'US-Central',
     'US-East', 'US-South', 'US-West'
 ];
 const selectRegionOptions = [];
-for(const region of voiceRegions) {
+for (const region of voiceRegions) {
     selectRegionOptions.push({
         label: region,
         description: `Set room region to ${region}`,
-        value: region.toLocaleLowerCase()
+        value: region.toLowerCase()
     });
 }
 

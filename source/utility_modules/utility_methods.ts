@@ -4,6 +4,8 @@
 
 import { type Client, type Collection, type Snowflake } from "discord.js";
 import fs from "graceful-fs";
+import { mkdir } from "fs/promises";
+import { rm } from "fs/promises";
 import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
 import PremiumKeyRepo from "../Repositories/premiumkey.js";
@@ -13,6 +15,9 @@ import csvParse from "csv-parser";
 import path from "path";
 import GuildModulesRepo from "../Repositories/guildmodules.js";
 import { ChatCommandGroup } from "../Interfaces/command.js";
+import { URL } from "url";
+import https from "https";
+import { pipeline } from "stream/promises";
 
 /**
  * 
@@ -93,40 +98,41 @@ export function formatTime(date: Date) {
     return `${date.getHours()}:${date.getMinutes()}:${date.getSeconds()}`;
 }
 
-/**
- * 
- * @param dirPath The path to the desired directory to check or create
- */
-export function directoryCheck(dirPath: string) {
-    let itExists = true;
-    fs.access(dirPath, fs.constants.F_OK, (error: Error) => {
-        if (error) { // throwing an error here means the directory doesn't exist
-            fs.mkdir(dirPath, { recursive: true }, (error: Error) => {
-                if (error) {
-                    console.error(error);
-                    itExists = false;
-                }
-            });
-        }
-    });
 
-    return itExists;
+/**
+ * Ensures a directory exists. Creates it recursively if missing.
+ * 
+ * @param dirPath The path to the directory
+ */
+export async function ensureDirectory(dirPath: string): Promise<void> {
+    await mkdir(dirPath, { recursive: true });
+}
+
+/**
+ * Ensures multiple directories exist.
+ * 
+ * @param dirArray Array of directory names
+ * @param root Root path (default: project root "./")
+ */
+export async function ensureDirectories(
+    dirArray: string[],
+    root: string = "./"
+): Promise<void> {
+    for (const dir of dirArray) {
+        const dirPath = `${root}${dir}`;
+        await ensureDirectory(dirPath);
+    }
 }
 
 /**
  * 
- * @param dirArray String array of directory names
- * @param root The root level of the directories. Default at the project root
- * 
- * Throws error if one of the directories does not exist and couldn't be created
+ * @param dirPath Path to the directory to be deleted along with its files and subdirectories.
  */
-export function directory_array_check(dirArray: string[], root: string = "./") {
-    for (const dir of dirArray) {
-        const dirPath = root + dir;
-        const dirExists = directoryCheck(dirPath);
-        if (!dirExists) {
-            throw new Error(`${dirPath} failed to get checked`);
-        }
+export async function deleteDirectoryRecursive(dirPath: string) {
+    try {
+        await rm(dirPath, { recursive: true, force: true });
+    } catch (error) {
+        console.error(`Failed to delete directory ${dirPath}:`, error);
     }
 }
 
@@ -189,11 +195,10 @@ export async function get_current_version() {
 export async function isFileOk(filePath: string): Promise<boolean> {
     try {
         await fs.promises.access(filePath, fs.constants.R_OK);
-    } catch (error) {
-        if (error) return false;
+        return true;
+    } catch {
+        return false;
     }
-
-    return true;
 }
 
 /**
@@ -479,4 +484,44 @@ export function chunkArray<T>(array: T[], size: number): T[][] {
     }
 
     return chunks;
+}
+
+
+/**
+ * Downloads a file using HTTP
+ * 
+ * @param url The file URL
+ * @param filePath The local path to save the file
+ * @returns The saved file path
+ */
+export async function downloadFileHTTP(url: string, filePath: string): Promise<string> {
+    // eslint-disable-next-line no-useless-catch
+    try {
+        const parsedUrl = new URL(url);
+
+        const response = await new Promise<import("http").IncomingMessage>((resolve, reject) => {
+            https.get(parsedUrl, (res) => {
+                if (res.statusCode !== 200) {
+                    reject(new Error(`Failed to download '${url}' (status: ${res.statusCode})`));
+                    res.resume(); // consume response to free memory
+                    return;
+                }
+                resolve(res);
+            }).on("error", reject);
+        });
+
+        const fileStream = fs.createWriteStream(filePath);
+
+        try {
+            await pipeline(response, fileStream);
+            return filePath;
+        } catch (err) {
+            // Delete file if writing fails
+            await fs.promises.unlink(filePath).catch(() => { });
+            throw err;
+        }
+
+    } catch (err) {
+        throw err;
+    }
 }

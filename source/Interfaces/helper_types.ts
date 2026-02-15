@@ -2,8 +2,11 @@
 
 import {
   CacheType,
+  Guild,
+  GuildMember,
   MessageComponentInteraction,
   ReadonlyCollection,
+  Role,
 
 } from "discord.js";
 
@@ -97,6 +100,15 @@ export type TimeStringUnit = "m" | "h" | "d" | "w" | "y";
 export interface ValidatorResponseType {
   value: boolean,
   message: string
+}
+
+export interface TicketSubjectContext {
+  subject: string,
+  description: string,
+  member: GuildMember,
+  guild: Guild,
+  ticketSupportRole: Role,
+  staffRole: Role
 }
 
 export type {

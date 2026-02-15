@@ -9,7 +9,8 @@ export const local_config: LocalConfig = {
         presence_config: "./source/objects/presence-config.json",
         default_presence_presets: "./source/objects/default-presence-presets.json",
         custom_presence_presets: "./source/objects/custom-presence-presets.json",
-        flag_data: "./source/flag_data.csv",
+        flag_data: "./flag_data.csv",
+        self_flag_data: "./self_flag_data.csv",
         error_dumps: "./error_dumps",
         event_hooks: "./event_hooks.js",
         attach_collectors: "./attach_collectors.js"
@@ -31,16 +32,17 @@ export interface LocalConfigRules {
     guild_plans: GuildPlansConfig
 }
 export interface LocalConfigSources {
-  system_directories: string[],
-  cron_tasks: string,
-  on_ready_tasks: string,
-  presence_config: string,
-  default_presence_presets: string,
-  custom_presence_presets: string,
-  flag_data: string,
-  error_dumps: string,
-  event_hooks: string,
-  attach_collectors: string
+    system_directories: string[],
+    cron_tasks: string,
+    on_ready_tasks: string,
+    presence_config: string,
+    default_presence_presets: string,
+    custom_presence_presets: string,
+    flag_data: string,
+    self_flag_data: string,
+    error_dumps: string,
+    event_hooks: string,
+    attach_collectors: string
 }
 export interface LocalConfigPresenceState {
     status: "enable" | "disable",

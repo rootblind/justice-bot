@@ -4,6 +4,7 @@ node_modules/
 toDoList.txt
 assets/avatar/
 flag_data.csv
+self_flag_data.csv
 backup-db/
 temp/
 nodemon.json

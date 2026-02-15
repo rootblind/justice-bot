@@ -210,7 +210,7 @@ export function embed_channel_event(
     // get the channel type as a normalized string like "text"
     const channelType = ChannelType[channel.type]
         .replace("Guild", "")
-        .toLocaleLowerCase();
+        .toLowerCase();
 
     return new EmbedBuilder()
         .setTitle(`Channel ${channelEvent}`)

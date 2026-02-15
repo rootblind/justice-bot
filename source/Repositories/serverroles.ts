@@ -27,12 +27,12 @@ class ServerRolesRepository {
      * @returns Array of {guild, role} objects (Snowflake)
      */
     async getAllGuildRolePairs(roletype: GuildRoleTypeString): Promise<GuildRolePair[] | null> {
-        const {rows: guildRolePairs} = await database.query(
+        const { rows: guildRolePairs } = await database.query(
             `SELECT guild, role FROM serverroles WHERE roletype=$1`,
             [roletype]
         );
 
-        if(guildRolePairs.length) {
+        if (guildRolePairs.length) {
             return guildRolePairs;
         } else {
             return null;
@@ -43,11 +43,11 @@ class ServerRolesRepository {
      * Fetch all assigned server roles.
      */
     async getServerRoles(guildId: Snowflake): Promise<ServerRoles[]> {
-        const {rows: data} = await database.query<ServerRoles>(
-            `SELECT * FROM serverroles WHERE guild=$1`, [ guildId ]
+        const { rows: data } = await database.query<ServerRoles>(
+            `SELECT * FROM serverroles WHERE guild=$1`, [guildId]
         );
 
-        for(const row of data) {
+        for (const row of data) {
             serverRolesCache.set(`${guildId}:${row.roletype}`, row.role);
         }
 
@@ -61,14 +61,14 @@ class ServerRolesRepository {
     async getGuildPremiumRole(guildId: Snowflake): Promise<Snowflake | null> {
         const key = `${guildId}:premium`;
         const cache = serverRolesCache.get(key);
-        if(cache !== undefined) return cache;
+        if (cache !== undefined) return cache;
 
-        const {rows: premiumRole} = await database.query(
+        const { rows: premiumRole } = await database.query(
             `SELECT role FROM serverroles WHERE guild=$1 AND roletype='premium'`,
             [guildId]
         );
 
-        if(premiumRole.length) {
+        if (premiumRole.length) {
             serverRolesCache.set(key, String(premiumRole[0].role));
             return String(premiumRole[0].role);
         } else {
@@ -85,14 +85,14 @@ class ServerRolesRepository {
     async getGuildStaffRole(guildId: Snowflake): Promise<Snowflake | null> {
         const key = `${guildId}:staff`;
         const cache = serverRolesCache.get(key);
-        if(cache !== undefined) return cache;
+        if (cache !== undefined) return cache;
 
-        const {rows: response} = await database.query(
+        const { rows: response } = await database.query(
             `SELECT role FROM serverroles WHERE guild=$1 AND roletype='staff'`,
             [guildId]
         );
 
-        if(response.length) {
+        if (response.length) {
             serverRolesCache.set(key, String(response[0].role));
             return String(response[0].role);
         } else {
@@ -104,14 +104,33 @@ class ServerRolesRepository {
     async getGuildBotRole(guildId: Snowflake): Promise<Snowflake | null> {
         const key = `${guildId}:bot`;
         const cache = serverRolesCache.get(key);
-        if(cache !== undefined) return cache;
+        if (cache !== undefined) return cache;
 
-        const {rows: response} = await database.query(
+        const { rows: response } = await database.query(
             `SELECT role FROM serverroles WHERE guild=$1 AND roletype='bot'`,
             [guildId]
         );
 
-        if(response.length) {
+        if (response.length) {
+            serverRolesCache.set(key, String(response[0].role));
+            return String(response[0].role);
+        } else {
+            serverRolesCache.set(key, null);
+            return null;
+        }
+    }
+
+    async getGuildTicketSupportRole(guildId: Snowflake): Promise<Snowflake | null> {
+        const key = `${guildId}:ticket-support`;
+        const cache = serverRolesCache.get(key);
+        if (cache !== undefined) return cache;
+
+        const { rows: response } = await database.query(
+            `SELECT role FROM serverroles WHERE guild=$1 AND roletype='ticket-support'`,
+            [guildId]
+        );
+
+        if (response.length) {
             serverRolesCache.set(key, String(response[0].role));
             return String(response[0].role);
         } else {

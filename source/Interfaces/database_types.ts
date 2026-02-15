@@ -161,11 +161,24 @@ export interface AutoVoiceRoom extends GuildChannelTable {
     order_room: number
 }
 
-export type TicketManager = GuildMessageTable & { category: Snowflake }
+export interface TicketManager extends GuildTable {
+    guild: string,
+    category: string,
+    channel: string,
+    message: string
+}
 
 export interface TicketSubject extends GuildTable {
     subject: string,
     description: string
+}
+
+export interface OpenTicketTable extends GuildTable {
+    channel: string
+    message: string,
+    member: string,
+    subject: string
+    timestamp: string
 }
 
 export interface StaffRoles extends ServerRoles {
@@ -194,8 +207,6 @@ export const GUILD_ROLE_TYPE = [
     "premium",
     "probation",
     "bot",
-    //| "lfg-eune"
-    //| "lfg-euw"
     "ticket-support"
 ] as const;
 

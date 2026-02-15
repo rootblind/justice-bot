@@ -158,8 +158,11 @@ export async function autovoice_manager_builder_collector(
                             {
                                 id: guild.roles.everyone.id,
                                 deny: [
+                                    PermissionFlagsBits.SendMessages,
                                     PermissionFlagsBits.AddReactions,
-                                    PermissionFlagsBits.SendMessages
+                                    PermissionFlagsBits.CreatePublicThreads,
+                                    PermissionFlagsBits.CreatePrivateThreads,
+                                    PermissionFlagsBits.ManageMessages
                                 ]
                             }
                         ]

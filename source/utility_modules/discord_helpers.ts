@@ -9,20 +9,26 @@ import {
     APIApplicationCommandSubcommandOption,
     ApplicationCommandOptionType,
     AutoModerationRuleTriggerType,
+    ButtonInteraction,
     CacheType,
     CategoryChannel,
+    ChannelSelectMenuInteraction,
     ChannelType,
+    ChatInputCommandInteraction,
     Client, Collection, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
     MappedInteractionTypes,
     Message,
     MessageComponentInteraction,
     MessageComponentType,
+    MessageFlags,
     NonThreadGuildBasedChannel,
     OverwriteResolvable,
-    PermissionResolvable, Role, SendableChannels, Snowflake,
+    PermissionResolvable, Role, RoleSelectMenuInteraction, SendableChannels, Snowflake,
+    StringSelectMenuInteraction,
     TextChannel,
     User,
+    UserSelectMenuInteraction,
     VoiceChannel,
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
@@ -44,6 +50,7 @@ import fs from "graceful-fs";
 import { escapeRegex } from "./curate_data.js";
 import { regexClassifier } from "./regex_classifier.js";
 import ServerLogsIgnoreRepo from "../Repositories/serverlogsignore.js";
+import { embed_interaction_expired } from "./embed_builders.js";
 
 /**
  * 
@@ -377,6 +384,33 @@ export async function fetchStaffRole(client: Client, guild: Guild | Snowflake): 
 /**
  * 
  * @param client Client object
+ * @param guild Guild object or the guild id
+ * @returns The role object of the designated ticket support server role
+ */
+export async function fetchTicketSupportRole(client: Client, guild: Guild | Snowflake): Promise<Role | null> {
+    let guildObject: Guild | null = null;
+    if (typeof guild === "string") { // if a snowflake of the guild was given, fetch the guild object
+        guildObject = await fetchGuild(client, guild);
+
+    } else {
+        guildObject = guild;
+    }
+
+    if (!guildObject) return null; // invalid guild
+    const ticketSupportRoleId = await ServerRolesRepo.getGuildTicketSupportRole(guildObject.id);
+    if (!ticketSupportRoleId) return null; // invalid guild
+    const ticketSupportRole = await fetchGuildRole(guildObject, ticketSupportRoleId);
+
+    if (ticketSupportRole === null) {
+        // if staff role is still null, must be a faulty row
+        await ServerRolesRepo.deleteGuildRole(guildObject.id, "ticket-support");
+    }
+    return ticketSupportRole;
+}
+
+/**
+ * 
+ * @param client Client object
  * @param guild Guild object
  * @param member Member object or member snowflake
  * @returns The custom role if the member has premium status and a custom role
@@ -525,7 +559,7 @@ export function renderArgs(
 }
 
 export function automodRegex(word: string): string {
-    return escapeRegex(word.toLocaleLowerCase())
+    return escapeRegex(word.toLowerCase())
 }
 
 export async function getAutoModWords(guild: Guild): Promise<{ words: string[]; ruleName: string }[]> {
@@ -755,4 +789,98 @@ export async function fetchAllBans(guild: Guild): Promise<Collection<string, Gui
     }
 
     return allBans;
+}
+
+//////////////////////////////////////////////////////
+// DISCORD CHANNEL SCRAPPER INCORPORATED IN JUSTICE //
+//////////////////////////////////////////////////////
+export interface DiscordChannelScrapperResponse {
+    lastId: string,
+    messages: Message[]
+}
+
+export type DiscordScrapperMessageFilter = (message: Message<boolean>) => boolean;
+
+/**
+ * Fetching discord channel messages is ordered by their timestamp in a descendent order.
+ * 
+ * @remark Calling this method inside an interaction requires the reply to be defered.
+ * 
+ * @param channel The channel to be scraped
+ * @param lastId Message snowflake of where the scrapping should start from (before: lastId)
+ * 
+ * @returns The last id that was fetched (the oldest in the array) and the array of all messages fetched 
+ * in chronological ascendent order and optionally filtered by the given method
+ * @throws It may reach Discord API ratelimit: 429 Too Many Requests
+ */
+export async function channel_scrapper(
+    channel: TextChannel,
+    lastId?: string,
+    messageFilter?: DiscordScrapperMessageFilter
+): Promise<DiscordChannelScrapperResponse> {
+    // the total batch of messages
+    let messages: Message<boolean>[] = [];
+
+
+    // total batch size is limited to 50k at a time since through testing, 80k is the upper limit at a time.
+    const totalBatchSizeLimit = 50_000;
+    let messageBatch: Collection<string, Message<boolean>> = await channel.messages.fetch({
+        limit: 100,
+        ...(lastId && { before: lastId })
+    });
+    // keep track of current last id
+    let currentLastId;
+    // while there are messages to be fetched and the total batch size 
+    do {
+        // add the current batch to the total batch
+        messages = messages.concat(Array.from(messageBatch.values()));
+        currentLastId = messageBatch.lastKey()!; // update the current last key
+        // fetch another batch
+        messageBatch = await channel.messages.fetch({ limit: 100, before: currentLastId });
+    } while (messageBatch.size !== 0 && messages.length < totalBatchSizeLimit);
+
+    // after the execution, the scrapper can return the response
+    // prepare the response
+    if (messageFilter) {
+        messages = messages.filter(messageFilter);
+    }
+
+    messages.reverse();
+
+    return {
+        lastId: currentLastId,
+        messages: messages
+    }
+}
+////////////////////////////////////////////////////
+
+/**
+ * If the error is issued by Modal Timeout, then if the interaction is given, it will follow up with 
+ * embed_interaction_expired message response.
+ * 
+ * errorLogHandle is called for other types of errors
+ * 
+ * @param error The error thrown
+ * @param interaction The interaction that awaits modal response
+ */
+export async function handleModalCatch(
+    error: unknown,
+    interaction?:
+        | ChatInputCommandInteraction<CacheType>
+        | ButtonInteraction<CacheType>
+        | StringSelectMenuInteraction<CacheType>
+        | RoleSelectMenuInteraction<CacheType>
+        | ChannelSelectMenuInteraction<CacheType>
+        | UserSelectMenuInteraction<CacheType>
+) {
+    if (error instanceof Error && error.message.includes("reason: time")) {
+        if (interaction) {
+            await interaction.followUp({
+                flags: MessageFlags.Ephemeral,
+                embeds: [embed_interaction_expired()]
+            });
+        }
+        return;
+    }
+    await errorLogHandle(error);
 }

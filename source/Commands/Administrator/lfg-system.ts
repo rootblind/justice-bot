@@ -460,7 +460,13 @@ const lfgSystem: ChatCommand = {
                                 type: ChannelType.GuildText,
                                 permissionOverwrites: [{
                                     id: guild.roles.everyone.id,
-                                    deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions]
+                                    deny: [
+                                        PermissionFlagsBits.SendMessages,
+                                        PermissionFlagsBits.AddReactions,
+                                        PermissionFlagsBits.CreatePublicThreads,
+                                        PermissionFlagsBits.CreatePrivateThreads,
+                                        PermissionFlagsBits.ManageMessages
+                                    ]
                                 }]
                             });
                             const newLfgChannel: LfgChannel = {

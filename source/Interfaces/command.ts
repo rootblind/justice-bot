@@ -30,6 +30,7 @@ export type ChatCommandGroup =
     | "block"
     | "lfg"
     | "moderation"
+    | "ticket"
 
 export type ChatCommandCategory =
     | "Info"

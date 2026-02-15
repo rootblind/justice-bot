@@ -52,7 +52,7 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
  * normalized name as the role's normalized name; default to the role itself otherwise
  */
 export function stringifyRoles(roles: Role[], guildEmojis: Collection<string, GuildEmoji>) {
-    const normalize = (s: string) => s.toLocaleLowerCase().replace(/\s+/g, "-");
+    const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, "-");
     return roles
         .map(r => {
             if (r.unicodeEmoji) return r.unicodeEmoji;
@@ -295,6 +295,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
         async () => {
             if (message.deletable) {
                 try {
+                    await LfgSystemRepo.deletePostBySnowflake(message.id);
                     await message.delete();
                 } catch { /* do nothing */ }
             }

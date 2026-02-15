@@ -6,30 +6,6 @@ import { generate_unique_code } from "../../utility_modules/utility_methods.js";
 import PremiumKeyRepo from "../../Repositories/premiumkey.js";
 import { embed_new_premium_membership, embed_premium_member_notification } from "../../utility_modules/embed_builders.js";
 
-export type removePremiumFromMemberHook = (
-    client: Client,
-    memberId: Snowflake,
-    guild: Guild
-) => Promise<void>
-const removePremiumFromMemberHooks: removePremiumFromMemberHook[] = [];
-export function extend_remove_premium_from_member(hook: removePremiumFromMemberHook) {
-    removePremiumFromMemberHooks.push(hook);
-}
-
-async function run_remove_premium_from_member_hooks(
-    client: Client,
-    memberId: Snowflake,
-    guild: Guild
-) {
-    for(const hook of removePremiumFromMemberHooks) {
-        try {
-            await hook(client, memberId, guild);
-        } catch(error) {
-            await errorLogHandle(error);
-        }
-    }
-}
-
 /**
  * Remove the membership of the member and handle the follow up actions.
  * 
@@ -68,7 +44,6 @@ export async function remove_premium_from_member(
 
     // cleaning the database
     await PremiumMembersRepo.deletePremiumGuildMember(guild.id, memberId);
-    await run_remove_premium_from_member_hooks(client, memberId, guild);
 }
 
 /**
@@ -106,9 +81,9 @@ export async function assign_premium_to_member(
         await PremiumKeyRepo.newKey(
             code,
             guild.id,
-            generatorMember.id, 
-            expiresAt, 
-            usesnumber - 1, 
+            generatorMember.id,
+            expiresAt,
+            usesnumber - 1,
             dedicatedMember ? member.id : null
         );
         // register the new membership
@@ -117,14 +92,14 @@ export async function assign_premium_to_member(
         await errorLogHandle(error, "There was a problem while trying to insert a new premium key");
     }
 
-    if(logChannel) { // log the event
+    if (logChannel) { // log the event
         try {
             await logChannel.send({
                 embeds: [
                     embed_new_premium_membership(member, code, expiresAt, usesnumber - 1, from_boosting)
                 ]
             });
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -135,5 +110,5 @@ export async function assign_premium_to_member(
                 embed_premium_member_notification(guild, member, code, expiresAt, from_boosting)
             ]
         });
-    } catch {/* do nothing */}
+    } catch {/* do nothing */ }
 }

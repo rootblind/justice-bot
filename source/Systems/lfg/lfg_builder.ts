@@ -134,7 +134,13 @@ export async function register_and_build_lfg(
     const channelPerms: OverwriteResolvable[] = [
         {
             id: guild.roles.everyone.id,
-            deny: [PermissionFlagsBits.SendMessages, PermissionFlagsBits.AddReactions]
+            deny: [
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.AddReactions,
+                PermissionFlagsBits.CreatePublicThreads,
+                PermissionFlagsBits.CreatePrivateThreads,
+                PermissionFlagsBits.ManageMessages
+            ]
         }
     ];
 

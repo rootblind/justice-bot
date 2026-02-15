@@ -1,4 +1,4 @@
-import { CategoryChannel, TextChannel } from "discord.js";
+import { CategoryChannel, Message, TextChannel } from "discord.js";
 import { getClient } from "../client_provider.js";
 import { OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
 import AutoVoiceSystemRepo from "../Repositories/autovoicesystem.js";
@@ -8,6 +8,10 @@ import LfgSystemRepo from "../Repositories/lfgsystem.js";
 import { interface_manager_collector } from "../Systems/lfg/lfg_interface_manager.js";
 import { LfgPostWithChannelTable } from "../Interfaces/lfg_system.js";
 import { lfg_post_collector } from "../Systems/lfg/lfg_post.js";
+import TicketSystemRepo from "../Repositories/ticketsystem.js";
+import { open_ticket_collector } from "../Systems/ticket_support/ticket_manager.js";
+import { ticket_collector } from "../Systems/ticket_support/ticket_collector.js";
+import ServerRolesRepo from "../Repositories/serverroles.js";
 
 function collectorErrorMessage(guildId: string) {
     return `Something went wrong while attaching the collector at guild id ${guildId}`
@@ -15,28 +19,28 @@ function collectorErrorMessage(guildId: string) {
 
 export const autoVoiceManagerCollectors: OnReadyTaskBuilder = {
     name: "Autovoice Manager Collectors",
-    task: async() => {
+    task: async () => {
         const client = getClient();
         const autovoiceSystems = await AutoVoiceSystemRepo.getAll();
-        for(const row of autovoiceSystems) {
+        for (const row of autovoiceSystems) {
             try {
                 const guild = await client.guilds.fetch(row.guild);
                 const category = await guild.channels.fetch(row.category);
-                if(!category) throw new Error("Category couldn't be fetched");
+                if (!category) throw new Error("Category couldn't be fetched");
                 const autovoice = await guild.channels.fetch(row.autovoice);
-                if(!autovoice) throw new Error("Autovoice couldn't be fetched");
+                if (!autovoice) throw new Error("Autovoice couldn't be fetched");
                 const managerchannel = await guild.channels.fetch(row.managerchannel);
-                if(!(managerchannel instanceof TextChannel)) throw new Error("Manager channel couldn't be fetched");
+                if (!(managerchannel instanceof TextChannel)) throw new Error("Manager channel couldn't be fetched");
                 const manager = await managerchannel.messages.fetch(row.message);
                 await attach_autovoice_manager_collector(manager);
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error, collectorErrorMessage(row.guild));
                 await AutoVoiceSystemRepo.deleteSystem(row.guild, row.message); // deleting the system as good measure
                 continue;
             }
         }
     },
-    runCondition: async() => true
+    runCondition: async () => true
 }
 
 export const lfgInterfaceManagerCollector: OnReadyTaskBuilder = {
@@ -44,23 +48,23 @@ export const lfgInterfaceManagerCollector: OnReadyTaskBuilder = {
     task: async () => {
         const client = getClient();
         const lfgGamesTable = await LfgSystemRepo.getGamesTable();
-        for(const row of lfgGamesTable) {
-            if(
-                row.manager_message_id === null 
-                || row.category_channel_id === null 
+        for (const row of lfgGamesTable) {
+            if (
+                row.manager_message_id === null
+                || row.category_channel_id === null
                 || row.manager_channel_id === null
             ) { continue; } // skip unbuilt games 
 
             try {
                 const guild = await client.guilds.fetch(row.guild_id);
                 const category = await guild.channels.fetch(row.category_channel_id);
-                if(!(category instanceof CategoryChannel)) throw new Error("Category couldn't be fetched");
+                if (!(category instanceof CategoryChannel)) throw new Error("Category couldn't be fetched");
                 const channel = await guild.channels.fetch(row.manager_channel_id);
-                if(!(channel instanceof TextChannel)) throw new Error("Channel couldn't be fetched");
+                if (!(channel instanceof TextChannel)) throw new Error("Channel couldn't be fetched");
                 const message = await channel.messages.fetch(row.manager_message_id);
-                if(!message) throw new Error("Couldn't fetch the LFG interface message.");
+                if (!message) throw new Error("Couldn't fetch the LFG interface message.");
                 await interface_manager_collector(message);
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error, collectorErrorMessage(row.guild_id));
                 await LfgSystemRepo.deleteGame(row.id);
             }
@@ -74,17 +78,67 @@ export const LfgPostsCollector: OnReadyTaskBuilder = {
     task: async () => {
         const client = getClient();
         const lfgPosts: LfgPostWithChannelTable[] = await LfgSystemRepo.getAllPostsWithChannel();
-        for(const row of lfgPosts) {
+        for (const row of lfgPosts) {
             try {
                 const guild = await client.guilds.fetch(row.guild_id);
                 const channel = await guild.channels.fetch(row.discord_channel_id);
-                if(!(channel instanceof TextChannel)) throw new Error("Post channel couldn't be fetched");
+                if (!(channel instanceof TextChannel)) throw new Error("Post channel couldn't be fetched");
                 const postMessage = await channel.messages.fetch(row.message_id);
-                if(!postMessage) throw new Error("Couldn't fetch the post message object");
+                if (!postMessage) throw new Error("Couldn't fetch the post message object");
                 await lfg_post_collector(postMessage, row);
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error, collectorErrorMessage(row.guild_id));
                 await LfgSystemRepo.deletePostById(row.id);
+            }
+        }
+    },
+    runCondition: async () => true
+}
+
+export const TicketSystemManagerCollector: OnReadyTaskBuilder = {
+    name: "Ticket System Manager Collector",
+    task: async () => {
+        const client = getClient();
+        const ticketManagers = await TicketSystemRepo.fetchAllManagers();
+        for (const row of ticketManagers) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const category = await guild.channels.fetch(row.category);
+                if (!(category instanceof CategoryChannel)) throw new Error("Ticket Manager Category couldn't be fetched");
+                const channel = await guild.channels.fetch(row.channel);
+                if (!(channel instanceof TextChannel)) throw new Error("Ticket Manager Channel couldn't be fetched");
+                const message = await channel.messages.fetch(row.message);
+                if (!(message instanceof Message)) throw new Error("Ticket Manager Message couldn't be fetched.");
+
+                await open_ticket_collector(client, guild, message);
+            } catch (error) {
+                await errorLogHandle(error, collectorErrorMessage(row.guild));
+                await TicketSystemRepo.deleteGuildManager(row.guild);
+            }
+        }
+    },
+    runCondition: async () => true
+}
+
+export const OpenTicketCollector: OnReadyTaskBuilder = {
+    name: "Open Ticket Collector",
+    task: async () => {
+        const client = getClient();
+        const openTickets = await TicketSystemRepo.fetchAllTickets();
+        for (const row of openTickets) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const channel = await guild.channels.fetch(row.channel);
+                if (!(channel instanceof TextChannel)) throw new Error("Open Ticket Channel couldn't be fetched");
+                const message = await channel.messages.fetch(row.message);
+                if (!(message instanceof Message)) throw new Error("Open Ticket Message couldn't be fetched.");
+                const staffRoleId = await ServerRolesRepo.getGuildStaffRole(row.guild);
+                if (staffRoleId === null) throw new Error("Failed to fetch the staff server role.")
+
+                await ticket_collector(message, staffRoleId, row.subject);
+            } catch (error) {
+                await errorLogHandle(error, collectorErrorMessage(row.guild));
+                await TicketSystemRepo.deleteTicketBySnowflake(row.message);
             }
         }
     },
