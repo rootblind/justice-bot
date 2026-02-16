@@ -1,6 +1,6 @@
 {
   "name": "justice",
-  "version": "2.0.0b",
+  "version": "2.0.0",
   "description": "League of Legends Romania discord BOT",
   "main": "justice.js",
   "type": "module",
