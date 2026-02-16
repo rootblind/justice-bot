@@ -636,7 +636,7 @@ class LfgSystemRepository {
             FROM lfg_posts p
             JOIN lfg_channels c
                 ON c.id = p.channel_id
-            WHERE p,created_at <= $1`,
+            WHERE p.created_at <= $1`,
             [timestampNow() - durationSeconds]
         );
 
