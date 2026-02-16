@@ -484,7 +484,7 @@ export function embed_invite_create(
             },
             {
                 name: "Expires at",
-                value: invite.maxAge ? `<t:${invite.expiresTimestamp}:R>` : "Permanent"
+                value: invite.maxAge ? `<t:${Math.floor((invite.expiresTimestamp ?? 0) / 1000)}:R>` : "Permanent"
             },
             {
                 name: "Max uses",
