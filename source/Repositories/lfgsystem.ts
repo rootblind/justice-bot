@@ -533,6 +533,27 @@ class LfgSystemRepository {
         return postResult[0]!;
     }
 
+    /**
+     * @param durationSeconds The lifetime of a lfg post message collector in seconds 
+     */
+    async getExpiredPosts(durationSeconds: number): Promise<LfgPostTable[]> {
+        const { rows: data } = await database.query<LfgPostTable>(
+            `SELECT *
+            FROM lfg_posts
+            WHERE created_at <= $1`,
+            [timestampNow() - durationSeconds]
+        );
+
+        return data;
+    }
+
+    /**
+     * Delete posts older than @param durationSeconds seconds.
+     */
+    async deleteExpiredPosts(durationSeconds: number): Promise<void> {
+        await database.query(`DELETE FROM lfg_posts WHERE created_at <= $1`, [timestampNow() - durationSeconds]);
+    }
+
     async deletePostById(id: number) {
         await database.query(`DELETE FROM lfg_posts WHERE id=$1`, [id]);
     }
@@ -598,6 +619,25 @@ class LfgSystemRepository {
             JOIN lfg_channels c
                 ON c.id = p.channel_id
             ORDER BY p.created_at DESC;`
+        );
+
+        return data;
+    }
+
+    /**
+     * Get lfg posts joined with their channel snowflake that are older (created_at < current timestamp - duration) than 
+     * the given duration in seconds.
+     */
+    async getAllExpiredPostsWithChannel(durationSeconds: number): Promise<LfgPostWithChannelTable[]> {
+        const { rows: data } = await database.query<LfgPostWithChannelTable>(
+            `SELECT
+                p.*,
+                c.discord_channel_id
+            FROM lfg_posts p
+            JOIN lfg_channels c
+                ON c.id = p.channel_id
+            WHERE p,created_at <= $1`,
+            [timestampNow() - durationSeconds]
         );
 
         return data;

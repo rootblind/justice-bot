@@ -5,6 +5,10 @@
  * Example: below the bot chooses a random presence to set to its profile, makes sure the client object is ready
  * makes sure the local directories it depends on are created and accessible, that all database tables are ready,
  * initializes the cron tasks and Discord collectors and executes on_ready_tasks.
+ * 
+ * DO NOTE: It is very important that collectors are attached after on ready tasks and cron tasks as those sources
+ * may be used to clear expired data, it can cause errors or unnecessary overhead to attach collectors just to have them deleted
+ * or even worse, attach collectors to messages that have their rows cleared afterwards.
  */
 import type { Event } from "../../Interfaces/event.js";
 import type { Client } from "discord.js";
@@ -67,22 +71,22 @@ const clientReady: Event = {
             setTimeout(() => process.exit(1), 5_000);
         }
 
-        // cron tasks
-        if (local_config.sources.cron_tasks) {
+        // on ready tasks
+        if (local_config.sources.on_ready_tasks) {
             try {
-                const cronTasks = await load_cron_source(local_config.sources.cron_tasks);
-                if (cronTasks) await init_cron_jobs(cronTasks);
+                const onReadyTasks = await load_onReady_tasks(local_config.sources.on_ready_tasks);
+                if (onReadyTasks) await on_ready_execute("On Ready Tasks", onReadyTasks);
             } catch (error) {
                 await errorLogHandle(error, "", "Fatal error");
                 setTimeout(() => process.exit(1), 5_000);
             }
         }
 
-        // on ready tasks
-        if (local_config.sources.on_ready_tasks) {
+        // cron tasks
+        if (local_config.sources.cron_tasks) {
             try {
-                const onReadyTasks = await load_onReady_tasks(local_config.sources.on_ready_tasks);
-                if (onReadyTasks) await on_ready_execute("On Ready Tasks", onReadyTasks);
+                const cronTasks = await load_cron_source(local_config.sources.cron_tasks);
+                if (cronTasks) await init_cron_jobs(cronTasks);
             } catch (error) {
                 await errorLogHandle(error, "", "Fatal error");
                 setTimeout(() => process.exit(1), 5_000);
@@ -104,6 +108,8 @@ const clientReady: Event = {
             }
         }
         */
+
+        // attach collectors
         if (local_config.sources.attach_collectors) {
             try {
                 const collectors = await load_onReady_tasks(local_config.sources.attach_collectors);

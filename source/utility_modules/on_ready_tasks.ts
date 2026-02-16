@@ -5,12 +5,12 @@
  */
 
 import type { CronTaskBuilder, OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
-import { fetchGuildMember, fetchGuild } from "./discord_helpers.js";
+import { fetchGuildMember, fetchGuild, fetchGuildChannel, fetchLogsChannel, fetchMessage } from "./discord_helpers.js";
 import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import { getClient } from "../client_provider.js";
 import BotConfigRepo from "../Repositories/botconfig.js";
 import { build_cron } from "./cronHandler.js";
-import { get_env_var } from "./utility_methods.js";
+import { duration_to_seconds, get_env_var } from "./utility_methods.js";
 import path from "path";
 import { exec } from "child_process";
 import { errorLogHandle } from "./error_logger.js";
@@ -19,7 +19,9 @@ import { remove_premium_from_member } from "../Systems/premium/premium_system.js
 import GuildModulesRepo from "../Repositories/guildmodules.js";
 import { sync_guild_commands } from "../Handlers/commandHandler.js";
 import AutoVoiceRoomRepo from "../Repositories/autovoiceroom.js";
-import { VoiceChannel } from "discord.js";
+import { EmbedBuilder, Message, TextChannel, VoiceChannel } from "discord.js";
+import TicketSystemRepo from "../Repositories/ticketsystem.js";
+import LfgSystemRepo from "../Repositories/lfgsystem.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -72,7 +74,7 @@ export const backupDatabaseScheduler: OnReadyTaskBuilder = {
                 schedule: backupSchedule,
                 job: async () => {
                     const refreshSchedule = await BotConfigRepo.getBackupSchedule();
-                    if(backupSchedule !== refreshSchedule) {
+                    if (backupSchedule !== refreshSchedule) {
                         // if by any means, the backup scheduler was modified, such as the usage of /backup-db
                         // stop the old schedule
                         stop();
@@ -84,13 +86,13 @@ export const backupDatabaseScheduler: OnReadyTaskBuilder = {
                     const date = new Date();
                     const fileName = `kayle_db_bk_${date.toISOString().replace(/:/g, "_").slice(0, -5)}.sql`;
 
-                    const backup_command = 
+                    const backup_command =
                         `pg_dump -U ${username} -d ${database} -f ${path.join("./backup-db", fileName)}`;
 
                     const backupPromise = new Promise((resolve, reject) => {
                         // eslint-disable-next-line @typescript-eslint/no-unused-vars
                         exec(backup_command, (err, stdout, _stderr) => {
-                            if(err) {
+                            if (err) {
                                 errorLogHandle(err);
                                 reject(err);
                             }
@@ -125,10 +127,10 @@ export const loadGuildCommands: OnReadyTaskBuilder = {
         const client = getClient();
         await GuildModulesRepo.getAll(); // initialize cache
 
-        for(const [ guildId, guild ] of client.guilds.cache) {
+        for (const [guildId, guild] of client.guilds.cache) {
             try {
                 await sync_guild_commands(client, guild);
-            } catch(error) {
+            } catch (error) {
                 console.error(`Failed to sync commands for ${guild.name} [${guildId}]` + error);
             }
         }
@@ -142,21 +144,105 @@ export const cleanAutovoiceGarbage: OnReadyTaskBuilder = {
     task: async () => {
         const client = getClient();
         const roomsData = await AutoVoiceRoomRepo.getRooms();
-        for(const row of roomsData) {
+        for (const row of roomsData) {
             try {
                 const guild = await client.guilds.fetch(row.guild);
                 const channel = await guild.channels.fetch(row.channel);
-                if(!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
-                if(channel.members.size === 0) {
+                if (!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
+                if (channel.members.size === 0) {
                     await channel.delete();
                     await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
                 }
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error, `At guild ${row.guild}`);
                 // delete the room row anyway if something fails to fetch
                 await AutoVoiceRoomRepo.deleteRoom(row.guild, row.channel);
             }
         }
     },
-    runCondition: async() => true
+    runCondition: async () => true
+}
+
+// tickets collectors handle the lifetime of each ticket, but if the bot restarts, when the collectors are
+// re-attached, the timer resets, therefore this on ready task checks for expired tickets
+// on ready tasks are executed before collectors are attached.
+export const cleanExpiredTickets: OnReadyTaskBuilder = {
+    name: "Clean Expired Tickets",
+    task: async () => {
+        const client = getClient();
+        const tickets = await TicketSystemRepo.getExpiredTickets(duration_to_seconds("7d")!); // tickets set to expire in 7 days
+        for (const row of tickets) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const ticketChannel = await fetchGuildChannel(guild, row.channel);
+                if (!(ticketChannel instanceof TextChannel)) throw new Error("Failed to fetch the ticket channel.");
+                // attempt to fetch the ticket logs
+                const logs = await fetchLogsChannel(guild, "ticket-support");
+                if (logs instanceof TextChannel) {
+                    await logs.send({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor("Red")
+                                .setTitle("Ticket expired")
+                                .setDescription("Tickets have 7 days to be resolved before being deleted without a resolution.")
+                                .addFields(
+                                    {
+                                        name: "Ticket",
+                                        value: `${ticketChannel.name} - ${ticketChannel.id}`
+                                    },
+                                    {
+                                        name: "Member ID",
+                                        value: row.member
+                                    },
+                                    {
+                                        name: "Subject",
+                                        value: row.subject
+                                    },
+                                    {
+                                        name: "Created",
+                                        value: `<t:${row.timestamp}:R>`
+                                    }
+                                )
+                                .setTimestamp()
+                                .setFooter({ text: `Ticket closed through expiration.` })
+                        ]
+                    });
+                }
+                await ticketChannel.delete();
+            } catch (error) {
+                await errorLogHandle(error, `There was a problem while clearing ticket of snowflake ${row.message} from guild id ${row.guild}`);
+            }
+        }
+
+        await TicketSystemRepo.deleteExpiredTickets(duration_to_seconds("7d")!); // clean the database after everything is handled
+    },
+    runCondition: async () => true
+}
+
+// LFG Posts collectors handle the lifetime of each ticket, but if the bot restarts, when the collectors are
+// re-attached, the timer resets, therefore this on ready task checks for expired posts
+// on ready tasks are executed before collectors are attached.
+export const cleanExpiredLfgPosts: OnReadyTaskBuilder = {
+    name: "Clean Expired LFGs",
+    task: async () => {
+        const client = getClient();
+        const expiredPosts = await LfgSystemRepo.getAllExpiredPostsWithChannel(duration_to_seconds("6h")!);
+        for (const row of expiredPosts) {
+            try {
+                const guild = await client.guilds.fetch(row.guild_id);
+
+                // if this is null, it might be a good thing to clear the respective lfg_channels row
+                // but at the same time it's also best to keep tasks atomic
+                const lfgChannel = await fetchGuildChannel(guild, row.discord_channel_id);
+                if (!(lfgChannel instanceof TextChannel)) throw new Error("Failed to fetch the lfg channel of the post.");
+                const postMessage = await fetchMessage(lfgChannel, row.message_id);
+                if (!(postMessage instanceof Message)) throw new Error("Failed to fetch the LFG post message");
+                await postMessage.delete(); // delete the message
+            } catch (error) {
+                await errorLogHandle(error, `Post Message ID ${row.message_id} | Channel ID ${row.discord_channel_id} | Guild ID ${row.guild_id}`)
+            }
+        }
+        await LfgSystemRepo.deleteExpiredPosts(duration_to_seconds("6h")!); // clean the database of expired posts
+    },
+    runCondition: async () => true
 }

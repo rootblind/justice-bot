@@ -1,5 +1,6 @@
 import database from "../Config/database.js";
 import { OpenTicketTable, TicketManager, TicketSubject } from "../Interfaces/database_types.js";
+import { timestampNow } from "../utility_modules/utility_methods.js";
 
 class TicketSystemRepository {
     //////////////////////////////////
@@ -177,6 +178,33 @@ class TicketSystemRepository {
 
         if (data && data[0]) return data[0];
         return null;
+    }
+
+    /**
+     * Get all tickets from all guilds that have the timestamp <= NOW - durationSeconds
+     * 
+     * For example if the duration is 3 days (259_200 seconds) a ticket is expired if the current timestamp in seconds 
+     * minus 259_200 is greater or equal than ticket's timestamp
+     */
+    async getExpiredTickets(durationSeconds: number): Promise<(OpenTicketTable & { id: number })[]> {
+        const { rows: data } = await database.query<OpenTicketTable & { id: number }>(
+            `SELECT *
+            FROM openticket
+            WHERE timestamp <= $1;`,
+            [timestampNow() - durationSeconds]
+        );
+
+        return data;
+    }
+
+    /**
+     * Get all tickets from all guilds that have the timestamp <= NOW - durationSeconds
+     * 
+     * For example if the duration is 3 days (259_200 seconds) a ticket is expired if the current timestamp in seconds 
+     * minus 259_200 is greater or equal than ticket's timestamp
+     */
+    async deleteExpiredTickets(durationSeconds: number): Promise<void> {
+        await database.query(`DELETE FROM openticket WHERE timestamp <= $1`, [timestampNow() - durationSeconds]);
     }
 }
 

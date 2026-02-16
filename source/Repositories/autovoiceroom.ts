@@ -6,7 +6,7 @@ import { AutoVoiceRoom } from "../Interfaces/database_types.js";
 const roomsCache = new SelfCache<string, AutoVoiceRoom>();
 // keeps the expiration timestamp in seconds of a member in a guild
 const cooldowns = new SelfCache<string, string>();
-export const AUTOVOICE_COOLDOWN = 300;
+export const AUTOVOICE_COOLDOWN = 60;
 
 class AutoVoiceRoomRepository {
     /**
@@ -15,7 +15,7 @@ class AutoVoiceRoomRepository {
     async getCooldown(guildId: Snowflake, memberId: Snowflake): Promise<string | null> {
         const key = `${guildId}:${memberId}`;
         const cd = cooldowns.get(key);
-        if(cd !== undefined) return cd;
+        if (cd !== undefined) return cd;
 
         return null;
     }
@@ -43,10 +43,10 @@ class AutoVoiceRoomRepository {
      * @returns The entire table
      */
     async getRooms() {
-        const {rows: data} = await database.query<AutoVoiceRoom>(
+        const { rows: data } = await database.query<AutoVoiceRoom>(
             `SELECT * FROM autovoiceroom`
         );
-        for(const row of data) {
+        for (const row of data) {
             roomsCache.set(`${row.guild}:${row.owner}`, row);
         }
         return data;
@@ -57,9 +57,9 @@ class AutoVoiceRoomRepository {
      */
     async isOwner(guildId: Snowflake, memberId: Snowflake) {
         const cache = roomsCache.getByValue((_, key) => key.includes(memberId));
-        if(cache !== undefined) return cache.length > 0;
+        if (cache !== undefined) return cache.length > 0;
 
-        const {rows: data} = await database.query(
+        const { rows: data } = await database.query(
             `SELECT EXISTS
                 (SELECT 1 FROM autovoiceroom WHERE guild=$1 AND owner=$2)`,
             [guildId, memberId]
@@ -74,14 +74,14 @@ class AutoVoiceRoomRepository {
     async getMemberRoom(guildId: Snowflake, memberId: Snowflake): Promise<AutoVoiceRoom | null> {
         const key = `${guildId}:${memberId}`;
         const cache = roomsCache.get(key);
-        if(cache !== undefined) return cache;
+        if (cache !== undefined) return cache;
 
-        const{rows: data} = await database.query<AutoVoiceRoom>(
+        const { rows: data } = await database.query<AutoVoiceRoom>(
             `SELECT * FROM autovoiceroom WHERE guild=$1 AND owner=$2`,
             [guildId, memberId]
         );
 
-        if(data.length && data[0]) {
+        if (data.length && data[0]) {
             const room: AutoVoiceRoom = {
                 guild: guildId,
                 owner: memberId,
@@ -102,14 +102,14 @@ class AutoVoiceRoomRepository {
      */
     async getRoom(guildId: Snowflake, channelId: Snowflake): Promise<AutoVoiceRoom | null> {
         const cache = roomsCache.getByValue((room) => room.channel === channelId);
-        if(cache !== undefined && cache[0]) return cache[0];
+        if (cache !== undefined && cache[0]) return cache[0];
 
-        const {rows: data} = await database.query<AutoVoiceRoom>(
+        const { rows: data } = await database.query<AutoVoiceRoom>(
             `SELECT * FROM autovoiceroom WHERE guild=$1 AND channel=$2`,
             [guildId, channelId]
         );
 
-        if(data.length && data[0]) {
+        if (data.length && data[0]) {
             roomsCache.set(`${guildId}:${data[0].owner}`, data[0]);
             return data[0];
         } else {
@@ -122,7 +122,7 @@ class AutoVoiceRoomRepository {
      */
     async changeOwnerRoom(guildId: Snowflake, newOwner: Snowflake, channelId: Snowflake): Promise<void> {
         const cache = roomsCache.getByValue((room) => room.channel === channelId);
-        if(cache !== undefined && cache[0]) {
+        if (cache !== undefined && cache[0]) {
             roomsCache.delete(`${guildId}:${cache[0].owner}`);
             cache[0].owner = newOwner;
             roomsCache.set(`${guildId}:${newOwner}`, cache[0]);
@@ -166,9 +166,9 @@ class AutoVoiceRoomRepository {
      */
     async isAutoVoiceRoom(guildId: Snowflake, channelId: Snowflake): Promise<boolean> {
         const cache = roomsCache.getByValue((room) => room.channel === channelId);
-        if(cache !== undefined) return cache.length > 0;
+        if (cache !== undefined) return cache.length > 0;
 
-        const {rows: data} = await database.query(
+        const { rows: data } = await database.query(
             `SELECT EXISTS
                 (SELECT 1 FROM autovoiceroom WHERE guild=$1 AND channel=$2)`,
             [guildId, channelId]
@@ -182,9 +182,9 @@ class AutoVoiceRoomRepository {
      */
     async isRoomOwner(guildId: Snowflake, memberId: Snowflake, channelId: Snowflake): Promise<boolean> {
         const cache = roomsCache.get(`${guildId}:${memberId}`);
-        if(cache !== undefined) return cache.channel === channelId;
+        if (cache !== undefined) return cache.channel === channelId;
 
-        const {rows: data} = await database.query(
+        const { rows: data } = await database.query(
             `SELECT EXISTS
                 (SELECT 1 FROM autovoiceroom WHERE guild=$1 AND owner=$2 AND channel=$3)`,
             [guildId, memberId, channelId]
@@ -196,26 +196,26 @@ class AutoVoiceRoomRepository {
     /**
      * Delete room based on its ID
      */
-    async deleteRoom(guildId:Snowflake, channelId: Snowflake) {
+    async deleteRoom(guildId: Snowflake, channelId: Snowflake) {
         roomsCache.deleteByValue((room) => room.channel === channelId);
-        await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND channel=$2`, [ guildId, channelId ]);
+        await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND channel=$2`, [guildId, channelId]);
     }
 
     /**
      * Delete room based on its owner ID
      */
-    async deleteOwnerRoom(guildId:Snowflake, memberId: Snowflake) {
+    async deleteOwnerRoom(guildId: Snowflake, memberId: Snowflake) {
         roomsCache.deleteByValue((room) => room.owner === memberId);
-        await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND owner=$2`, [ guildId, memberId ]);
+        await database.query(`DELETE FROM autovoiceroom WHERE guild=$1 AND owner=$2`, [guildId, memberId]);
     }
 
     async getLastOrder(guildId: Snowflake): Promise<number> {
-        const {rows: data} = await database.query(
+        const { rows: data } = await database.query(
             `SELECT order_room FROM autovoiceroom WHERE guild=$1 ORDER BY order_room DESC LIMIT 1`,
             [guildId]
         );
 
-        if(data.length && data[0]) return data[0].order_room as number;
+        if (data.length && data[0]) return data[0].order_room as number;
         return 0;
     }
 }

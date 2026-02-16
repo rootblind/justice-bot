@@ -43,7 +43,7 @@ import {
 } from "../../utility_modules/discord_helpers.js";
 import { embed_error, embed_message, embed_interaction_expired } from "../../utility_modules/embed_builders.js";
 import { select_gamemode_label, slots_label, select_roles_label, select_rank_label, add_details_label } from "./lfg_modals.js";
-import { has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
+import { duration_to_seconds, has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 
 /**
@@ -230,7 +230,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
     const collector = await message_collector<ComponentType.Button>(message,
         {
             componentType: ComponentType.Button,
-            time: 6 * 60 * 60_000, // 6 hours
+            time: duration_to_seconds("6h")! * 1000, // 6 * 60 * 60_000 // 6 hours
             filter: (i) => i.user.id === post.owner_id
         },
         async (buttonInteraction) => {

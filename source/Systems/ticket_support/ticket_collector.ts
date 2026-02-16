@@ -123,7 +123,7 @@ export async function ticket_collector(message: Message, staffRoleId: string, su
         {
             componentType: ComponentType.Button,
             filter: (i) => (i.member as GuildMember).roles.cache.has(staffRoleId),
-            time: duration_to_seconds("3d")! * 1000 // a ticket can not stay open for longer than 3 days.
+            time: duration_to_seconds("7d")! * 1000 // a ticket can not stay open for longer than 7 days.
         },
         async (buttonInteraction) => {
             const guild = buttonInteraction.guild as Guild;
