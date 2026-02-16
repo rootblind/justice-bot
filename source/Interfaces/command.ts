@@ -39,3 +39,4 @@ export type ChatCommandCategory =
     | "Social"
     | "Staff"
     | "Moderator"
+    | "Miscellaneous"
