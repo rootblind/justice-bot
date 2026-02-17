@@ -64,6 +64,7 @@ const guildMemberUpdate: Event = {
         if (premiumRole) {
             const premiumLogs = await fetchLogsChannel(guild, "premium-activity");
             const hasPremium = await PremiumMembersRepo.checkUserMembership(guild.id, newMember.id);
+            const hasPremiumFromBoosting = await PremiumMembersRepo.isPremiumFromBoosting(guild.id, newMember.id);
             if (!oldMember.premiumSince && newMember.premiumSince && !hasPremium) {
                 // if the member was not boosting before, but is boosting now and does not currently have premium
                 const expiresAt = 0; // 0 = permanent for boosters
@@ -80,7 +81,7 @@ const guildMemberUpdate: Event = {
                     from_boosting,
                     premiumLogs
                 );
-            } else if (hasPremium && !newMember.premiumSince) {
+            } else if (hasPremiumFromBoosting && !newMember.premiumSince) {
                 // when a member stops boosting, premiumSince is null
                 await remove_premium_from_member(
                     guild.client,
