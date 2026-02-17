@@ -13,10 +13,10 @@ export function extend_guildMemberUpdate(hook: guildMemberUpdateHook) {
 }
 
 async function runHooks(oldMember: GuildMember, newMember: GuildMember) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(oldMember, newMember);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -80,7 +80,7 @@ const guildMemberUpdate: Event = {
                     from_boosting,
                     premiumLogs
                 );
-            } else if(hasPremium && newMember.premiumSince) {
+            } else if (hasPremium && !newMember.premiumSince) {
                 // when a member stops boosting, premiumSince is null
                 await remove_premium_from_member(
                     guild.client,
