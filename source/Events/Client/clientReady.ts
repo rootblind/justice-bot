@@ -22,7 +22,7 @@ import {
     isFileOk
 } from "../../utility_modules/utility_methods.js";
 import modelsInit from "../../Models/modelsInit.js";
-import { bot_presence_setup } from "../../utility_modules/discord_helpers.js";
+import { bot_presence_setup, gatewayStability } from "../../utility_modules/discord_helpers.js";
 import fs from "graceful-fs";
 import { init_cron_jobs, load_cron_source } from "../../utility_modules/cronHandler.js";
 import { load_onReady_tasks, on_ready_execute } from "../../utility_modules/onReadyTasksHandler.js";
@@ -70,6 +70,8 @@ const clientReady: Event = {
             await errorLogHandle(error, "", "Fatal error");
             setTimeout(() => process.exit(1), 5_000);
         }
+
+        await gatewayStability(client); // await for guilds to be available
 
         // on ready tasks
         if (local_config.sources.on_ready_tasks) {

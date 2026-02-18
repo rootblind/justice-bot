@@ -5,7 +5,7 @@
  */
 
 import type { CronTaskBuilder, OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
-import { fetchGuildMember, fetchGuild, fetchGuildChannel, fetchLogsChannel, fetchMessage } from "./discord_helpers.js";
+import { fetchGuildMember, fetchGuild, fetchGuildChannel, fetchLogsChannel, fetchMessage, hasVoiceMembers } from "./discord_helpers.js";
 import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import { getClient } from "../client_provider.js";
 import BotConfigRepo from "../Repositories/botconfig.js";
@@ -146,12 +146,16 @@ export const cleanAutovoiceGarbage: OnReadyTaskBuilder = {
         const roomsData = await AutoVoiceRoomRepo.getRooms();
         for (const row of roomsData) {
             try {
-                const guild = await client.guilds.fetch(row.guild);
-                const channel = await guild.channels.fetch(row.channel);
+                const guild = await client.guilds.fetch({ guild: row.guild, force: true });
+                if (!guild.available) continue;
+                const channel = await fetchGuildChannel(guild, row.channel)
                 if (!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
-                if (channel.members.size === 0) {
-                    await channel.delete();
-                    await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
+                if (!hasVoiceMembers(guild, channel.id)) {
+                    await channel.fetch();
+                    if (channel.members.size === 0) {
+                        await channel.delete();
+                        await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
+                    }
                 }
             } catch (error) {
                 await errorLogHandle(error, `At guild ${row.guild}`);
@@ -173,7 +177,7 @@ export const cleanExpiredTickets: OnReadyTaskBuilder = {
         const tickets = await TicketSystemRepo.getExpiredTickets(duration_to_seconds("7d")!); // tickets set to expire in 7 days
         for (const row of tickets) {
             try {
-                const guild = await client.guilds.fetch(row.guild);
+                const guild = await client.guilds.fetch({ guild: row.guild, force: true });
                 const ticketChannel = await fetchGuildChannel(guild, row.channel);
                 if (!(ticketChannel instanceof TextChannel)) throw new Error("Failed to fetch the ticket channel.");
                 // attempt to fetch the ticket logs
@@ -229,7 +233,7 @@ export const cleanExpiredLfgPosts: OnReadyTaskBuilder = {
         const expiredPosts = await LfgSystemRepo.getAllExpiredPostsWithChannel(duration_to_seconds("6h")!);
         for (const row of expiredPosts) {
             try {
-                const guild = await client.guilds.fetch(row.guild_id);
+                const guild = await client.guilds.fetch({ guild: row.guild_id, force: true });
 
                 // if this is null, it might be a good thing to clear the respective lfg_channels row
                 // but at the same time it's also best to keep tasks atomic

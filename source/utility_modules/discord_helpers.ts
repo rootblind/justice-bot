@@ -95,7 +95,7 @@ export function permission_names(permission: PermissionResolvable): string[] {
 export async function fetchGuild(client: Client, guildID: Snowflake): Promise<Guild | null> {
     let guild = null;
     try {
-        guild = await client.guilds.fetch(guildID);
+        guild = await client.guilds.fetch({ guild: guildID, force: true });
     } catch { /* the guild doesn't exist, do nothing */ }
     return guild;
 }
@@ -883,4 +883,24 @@ export async function handleModalCatch(
         return;
     }
     await errorLogHandle(error);
+}
+
+export function hasVoiceMembers(guild: Guild, channelId: Snowflake): boolean {
+    return guild.voiceStates.cache.some(vs => vs.channelId === channelId);
+}
+
+/**
+ * Awaiting for each guild to become available
+ */
+export async function gatewayStability(client: Client) {
+    // awaiting guilds to become available
+    const timeout = 15_000; //15s
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+        const unavailable = client.guilds.cache.some(g => !g.available);
+        if (!unavailable) break;
+        await new Promise(res => setTimeout(res, 1_000));
+    }
+
+    await new Promise(res => setTimeout(res, 5_000));
 }
