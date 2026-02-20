@@ -142,27 +142,29 @@ export const loadGuildCommands: OnReadyTaskBuilder = {
 export const cleanAutovoiceGarbage: OnReadyTaskBuilder = {
     name: "Clean Autovoice Garbage",
     task: async () => {
-        const client = getClient();
-        const roomsData = await AutoVoiceRoomRepo.getRooms();
-        for (const row of roomsData) {
-            try {
-                const guild = await client.guilds.fetch({ guild: row.guild, force: true });
-                if (!guild.available) continue;
-                const channel = await fetchGuildChannel(guild, row.channel)
-                if (!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
-                if (!hasVoiceMembers(guild, channel.id)) {
-                    await channel.fetch();
-                    if (channel.members.size === 0) {
-                        await channel.delete();
-                        await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
+        setTimeout(async () => {
+            const client = getClient();
+            const roomsData = await AutoVoiceRoomRepo.getRooms();
+            for (const row of roomsData) {
+                try {
+                    const guild = await client.guilds.fetch({ guild: row.guild, force: true });
+                    const channel = await fetchGuildChannel(guild, row.channel)
+                    if (!(channel instanceof VoiceChannel)) throw new Error("Failed to fetch autovoice");
+                    if (!hasVoiceMembers(guild, channel.id)) {
+                        await channel.fetch();
+                        if (channel.members.size === 0) {
+                            await channel.delete();
+                            await AutoVoiceRoomRepo.deleteRoom(guild.id, channel.id);
+                        }
                     }
+                } catch (error) {
+                    await errorLogHandle(error, `At guild ${row.guild}`);
+                    // delete the room row anyway if something fails to fetch
+                    await AutoVoiceRoomRepo.deleteRoom(row.guild, row.channel);
                 }
-            } catch (error) {
-                await errorLogHandle(error, `At guild ${row.guild}`);
-                // delete the room row anyway if something fails to fetch
-                await AutoVoiceRoomRepo.deleteRoom(row.guild, row.channel);
             }
-        }
+        }, 10 * 60_000); // execute the task after 10 minutes of operating
+
     },
     runCondition: async () => true
 }

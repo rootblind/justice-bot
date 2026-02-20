@@ -892,9 +892,13 @@ export function hasVoiceMembers(guild: Guild, channelId: Snowflake): boolean {
 /**
  * Awaiting for each guild to become available
  */
-export async function gatewayStability(client: Client) {
+export async function gatewayStability(client: Client, silent: boolean = false) {
     // awaiting guilds to become available
     const timeout = 15_000; //15s
+    if (!silent) {
+        console.log(`gatewayStability was called, please wait a few seconds for every guild to be available.`);
+        console.log(`Maximum timeout: ${Math.floor(timeout) / 1000} seconds.`);
+    }
     const start = Date.now();
     while (Date.now() - start < timeout) {
         const unavailable = client.guilds.cache.some(g => !g.available);
