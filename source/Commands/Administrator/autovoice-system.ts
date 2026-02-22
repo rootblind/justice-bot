@@ -86,10 +86,10 @@ const autovoice_system: ChatCommand = {
 
                 // to finalize the setup, autovoice manager builder is called
                 const buttonRows = autovoice_actionrow_button_builder();
-                const managerBuilderEmbed = embed_autovoice_manager_builder();
+                const managerBuilderEmbed = embed_autovoice_manager_builder(guild.preferredLocale);
 
                 await interaction.editReply({
-                    embeds: [ managerBuilderEmbed ],
+                    embeds: [managerBuilderEmbed],
                     components: buttonRows
                 });
 
@@ -103,10 +103,10 @@ const autovoice_system: ChatCommand = {
                 const managerchannel: TextChannel = options.getChannel("managerchannel", true);
 
                 const buttonRows = autovoice_actionrow_button_builder();
-                const managerBuilderEmbed = embed_autovoice_manager_builder();
+                const managerBuilderEmbed = embed_autovoice_manager_builder(guild.preferredLocale);
 
                 await interaction.editReply({
-                    embeds: [ managerBuilderEmbed ],
+                    embeds: [managerBuilderEmbed],
                     components: buttonRows
                 });
 
@@ -116,16 +116,16 @@ const autovoice_system: ChatCommand = {
             }
             case "delete": {
                 const messageId: string = options.getString("messageid", true);
-                if(!isSnowflake(messageId)) {
+                if (!isSnowflake(messageId)) {
                     await interaction.editReply({
-                        embeds: [ embed_error("The ID provided is not a valid Snowflake.") ]
+                        embeds: [embed_error("The ID provided is not a valid Snowflake.")]
                     });
                     return;
                 }
                 const autovoiceSystem = await AutoVoiceSystemRepo.getInterfaceSystem(guild.id, messageId);
-                if(autovoiceSystem === null) {
+                if (autovoiceSystem === null) {
                     await interaction.editReply({
-                        embeds: [ embed_error("The message provided is not a valid message Snowflake or is not the ID of a registered interface!") ],
+                        embeds: [embed_error("The message provided is not a valid message Snowflake or is not the ID of a registered interface!")],
                     });
                     return;
                 }
@@ -134,19 +134,19 @@ const autovoice_system: ChatCommand = {
                 const autovoice = await fetchGuildChannel(guild, autovoiceSystem.autovoice);
                 const category = await fetchGuildChannel(guild, autovoiceSystem.category);
 
-                if(
+                if (
                     !(managerchannel instanceof TextChannel) ||
                     !(autovoice instanceof VoiceChannel) ||
                     !(category instanceof CategoryChannel)
                 ) {
-                    
+
                     await interaction.editReply({
-                        embeds: [ 
+                        embeds: [
                             embed_message(
-                                "Yellow", 
-                                "The system was deleted from database but guild-side removal must be done manual.", 
+                                "Yellow",
+                                "The system was deleted from database but guild-side removal must be done manual.",
                                 "Some channels couldn't be fetched"
-                            ) 
+                            )
                         ]
                     });
                 } else {
@@ -155,12 +155,12 @@ const autovoice_system: ChatCommand = {
                         await autovoice.delete();
                         await category.delete();
                         await interaction.editReply({
-                            embeds: [ embed_message("Green", `Autovoice system identified by interface ID ${messageId} was completely removed.`) ]
+                            embeds: [embed_message("Green", `Autovoice system identified by interface ID ${messageId} was completely removed.`)]
                         })
-                    } catch(error) {
+                    } catch (error) {
                         await errorLogHandle(error);
-                        await interaction.editReply( {
-                            embeds: [ embed_message("Yellow", "The autovoice system was removed from the database, but an error occured while trying to clean the channels. Some might need manual clean up.") ]
+                        await interaction.editReply({
+                            embeds: [embed_message("Yellow", "The autovoice system was removed from the database, but an error occured while trying to clean the channels. Some might need manual clean up.")]
                         });
                     }
                 }
@@ -185,9 +185,9 @@ const autovoice_system: ChatCommand = {
                     )
                 ];
 
-                if(categoryArray.length === 0) {
+                if (categoryArray.length === 0) {
                     await interaction.editReply({
-                        embeds: [ embed_message("Aqua", "This guild has no autovoice system in place to be wiped.", "Nothing was deleted.") ]
+                        embeds: [embed_message("Aqua", "This guild has no autovoice system in place to be wiped.", "Nothing was deleted.")]
                     });
                     return;
                 }
@@ -196,14 +196,14 @@ const autovoice_system: ChatCommand = {
                 await resolveAndDeleteChannels(guild, channels);
                 await AutoVoiceSystemRepo.wipeGuildSystems(guild.id);
                 await interaction.editReply({
-                    embeds: [ embed_message(
-                            "Green", 
-                            "This guild no longer has registered autovoice systems.\nThere may be residual channels that need to be removed manually."
-                        ) 
+                    embeds: [embed_message(
+                        "Green",
+                        "This guild no longer has registered autovoice systems.\nThere may be residual channels that need to be removed manually."
+                    )
                     ]
                 });
             }
-                
+
         }
 
     },

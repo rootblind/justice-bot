@@ -8,6 +8,7 @@ import {
     EmbedBuilder,
     Guild,
     GuildMember,
+    Locale,
     Message,
     MessageFlags,
     PermissionFlagsBits,
@@ -23,20 +24,25 @@ import { embed_error, embed_interaction_expired, embed_message } from "../../uti
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { select_lfg_channels_builder } from "./lfg_select_builders.js";
 import { bump_lfg_post, delete_lfg_post, fetchPostMessage, lfg_post_builder, stringifyRoles } from "./lfg_post.js";
+import { t } from "../../Config/i18n.js";
 
-export function embed_interface_manager(gameName: string, color: ColorResolvable = "Purple"): EmbedBuilder {
+export function embed_interface_manager(
+    gameName: string,
+    locale: Locale = Locale.EnglishUS,
+    color: ColorResolvable = "Purple"
+): EmbedBuilder {
     return new EmbedBuilder()
         .setColor(color)
-        .setTitle("Looking for Group")
+        .setTitle(t(locale, "systems.lfg.interface_manager.interface_embed.title"))
         .setAuthor({ name: `LFG ${gameName}` })
-        .setDescription("Press the **LFG** button, select the channel to post in and complete the modal with what you are looking for!")
+        .setDescription(t(locale, "systems.lfg.interface_manager.interface_embed.description"))
         .setFields({
-            name: "Buttons",
-            value: `**LFG**: Create a post
-            **Active Posts**: List currently active posts for this LFG
-            **Info**: A quick guide on how to use this interface
-            **BUMP**: Re-send your currently active post
-            **Delete**: Delete your post`
+            name: t(locale, "systems.lfg.interface_manager.interface_embed.field.name"),
+            value: `**LFG**: ${t(locale, "systems.lfg.interface_manager.interface_embed.field.value.LFG")}
+            **Active Posts**: ${t(locale, "systems.lfg.interface_manager.interface_embed.field.value.active_posts")}
+            **Info**: ${t(locale, "systems.lfg.interface_manager.interface_embed.field.value.info")}
+            **BUMP**: ${t(locale, "systems.lfg.interface_manager.interface_embed.field.value.bump")}
+            **Delete**: ${t(locale, "systems.lfg.interface_manager.interface_embed.field.value.delete")}`
         });
 }
 
@@ -60,9 +66,14 @@ export function interface_manager_buttons(): ButtonBuilder[] {
     ]
 }
 
-export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member: GuildMember): Promise<EmbedBuilder> {
+export async function active_lfg_posts(
+    guild: Guild,
+    game: LfgGameTable,
+    member: GuildMember,
+    locale: Locale = Locale.EnglishUS
+): Promise<EmbedBuilder> {
     // TODO: ADD FILTERS FOR RANKS, ROLES AND GAMEMODES
-    const activePostsEmbed = new EmbedBuilder().setColor("Purple").setDescription("There is no active post at the moment.");
+    const activePostsEmbed = new EmbedBuilder().setColor("Purple").setDescription(t(locale, "systems.lfg.interface_manager.active_lfg_posts.empty.description"));
     const posts: LfgPostFullRow[] = await LfgSystemRepo.getPostsFullByGame(guild.id, game.id);
     if (!posts.length) {
         return activePostsEmbed;
@@ -70,7 +81,7 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
 
     activePostsEmbed
         .setAuthor({ name: guild.name, iconURL: `${guild.iconURL({ extension: "png" })}` })
-        .setTitle("Active LFG Posts");
+        .setTitle(t(locale, "systems.lfg.interface_manager.active_lfg_posts.full.title"));
 
     const activePostStrings: string[] = [];
     let index = 1;
@@ -112,7 +123,7 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
             const postRanks: Role[] = ranksResolved.filter(role => row.roles.map(r => r.role_id).includes(role.id));
             const rankString = stringifyRoles(postRanks, guildEmojis);
             activePostStrings.push(
-                `${index++} - ${owner.toString()} \`+${row.slots}\` ${rankString} <t:${row.created_at}:R> [jump to post](${lfg.message.url})`
+                `${index++} - ${owner.toString()} \`+${row.slots}\` ${rankString} <t:${row.created_at}:R> [${t(locale, "systems.lfg.interface_manager.active_lfg_posts.jump_to_post")}](${lfg.message.url})`
             );
 
 
@@ -122,16 +133,11 @@ export async function active_lfg_posts(guild: Guild, game: LfgGameTable, member:
     return activePostsEmbed;
 }
 
-export function info_lfg(): EmbedBuilder {
+export function info_lfg(locale: Locale = Locale.EnglishUS): EmbedBuilder {
     return new EmbedBuilder()
         .setColor("Aqua")
-        .setDescription(
-            "- Press the **LFG** and fill the modal that will open, with your post requirements and info." +
-            "\n- If you wish to see what rooms are open to join immediately, use the **Active Posts** button." +
-            "\n- **BUMP** and **Delete** are post-related buttons. By bumping, you are using your cooldown to re-post your currently active LFG." +
-            "- By pressing delete, you are removing your post from the channel."
-        )
-        .setFooter({ text: "Do note that deleting your post won't refresh your cooldown" })
+        .setDescription(t(locale, "systems.lfg.interface_manager.info.description"))
+        .setFooter({ text: t(locale, "systems.lfg.interface_manager.info.footer") })
 }
 
 /**
@@ -149,9 +155,10 @@ export async function interface_manager_collector(message: Message) {
         },
         async (buttonInteraction) => {
             const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, cooldown);
+            const locale = buttonInteraction.locale;
             if (userCooldown) {
                 await buttonInteraction.reply({
-                    embeds: [embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)],
+                    embeds: [embed_message("Red", t(locale, "common.button_inner_cooldown", { cooldown: userCooldown }))],
                     flags: MessageFlags.Ephemeral
                 });
                 return;
@@ -165,8 +172,8 @@ export async function interface_manager_collector(message: Message) {
                 await buttonInteraction.reply({
                     embeds: [
                         embed_error(
-                            "There was a problem while fetching the game row for this interface...",
-                            "Mismatch between the collector and database"
+                            t(locale, "systems.lfg.interface_manager.errors.collector.fetch_game.description"),
+                            t(locale, "systems.lfg.interface_manager.errors.collector.title")
                         )
                     ],
                     flags: MessageFlags.Ephemeral
@@ -186,7 +193,7 @@ export async function interface_manager_collector(message: Message) {
                 const systemConfig = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
                 if ((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                     await buttonInteraction.reply({
-                        embeds: [embed_message("Red", "You need to be in a voice channel to do that!")],
+                        embeds: [embed_message("Red", t(locale, "common.not_in_voice"))],
                         flags: MessageFlags.Ephemeral
                     });
                     return;
@@ -196,7 +203,7 @@ export async function interface_manager_collector(message: Message) {
                 if (userCooldown) {
                     await buttonInteraction.reply({
                         embeds: [
-                            embed_message("Red", `This action is on cooldown!\nCooldown expires <t:${userCooldown}:R>`)
+                            embed_message("Red", t(locale, "common.action_on_cooldown", { cooldown: userCooldown }))
                         ],
                         flags: MessageFlags.Ephemeral
                     });
@@ -211,7 +218,7 @@ export async function interface_manager_collector(message: Message) {
                         // member must be on voice
                         await buttonInteraction.reply({
                             embeds: [
-                                embed_message("Red", "You must be in a voice channel in order to use the LFG system!")
+                                embed_message("Red", t(locale, "common.not_in_voice"))
                             ],
                             flags: MessageFlags.Ephemeral
                         });
@@ -225,7 +232,7 @@ export async function interface_manager_collector(message: Message) {
 
                     if (lfgChannels.length === 0) {
                         await buttonInteraction.reply({
-                            embeds: [embed_error("It seems like this game has no LFG channels assigned to the system...")],
+                            embeds: [embed_error("systems.lfg.interface_manager.errors.collector.game_missing_channels")],
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -244,7 +251,7 @@ export async function interface_manager_collector(message: Message) {
                         // if there are 2 or more channels, let the user decide
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_message("Purple", "Select the desired channel.")],
+                            embeds: [embed_message("Purple", t(locale, "systems.lfg.interface_manager.lfg_button.select_channel"))],
                             components: [
                                 new ActionRowBuilder<StringSelectMenuBuilder>()
                                     .addComponents(select_lfg_channels_builder(lfgChannels))
@@ -273,7 +280,7 @@ export async function interface_manager_collector(message: Message) {
                             async () => {
                                 try {
                                     await buttonInteraction.editReply({
-                                        embeds: [embed_interaction_expired()],
+                                        embeds: [embed_interaction_expired(locale)],
                                         components: []
                                     });
                                 } catch { /* do nothing */ }
@@ -284,7 +291,7 @@ export async function interface_manager_collector(message: Message) {
                 }
                 case "active-lfg-posts": {
                     await buttonInteraction.deferReply({ flags: MessageFlags.Ephemeral });
-                    const activeLFGs = await active_lfg_posts(guild, gameTable, (buttonInteraction.member as GuildMember));
+                    const activeLFGs = await active_lfg_posts(guild, gameTable, (buttonInteraction.member as GuildMember), locale);
                     await buttonInteraction.editReply({
                         embeds: [activeLFGs]
                     });
@@ -293,7 +300,7 @@ export async function interface_manager_collector(message: Message) {
 
                 case "info-lfg-button": {
                     await buttonInteraction.reply({
-                        embeds: [info_lfg()],
+                        embeds: [info_lfg(locale)],
                         flags: MessageFlags.Ephemeral
                     });
                     break;
@@ -304,7 +311,7 @@ export async function interface_manager_collector(message: Message) {
                     const lfgOnCooldown = LfgSystemRepo.getCooldown(guild.id, buttonInteraction.user.id, gameTable.id);
                     if (lfgOnCooldown) {
                         await buttonInteraction.editReply({
-                            embeds: [embed_message("Red", `You can not bump since you are on cooldown! <t:${lfgOnCooldown}:R>`)]
+                            embeds: [embed_message("Red", t(locale, "common.action_on_cooldown", { cooldown: lfgOnCooldown }))]
                         });
                         return;
                     }
@@ -312,7 +319,7 @@ export async function interface_manager_collector(message: Message) {
                         const lfgPost = await fetchPostMessage(guild, gameTable.id, buttonInteraction.user.id);
                         if (!lfgPost) {
                             await buttonInteraction.editReply({
-                                embeds: [embed_message("Red", "You have no active post to bump!")]
+                                embeds: [embed_message("Red", t(locale, "systems.lfg.interface_manager.bump_button.no_active_post"))]
                             });
                             return;
                         }
@@ -320,14 +327,14 @@ export async function interface_manager_collector(message: Message) {
                         if (expiresAt === 0) {
                             await buttonInteraction.editReply({
                                 embeds: [
-                                    embed_error("Something went wrong and your post couldn't be bumped. Try using the interface instead.")
+                                    embed_error(t(locale, "systems.lfg.interface_manager.errors.collector.bump_failed"))
                                 ]
                             });
                             return;
                         }
 
                         await buttonInteraction.editReply({
-                            embeds: [embed_message("Green", `Your post was bumped!\nYou can post or bump again <t:${expiresAt}:R>`)]
+                            embeds: [embed_message("Green", t(locale, "systems.lfg.interface_manager.bump_button.success", { cooldown: expiresAt }))]
                         });
                     } catch (error) {
                         if (error instanceof Error) {
@@ -348,7 +355,7 @@ export async function interface_manager_collector(message: Message) {
                         const lfgPost = await fetchPostMessage(guild, gameTable.id, buttonInteraction.user.id);
                         if (!lfgPost) {
                             await buttonInteraction.editReply({
-                                embeds: [embed_message("Red", "You have no active post to delete!")]
+                                embeds: [embed_message("Red", t(locale, "systems.lfg.interface_manager.delete_button.no_active_post"))]
                             });
                             return;
                         }
@@ -356,7 +363,7 @@ export async function interface_manager_collector(message: Message) {
                         await delete_lfg_post(lfgPost.message, lfgPost.post.id);
 
                         await buttonInteraction.editReply({
-                            embeds: [embed_message("Green", "Your post has been deleted.")]
+                            embeds: [embed_message("Green", t(locale, "systems.lfg.interface_manager.delete_button.success"))]
                         });
                     } catch (error) {
                         if (error instanceof Error) {

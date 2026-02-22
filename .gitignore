@@ -9,3 +9,4 @@ backup-db/
 temp/
 nodemon.json
 dist/
+source/Commands/Owner/test.ts

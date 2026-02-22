@@ -582,16 +582,19 @@ export async function fetchAutoModList(guild: Guild): Promise<string[]> {
     return rules.flatMap(r => r.words);
 }
 
+// removed the automod blocked words until a filter can be implemented
+// automod rules may apply only on specific channels for other purposes than to filter toxicity
 export async function getAllTriggerPatterns(
     localPatterns: string[],
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     guild: Guild
 ): Promise<string[]> {
-    const automodWords = await fetchAutoModList(guild);
-    const automodPatterns = automodWords.map(automodRegex);
+    // const automodWords = await fetchAutoModList(guild);
+    // const automodPatterns = automodWords.map(automodRegex);
 
     return Array.from(
         new Set(
-            [...localPatterns, ...automodPatterns]
+            [...localPatterns] // [...localPatterns, ...automodPatterns]
                 .map(p => p.trim())
                 .filter(Boolean)
         )

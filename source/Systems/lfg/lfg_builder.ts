@@ -159,7 +159,7 @@ export async function register_and_build_lfg(
 
     // sending the interface manager message and attaching the collector
     const interfaceMessage = await managerChannel.send({
-        embeds: [embed_interface_manager(game.game_name)],
+        embeds: [embed_interface_manager(game.game_name, guild.preferredLocale)],
         components: [
             new ActionRowBuilder<ButtonBuilder>().addComponents(...interface_manager_buttons()),
             new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())

@@ -1,15 +1,17 @@
 
-import { 
-    APISelectMenuOption, 
-    LabelBuilder, 
-    ModalBuilder, 
-    RestOrArray, 
-    Role, 
-    StringSelectMenuBuilder, 
-    TextInputBuilder, 
-    TextInputStyle 
+import {
+    APISelectMenuOption,
+    LabelBuilder,
+    Locale,
+    ModalBuilder,
+    RestOrArray,
+    Role,
+    StringSelectMenuBuilder,
+    TextInputBuilder,
+    TextInputStyle
 } from "discord.js";
 import { LfgChannelTable, LfgGamemode, LfgGamemodeTable, LfgGameTable } from "../../Interfaces/lfg_system.js";
+import { t } from "../../Config/i18n.js";
 
 const channelNameModal = new ModalBuilder()
     .setCustomId("channel-name-modal")
@@ -53,18 +55,18 @@ export function getGamemodeModal() {
 }
 export function getGamemodeInputLabel(): LabelBuilder {
     return gamemodeLabel;
-} 
+}
 
-export function add_details_label(): LabelBuilder {
+export function add_details_label(locale: Locale = Locale.EnglishUS): LabelBuilder {
     const addDetailsInput = new TextInputBuilder()
         .setCustomId("details-input")
         .setMaxLength(256)
         .setRequired(false)
-        .setPlaceholder("Add your in-game name and anything you want the other players to know.")
+        .setPlaceholder(t(locale, "systems.lfg.modals.details.placeholder"))
         .setStyle(TextInputStyle.Paragraph)
     const addDetailsLabel = new LabelBuilder()
-        .setLabel("Additional info")
-        .setDescription("Add details about your LFG.")
+        .setLabel(t(locale, "systems.lfg.modals.details.label"))
+        .setDescription(t(locale, "systems.lfg.modals.details.description"))
         .setTextInputComponent(addDetailsInput);
 
     return addDetailsLabel;
@@ -91,13 +93,13 @@ export function select_lfg_roles_label(roles: Role[], required: boolean = true, 
     return selectRoleLabel;
 }
 
-export function select_rank_label(ranks: Role[]): LabelBuilder {
+export function select_rank_label(ranks: Role[], locale: Locale = Locale.EnglishUS): LabelBuilder {
     const selectRankOptions: RestOrArray<APISelectMenuOption> =
         ranks.map((r) => {
             return {
                 label: r.name,
                 value: r.id,
-                description: `Add ${r.name}`
+                description: t(locale, "systems.lfg.modals.select_ranks.option_description", { string: r.name })
             }
         });
     const selectGameRanks = new StringSelectMenuBuilder()
@@ -106,20 +108,20 @@ export function select_rank_label(ranks: Role[]): LabelBuilder {
         .setMaxValues(selectRankOptions.length)
         .addOptions(selectRankOptions);
     const selectRankLabel = new LabelBuilder()
-        .setLabel("What ranks are you looking for?")
-        .setDescription("Select the desired ranks to add to the post.")
+        .setLabel(t(locale, "systems.lfg.modals.select_ranks.label"))
+        .setDescription(t(locale, "systems.lfg.modals.select_ranks.description"))
         .setStringSelectMenuComponent(selectGameRanks);
 
     return selectRankLabel;
 }
 
-export function select_roles_label(roles: Role[]): LabelBuilder {
+export function select_roles_label(roles: Role[], locale: Locale = Locale.EnglishUS): LabelBuilder {
     const selectRoleOptions: RestOrArray<APISelectMenuOption> =
         roles.map((r) => {
             return {
                 label: r.name,
                 value: r.id,
-                description: `Add ${r.name}`
+                description: t(locale, "systems.lfg.modals.select_roles.option_description", { string: r.name })
             }
         });
     // if the game has in-game roles, attach a select menu
@@ -130,14 +132,14 @@ export function select_roles_label(roles: Role[]): LabelBuilder {
         .addOptions(selectRoleOptions)
 
     const selectRolesLabel = new LabelBuilder()
-        .setLabel("Ask for specific role.")
-        .setDescription("Select the roles you want in your post.")
+        .setLabel(t(locale, "systems.lfg.modals.select_roles.label"))
+        .setDescription(t(locale, "systems.lfg.modals.select_roles.description"))
         .setStringSelectMenuComponent(selectGameRoles);
 
     return selectRolesLabel;
 }
 
-export function slots_label(): LabelBuilder {
+export function slots_label(locale: Locale = Locale.EnglishUS): LabelBuilder {
     const slotsTextInput = new TextInputBuilder()
         .setCustomId("slots-input")
         .setMinLength(1)
@@ -146,15 +148,16 @@ export function slots_label(): LabelBuilder {
         .setPlaceholder("4")
         .setStyle(TextInputStyle.Short);
     const slotsLabel = new LabelBuilder()
-        .setLabel("How many players are you looking for?")
+        .setLabel(t(locale, "systems.lfg.modals.slots_label"))
         .setTextInputComponent(slotsTextInput);
 
     return slotsLabel;
 }
 
 export function select_gamemode_label(
-    gamemodes: LfgGamemode[], 
-    required: boolean = true, 
+    gamemodes: LfgGamemode[],
+    locale: Locale = Locale.EnglishUS,
+    required: boolean = true,
     selectLimit: number = 1
 ): LabelBuilder {
     const selectGamemodeOptions: RestOrArray<APISelectMenuOption> =
@@ -162,7 +165,7 @@ export function select_gamemode_label(
             return {
                 label: g.name,
                 value: g.name,
-                description: `Looking for ${g.name}`
+                description: t(locale, "systems.lfg.modals.looking_for", { string: g.name })
             }
         });
     const selectGamemodeMenu = new StringSelectMenuBuilder()
@@ -174,7 +177,7 @@ export function select_gamemode_label(
         .addOptions(selectGamemodeOptions);
 
     const selectGamemodeLabel = new LabelBuilder()
-        .setLabel("Select the gamemode you're planning to play.")
+        .setLabel(t(locale, "systems.lfg.modals.select_gamemode_label"))
         .setStringSelectMenuComponent(selectGamemodeMenu);
 
     return selectGamemodeLabel;
@@ -184,8 +187,8 @@ export function select_gamemode_label(
  * Select gamemode by id
  */
 export function select_gamemode_id_label(
-    gamemodes: LfgGamemodeTable[], 
-    required: boolean = true, 
+    gamemodes: LfgGamemodeTable[],
+    required: boolean = true,
     selectLimit: number = 1
 ): LabelBuilder {
     const selectGamemodeOptions: RestOrArray<APISelectMenuOption> =
@@ -260,8 +263,8 @@ export function select_game_id_builder(games: LfgGameTable[], selectLimit: numbe
 }
 
 export function select_lfg_channel_label(
-    channels: LfgChannelTable[], 
-    required: boolean = true, 
+    channels: LfgChannelTable[],
+    required: boolean = true,
     selectLimit: number = 1
 ): LabelBuilder {
     const selectChannelOptions: RestOrArray<APISelectMenuOption> =

@@ -1,0 +1,260 @@
+{
+  "commands": {},
+  "events": {},
+  "systems": {
+    "autovoice": {
+      "buttons": {
+        "name": {
+          "name": "NUME",
+          "value": "Redenumește camera"
+        },
+        "limit": {
+          "name": "LIMITĂ",
+          "value": "Setează limita camerei"
+        },
+        "hide": {
+          "name": "ASCUNDE",
+          "value": "Ascunde/afișează camera"
+        },
+        "lock": {
+          "name": "BLOCHEAZĂ",
+          "value": "Blochează/deblochează camera"
+        },
+        "region": {
+          "name": "REGIUNE",
+          "value": "Schimbă regiunea camerei"
+        },
+        "trust": {
+          "name": "ACORDĂ ACCES",
+          "value": "Permite accesul membrilor în cameră"
+        },
+        "untrust": {
+          "name": "RETRAGE ACCES",
+          "value": "Refuză accesul membrilor în cameră"
+        },
+        "block": {
+          "name": "BLOCHEAZĂ",
+          "value": "Blochează membri"
+        },
+        "unblock": {
+          "name": "DEBLOCHEAZĂ",
+          "value": "Deblochează membri"
+        },
+        "claim": {
+          "name": "REVENDICĂ",
+          "value": "Revendică proprietatea camerei"
+        },
+        "transfer": {
+          "name": "TRANSFERĂ",
+          "value": "Transferă proprietatea camerei"
+        },
+        "delete": {
+          "name": "ȘTERGE",
+          "value": "Șterge camera"
+        },
+        "send_interface": "Trimite interfața"
+      },
+      "interface": {
+        "manager": {
+          "description": "# Manager Autovoice\nFolosește această interfață pentru a gestiona canalul tău autovoice.\nImplicit, canalele autovoice sunt nelimitate, vizibile și deschise pentru toată lumea (cu excepția membrilor blocați).",
+          "footer": "Canalele autovoice sunt șterse când rămân goale."
+        },
+        "modals": {
+          "name": {
+            "label": "Noul nume al canalului",
+            "description": "Setează un nume nou pentru canal.",
+            "title": "Nume canal"
+          },
+          "limit": {
+            "label": "Limită canal",
+            "description": "Schimbă limita de utilizatori a camerei (0 pentru a elimina limita)",
+            "title": "Limită utilizatori"
+          }
+        },
+        "select": {
+          "region": {
+            "option_description": "Setează regiunea camerei la {{string}}",
+            "placeholder": "Selectează regiunea dorită..."
+          }
+        },
+        "collector": {
+          "left_while_selecting": "Se pare că ai părăsit canalul în timp ce efectuai această acțiune...",
+          "no_longer_owner": "Se pare că nu mai ești proprietarul acestei camere.",
+          "target_block": {
+            "description": "Unul sau mai mulți membri selectați sunt blocați de tine sau te au în lista lor de blocare!",
+            "title": "Restricție reciprocă"
+          },
+          "name": "Canalul tău a fost redenumit în **{{string}}**",
+          "limit": {
+            "nan": "Trebuie să introduci un număr valid (0 - 99).",
+            "minimum_slots": "În prezent sunt {{room_size}} membri în camera ta, limita nu poate fi mai mică decât acest număr.\nPoți introduce 0 pentru a elimina limita.",
+            "set": "Limita camerei tale a fost setată la {{limit}}."
+          },
+          "hide": {
+            "hidden": "Canalul tău este acum ascuns.\nDoar tu și membrii de încredere pot vedea acest canal.\nMembrii aflați momentan în canal îl pot vedea până când îl părăsesc.",
+            "visible": "Canalul tău este acum vizibil."
+          },
+          "lock": {
+            "locked": "Canalul tău este acum blocat.\nDoar tu și membrii de încredere pot intra și vorbi în acest canal.\nMembrii aflați în prezent pe canalul vocal care **NU** sunt de încredere nu vor avea permisiuni.",
+            "unlocked": "Canalul tău este acum deblocat."
+          },
+          "region": {
+            "set": "Regiunea camerei tale a fost setată la {{string}}."
+          },
+          "trust": {
+            "select_placeholder": "Selectează utilizatorii care vor primi acces."
+          },
+          "untrust": {
+            "select_placeholder": "Selectează utilizatorii cărora li se va retrage accesul."
+          },
+          "unblock": "Deblocarea unei persoane nu îi oferă automat acces la acest canal, adaug-o la membrii de încredere.",
+          "claim": {
+            "not_in_autovoice": "Trebuie să fii într-un canal autovoice pentru a face asta!",
+            "already_owner": "Deții deja o cameră, nu poți revendica alta!",
+            "owner_still_present": "Nu poți revendica o cameră cât timp proprietarul este încă prezent.",
+            "success": "Ești acum proprietarul canalului {{channel}}."
+          },
+          "transfer": {
+            "no_members": {
+              "description": "Nu ai cui să transferi proprietatea!",
+              "title": "Ești singur în cameră"
+            },
+            "option_description": "Atribuie-l pe {{username}} ca nou proprietar",
+            "select_placeholder": "Selectează un nou proprietar din cameră...",
+            "success": "{{member_id}} este noul proprietar al canalului {{channel}}"
+          },
+          "delete": "Canalul tău autovoice a fost șters.",
+          "status": {
+            "currently_in": "În prezent în",
+            "voice_room": "Canal vocal"
+          }
+        }
+      },
+      "forbidden": {
+        "not_voice_owner": "Trebuie să fii în propriul tău canal autovoice pentru a face asta!"
+      },
+      "error": {
+        "fetch": {
+          "room": "Preluarea camerei tale din baza de date către Discord a eșuat, este posibil să nu mai existe."
+        }
+      }
+    },
+    "lfg": {
+      "interface_manager": {
+        "interface_embed": {
+          "title": "Caut Grup",
+          "description": "Apasă butonul **LFG**, selectează canalul în care vrei să postezi și completează formularul cu ceea ce cauți!",
+          "field": {
+            "name": "Butoane",
+            "value": {
+              "LFG": "Creează o postare",
+              "active_posts": "Listează postările active pentru acest LFG",
+              "info": "Ghid rapid pentru utilizarea interfeței",
+              "bump": "Retrimite postarea ta activă",
+              "delete": "Șterge postarea ta"
+            }
+          }
+        },
+        "active_lfg_posts": {
+          "empty": {
+            "description": "Nu există nicio postare activă momentan."
+          },
+          "full": {
+            "title": "Postări LFG active"
+          },
+          "jump_to_post": "mergi la postare"
+        },
+        "info": {
+          "description": "- Apasă **LFG** și completează formularul care se va deschide cu cerințele și informațiile tale.\n- Dacă vrei să vezi ce camere sunt disponibile pentru a te alătura imediat, folosește butonul **Postări Active**.\n- **BUMP** și **Delete** sunt butoane legate de postare. Prin bump folosești cooldown-ul pentru a reposta LFG-ul activ.\n- Prin apăsarea butonului delete îți elimini postarea din canal.",
+          "footer": "Reține că ștergerea postării nu îți resetează cooldown-ul."
+        },
+        "lfg_button": {
+          "select_channel": "Selectează canalul dorit.",
+          "success": "Postarea ta a fost trimisă în {{channel}}.\nPoți posta din nou <t:{{cooldown}}:R>"
+        },
+        "bump_button": {
+          "success": "Postarea ta a fost readusă în atenție!\nPoți posta sau da bump din nou <t:{{cooldown}}:R>",
+          "no_active_post": "Nu ai nicio postare activă pentru bump!"
+        },
+        "delete_button": {
+          "success": "Postarea ta a fost ștearsă",
+          "no_active_post": "Nu ai nicio postare activă de șters!"
+        },
+        "errors": {
+          "collector": {
+            "fetch_game": {
+              "title": "Nepotrivire între collector și baza de date",
+              "description": "A apărut o problemă la preluarea jocului pentru această interfață..."
+            },
+            "game_missing_channels": "Se pare că acest joc nu are canale LFG atribuite sistemului...",
+            "bump_failed": "A apărut o eroare și postarea nu a putut primi bump. Încearcă din nou folosind interfața peste un minut."
+          },
+          "post_builder": {
+            "selected_channel": "Preluarea canalului selectat a eșuat, raportează această problemă unui administrator."
+          }
+        }
+      },
+      "modals": {
+        "select_gamemode_label": "Selectează modul de joc pe care intenționezi să îl joci.",
+        "looking_for": "Caut {{string}}",
+        "slots_label": "Câți jucători cauți?",
+        "select_roles": {
+          "option_description": "Adaugă {{string}}",
+          "label": "Solicită roluri specifice.",
+          "description": "Selectează rolurile dorite în postare."
+        },
+        "select_ranks": {
+          "option_description": "Adaugă {{string}}",
+          "label": "Solicită rank-uri specifice.",
+          "description": "Selectează rank-urile dorite în postare."
+        },
+        "details": {
+          "placeholder": "Adaugă numele tău din joc și orice informație relevantă pentru ceilalți jucători.",
+          "label": "Informații suplimentare",
+          "description": "Adaugă detalii despre LFG-ul tău."
+        }
+      },
+      "posts": {
+        "invalid": {
+          "slots": "Trebuie să introduci un număr valid mai mare decât 0."
+        }
+      }
+    },
+    "block": {
+      "empty_list": "Lista ta de persoane blocate este goală."
+    }
+  },
+  "common": {
+    "action_on_cooldown": "Această acțiune este în cooldown!\nCooldown-ul expiră <t:{{cooldown}}:R>",
+    "button_inner_cooldown": "Apesi butoanele prea repede! <t:{{cooldown}}:R>",
+    "embeds": {
+      "interaction_expired": "Interacțiunea a expirat."
+    },
+    "invalid_input": "Input invalid",
+    "bad_word_usage": {
+      "description": "Au fost detectate cuvinte interzise în input!",
+      "title": "Cuvinte blocate detectate"
+    },
+    "not_in_voice": "Trebuie să fii într-un canal vocal pentru a face asta!",
+    "block_self_target": "Nu te poți selecta pe tine!",
+    "block_bot_target": "Nu poți selecta boți!",
+    "block_staff_target": "Nu poți selecta membri ai staff-ului!"
+  },
+  "dictionary": {
+    "Role": "Rol",
+    "Roles": "Roluri",
+    "Ranks": "Rank-uri",
+    "Rank": "Rank",
+    "Channel": "Canal",
+    "Channels": "Canale",
+    "Trusting": "Acordare acces",
+    "Untrusting": "Retragere acces",
+    "None": "Niciunul",
+    "Visibility": "Vizibilitate",
+    "Visible": "Vizibil",
+    "Hidden": "Ascuns",
+    "Accessability": "Accesibilitate",
+    "Unlocked": "Deblocat",
+    "Locked": "Blocat"
+  }
+}

@@ -19,12 +19,15 @@ export const local_config: LocalConfig = {
     rules: {
         toxic_pattern: toxic_patterns,
         guild_plans: GUILD_PLANS
-    }
+    },
+
+    locales: ["ro", "en-US"]
 }
 
 export interface LocalConfig {
     sources: LocalConfigSources,
-    rules: LocalConfigRules
+    rules: LocalConfigRules,
+    locales: string[]
 }
 export type GuildPlansConfig = typeof GUILD_PLANS;
 export interface LocalConfigRules {

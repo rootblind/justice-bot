@@ -1,0 +1,261 @@
+{
+  "commands": {},
+  "events": {},
+  "systems": {
+    "autovoice": {
+      "buttons": {
+        "name": {
+          "name": "NAME",
+          "value": "Name the room"
+        },
+        "limit": {
+          "name": "LIMIT",
+          "value": "Limit room"
+        },
+        "hide": {
+          "name": "HIDE",
+          "value": "Hide/unhide room"
+        },
+        "lock": {
+          "name": "LOCK",
+          "value": "Lock/unlock room"
+        },
+        "region": {
+          "name": "REGION",
+          "value": "Change room region"
+        },
+        "trust": {
+          "name": "TRUST",
+          "value": "Allow members in the room"
+        },
+        "untrust": {
+          "name": "UNTRUST",
+          "value": "Deny members from the room"
+        },
+        "block": {
+          "name": "BLOCK",
+          "value": "Block members"
+        },
+        "unblock": {
+          "name": "UNBLOCK",
+          "value": "Unblock members"
+        },
+        "claim": {
+          "name": "CLAIM",
+          "value": "Claim room ownership"
+        },
+        "transfer": {
+          "name": "TRANSFER",
+          "value": "Transfer room ownership"
+        },
+        "delete": {
+          "name": "DELETE",
+          "value": "Delete room"
+        },
+        "send_interface": "Send Interface"
+      },
+      "interface": {
+        "manager": {
+          "description": "# Autovoice manager\nUse this interface to manage your autovoice channel.\nBy default, autovoice channels are unlimited, visible and open to everyone (except blocked members).",
+          "footer": "Autovoice channels are deleted when they get empty."
+        },
+        "modals": {
+          "name": {
+            "label": "New channel name",
+            "description": "Assign a new name to the channel.",
+            "title": "Channel Name"
+          },
+          "limit": {
+            "label": "Channel limit",
+            "description": "Change the room user limit (0 to remove the limit)",
+            "title": "User Limit"
+          }
+        },
+        "select": {
+          "region": {
+            "option_description": "Set room region to {{string}}",
+            "placeholder": "Select the desired region..."
+          }
+        },
+        "collector": {
+          "left_while_selecting": "It looks like you left the channel while performing this action...",
+          "no_longer_owner": "It seems like you are no longer the owner of this room.",
+          "target_block": {
+            "description": "One or more of the members selected are being blocked by you or they have you on their blocklist!",
+            "title": "Mutual restriction"
+          },
+          "name": "Your channel was renamed to **{{string}}**",
+          "limit": {
+            "nan": "You must provide a valid number (0 - 99).",
+            "minimum_slots": "There are currently {{room_size}} members on your room, limit can not be less than that.\n0 may be given to remove the limit.",
+            "set": "Your room has its limit set to {{limit}}."
+          },
+          "hide": {
+            "hidden": "Your channel is now hidden\nOnly you and trusted members can see this channel.\nMembers currently in the channel can see it too until they leave.",
+            "visible": "Your channel is now visible."
+          },
+          "lock": {
+            "locked": "Your channel is now locked.\nOnly you and trusted members can join and speak in this channel.\nMembers currently on the voice channel that are **NOT** trusted will lack permissions.",
+            "unlocked": "Your channel is now unlocked."
+          },
+          "region": {
+            "set": "Your room region is now set to {{string}}."
+          },
+          "trust": {
+            "select_placeholder": "Select users to be trusted and granted access."
+          },
+          "untrust": {
+            "select_placeholder": "Select users to be untrusted and denied access."
+          },
+          "unblock": "Unblocking someone doesn't grant them access to this channel, add them to trusted members.",
+          "claim": {
+            "not_in_autovoice": "You must be in an autovoice to do that!",
+            "already_owner": "You already own a room, you can't claim another one!",
+            "owner_still_present": "You can't claim a room when the owner is still there.",
+            "success": "You are now the owner of {{channel}}."
+          },
+          "transfer": {
+            "no_members": {
+              "description": "You have no one to transfer the ownership to!",
+              "title": "You're the only one in the room"
+            },
+            "option_description": "Assign {{username}} as the new owner",
+            "select_placeholder": "Select a new owner from the room...",
+            "success": "{{member_id}} is the new owner of {{channel}}"
+          },
+          "delete": "Your autovoice was deleted.",
+          "status": {
+            "currently_in": "Currently in",
+            "voice_room": "Voice room"
+          }
+        }
+      },
+      "forbidden": {
+        "not_voice_owner": "You must be in your own autovoice room to do that!"
+      },
+      "error": {
+        "fetch": {
+          "room": "Failed to fetch your room from database to discord, might no longer exist."
+        }
+      }
+    },
+    "lfg": {
+        "interface_manager": {
+            "interface_embed": {
+                "title": "Looking for Group",
+                "description": "Press the **LFG** button, select the channel to post in and complete the modal with what you are looking for!",
+                "field": {
+                  "name": "Buttons",
+                  "value": {
+                    "LFG": "Create a post",
+                    "active_posts": "List currently active posts for this LFG",
+                    "info": "A quick guide on how to use this interface",
+                    "bump": "Re-send your currently active post",
+                    "delete": "Delete your post"
+                  }
+                }
+            },
+            "active_lfg_posts": {
+              "empty": {
+                "description": "There is no active post at the moment."
+              },
+              "full": {
+                "title": "Active LFG Posts"
+              },
+              "jump_to_post": "jump to post"
+            },
+            "info": {
+              "description": "- Press the **LFG** and fill the modal that will open, with your post requirements and info.\n- If you wish to see what rooms are open to join immediately, use the **Active Posts** button.\n- **BUMP** and **Delete** are post-related buttons. By bumping, you are using your cooldown to re-post your currently active LFG.\n- By pressing delete, you are removing your post from the channel.",
+              "footer": "Do note that deleting your post won't refresh your cooldown."
+            },
+            "lfg_button": {
+              "select_channel": "Select the desired channel.",
+              "success": "Your post has been sent in {{channel}}.\nYou can post again <t:{{cooldown}}:R>"
+            },
+            "bump_button": {
+              "success": "Your post was bumped!\nYou can post or bump again <t:{{cooldown}}:R>",
+              "no_active_post": "You have no active post to bump!"
+            },
+            "delete_button": {
+              "success": "Your post has been deleted",
+              "no_active_post": "You have no active post to delete!"
+            },
+            "errors": {
+              "collector": {
+                "fetch_game": {
+                  "title": "Mismatch between the collector and database",
+                  "description": "There was a problem while fetching the game row for this interface..."
+                },
+                "game_missing_channels": "It seems like this game has no LFG channels assigned to the system...",
+                "bump_failed": "Something went wrong and your post couldn't be bumped. Try using the interface instead after a minute."
+              },
+              "post_builder": {
+                "selected_channel": "Failed to fetch the selected channel, report this to an admin."
+              }
+            }
+        },
+        "modals": {
+          "select_gamemode_label": "Select the gamemode you're planning to play.",
+          "looking_for": "Looking for {{string}}",
+          "slots_label": "How many players are you looking for?",
+          "select_roles": {
+            "option_description": "Add {{string}}",
+            "label": "Ask for specific roles.",
+            "description": "Select the roles you want in your post."
+          },
+          "select_ranks": {
+            "option_description": "Add {{string}}",
+            "label": "Ask for specific ranks.",
+            "description": "Select the ranks you want in your post."
+          },
+          "details": {
+            "placeholder": "Add your in-game name and anything you want the other players to know.",
+            "label": "Additional info",
+            "description": "Add details about your LFG."
+          }
+        },
+        "posts": {
+          "invalid": {
+            "slots": "You must provide a valid number greater than 0."
+            
+          }
+        }
+    },
+    "block": {
+      "empty_list": "Your blocklist is empty."
+    }
+  },
+  "common": {
+    "action_on_cooldown": "This action is on cooldown!\nCooldown expires <t:{{cooldown}}:R>",
+    "button_inner_cooldown": "You are pressing buttons too fast! <t:{{cooldown}}:R>",
+    "embeds": {
+      "interaction_expired": "Interaction expired."
+    },
+    "invalid_input": "Invalid input",
+    "bad_word_usage": {
+      "description": "Bad word usage in the input given!",
+      "title": "Blocked words detected"
+    },
+    "not_in_voice": "You need to be in a voice channel to do that!",
+    "block_self_target": "You can't target yourself!",
+    "block_bot_target": "You can't target bots!",
+    "block_staff_target": "You can't target staff members!"
+  },
+  "dictionary": {
+    "Role": "Role",
+    "Roles": "Roles",
+    "Ranks": "Ranks",
+    "Rank": "Rank",
+    "Channel": "Channel",
+    "Channels": "Channels",
+    "Trusting": "Trusting",
+    "Untrusting": "Untrusting",
+    "None": "None",
+    "Visibility": "Visibility",
+    "Visible": "Visible",
+    "Hidden": "Hidden",
+    "Accessability": "Accessability",
+    "Unlocked": "Unlocked",
+    "Locked": "Locked"
+  }
+}

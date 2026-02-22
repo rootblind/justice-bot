@@ -10,7 +10,8 @@
     "dev": "tsc --watch & nodemon --watch dist --ext js --exec \"node -r dotenv/config ./dist/justice.js\"",
     "clean": "rm -rf dist/*",
     "lint": "eslint source --ext .ts",
-    "lint:fix": "eslint source --ext .ts --fix"
+    "lint:fix": "eslint source --ext .ts --fix",
+    "locale:sync": "node locale_keys_sync.js"
   },
   "author": "rootblind",
   "license": "GPL-3.0-only",
@@ -31,6 +32,8 @@
     "express-session": "^1.18.2",
     "fs": "^0.0.1-security",
     "graceful-fs": "^4.2.11",
+    "i18next": "^25.8.13",
+    "i18next-fs-backend": "^2.6.1",
     "node-cron": "^4.2.1",
     "nodemon": "^3.0.1",
     "pg": "^8.11.3",
@@ -49,6 +52,7 @@
     "@types/express": "^5.0.5",
     "@types/express-session": "^1.18.2",
     "@types/graceful-fs": "^4.1.9",
+    "@types/i18next": "^12.1.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",

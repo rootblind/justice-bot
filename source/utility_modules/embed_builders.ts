@@ -1,7 +1,7 @@
 /**
  * Implementing shorter means to build repetitive embeds in other source files
  */
-import { ChannelType, EmbedBuilder } from "discord.js";
+import { ChannelType, EmbedBuilder, Locale } from "discord.js";
 import type {
     Snowflake,
     ColorResolvable,
@@ -18,13 +18,14 @@ import type {
     APIApplicationCommandOption,
     TextChannel,
     RestOrArray,
-    APIEmbedField
+    APIEmbedField,
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
 import { ChatCommandMetadata } from "../Interfaces/command.js";
 import { isSubcommand, isSubcommandGroup, permission_names, renderArgs } from "./discord_helpers.js";
 import { EventGuildLogsString } from "../Interfaces/database_types.js";
+import { t } from "../Config/i18n.js";
 
 /**
  * Embed for errors while a response is awaited
@@ -46,8 +47,8 @@ export function embed_message(color: ColorResolvable, description: string, title
     return embed;
 }
 
-export function embed_interaction_expired() {
-    return embed_message("Aqua", "Interaction expired.");
+export function embed_interaction_expired(locale: Locale = Locale.EnglishUS) {
+    return embed_message("Aqua", t(locale, "common.embeds.interaction_expired"));
 }
 
 export function embed_unban(

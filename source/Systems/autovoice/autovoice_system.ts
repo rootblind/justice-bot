@@ -19,12 +19,13 @@ import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import AutoVoiceRoomRepo from "../../Repositories/autovoiceroom.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { has_cooldown } from "../../utility_modules/utility_methods.js";
-import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
-import { channelLimitModal, channelNameModal, selectRegionRow } from "./autovoice_components.js";
+import { embed_error, embed_interaction_expired, embed_message } from "../../utility_modules/embed_builders.js";
+import { channelLimitModal, channelNameModal, select_region_row } from "./autovoice_components.js";
 import { local_config } from "../../objects/local_config.js";
 import BlockSystemRepo from "../../Repositories/blocksystem.js";
 import { add_block_collector, remove_block_collector, select_block_row, select_unblock_builder } from "../block/block_system.js";
 import ServerRolesRepo from "../../Repositories/serverroles.js";
+import { t } from "../../Config/i18n.js";
 
 const relevantPermissions = [
     PermissionFlagsBits.ViewChannel,
@@ -137,12 +138,12 @@ export async function attach_autovoice_manager_collector(message: Message) {
         async (buttonInteraction) => {
             const member = buttonInteraction.member as GuildMember;
             const guild = member.guild;
-
+            const locale = buttonInteraction.locale;
             const userCooldown = has_cooldown(member.id, buttonCooldowns, innerCooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     flags: MessageFlags.Ephemeral,
-                    embeds: [embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)]
+                    embeds: [embed_message("Red", t(locale, "common.button_inner_cooldown", { cooldown: userCooldown }))]
                 });
                 return;
             } else {
@@ -161,7 +162,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     // 
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_error("You must be in your own autovoice room to do that!")]
+                        embeds: [embed_error(t(locale, "systems.autovoice.forbidden.not_voice_owner"))]
                     });
 
                     return;
@@ -170,7 +171,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     // if the member is in an autovoice owned by someone else
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_error("You can't do that with someone else's autovoice room!")]
+                        embeds: [embed_error(t(locale, "systems.autovoice.forbidden.not_voice_owner"))]
                     });
 
                     return;
@@ -183,7 +184,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -191,7 +192,8 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         return;
                     }
 
-                    await buttonInteraction.showModal(channelNameModal);
+                    const nameModal = channelNameModal(locale);
+                    await buttonInteraction.showModal(nameModal);
                     try {
                         const submit = await buttonInteraction.awaitModalSubmit({
                             filter: (i) => i.user.id === member.id,
@@ -204,18 +206,18 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         const localTriggers = Object.values(local_config.rules.toxic_pattern).flat();
                         const badName = await hasBlockedContent(newName, localTriggers, guild);
                         if (badName) {
-                            await submit.editReply({ embeds: [embed_error("Bad word usage in the name!", "Blocked words detected.")] })
+                            await submit.editReply({ embeds: [embed_error(t(locale, "common.bad_word_usage.description"), t(locale, "common.bad_word_usage.title"))] })
                             return;
                         }
 
                         try {
                             await room.edit({ name: newName });
-                            await submit.editReply({ embeds: [embed_message("Green", `Your channel was renamed to **${newName}**`)] });
+                            await submit.editReply({ embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.name", { string: newName }))] });
                         } catch (error) {
                             await errorLogHandle(error);
                         }
                     } catch {
-                        await buttonInteraction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_message("Red", "Time ran out, interaction expired.")] });
+                        await buttonInteraction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired(locale)] });
                     }
                     break;
                 }
@@ -224,7 +226,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -232,7 +234,8 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         return;
                     }
 
-                    await buttonInteraction.showModal(channelLimitModal);
+                    const limitModal = channelLimitModal(locale);
+                    await buttonInteraction.showModal(limitModal);
                     try {
                         const submit = await buttonInteraction.awaitModalSubmit({
                             filter: (i) => i.user.id === member.id,
@@ -243,7 +246,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         if (Number.isNaN(limit)) { // invalid characters that are not digits
                             await submit.reply({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_error("You must provide a valid number (0 - 99).")]
+                                embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.limit.nan"))]
                             });
                         }
 
@@ -252,7 +255,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             // if the limit given is not to be removed and is under the number of members currently on the room
                             await submit.reply({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_error(`There are currently ${room.members.size} members on your room, limit can not be less than that.\n0 may be given as it removes the limit.`)]
+                                embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.limit.minimum_slots", { room_size: room.members.size }))]
                             });
                         }
 
@@ -264,12 +267,12 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                         await submit.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_message("Green", `Your room has its limit set to ${limit ? limit : "none"}.`)]
+                            embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.limit.set", { limit: limit ? limit : "none" }))]
                         });
                     } catch {
                         await buttonInteraction.followUp({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_message("Red", "Time ran out, interaction expired.")]
+                            embeds: [embed_interaction_expired(locale)]
                         });
                     }
                     break;
@@ -279,7 +282,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -293,9 +296,10 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         ViewChannel: !viewChannelPermission
                     });
 
+                    // the permission is fetched before the ViewChannel is negated, so viewChannelPermission = true means the channel is hidden
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_message("Aqua", `Your channel is now ${viewChannelPermission ? "Hidden.\nOnly you and trusted members can see this channel.\nMembers currently on the channel can see it too until they leave." : "Visible"}`)]
+                        embeds: [embed_message("Aqua", viewChannelPermission ? t(locale, "systems.autovoice.interface.collector.hide.hidden") : t(locale, "systems.autovoice.interface.collector.hide.visible"))]
                     });
 
                     break;
@@ -305,7 +309,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -319,9 +323,10 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         SendMessages: !lock,
                         Speak: !lock,
                     });
+                    // the permission is fetched before it is toggled, so lock = true means that everyone had permission and it was toggled
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_message("Aqua", `Your channel is now ${lock ? "Locked.\nOnly you and trusted members can join and speak in this channel.\nMembers currently on the voice channel that are not trusted will lack permissions." : "Unlocked"}`)]
+                        embeds: [embed_message("Aqua", lock ? t(locale, "systems.autovoice.interface.collector.lock.locked") : t(locale, "systems.autovoice.interface.collector.lock.unlocked"))]
                     });
 
                     break;
@@ -331,7 +336,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -341,7 +346,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        components: [selectRegionRow]
+                        components: [select_region_row(locale)]
                     });
 
                     const reply = await buttonInteraction.fetchReply();
@@ -357,7 +362,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (member.voice.channelId !== room.id) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It looks like you left the channel while performing this action...")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.left_while_selecting"))]
                                 });
                                 collector.stop();
                                 return;
@@ -366,7 +371,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (!isStillOwner) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It seems like you are no longer the owner of this room!")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.no_longer_owner"))]
                                 });
                                 collector.stop();
                                 return;
@@ -382,13 +387,13 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                             await selectInteraction.reply({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Green", `Your room region is now set to ${region}.`)]
+                                embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.region.set", { string: region }))]
                             })
                         },
                         async () => {
                             await buttonInteraction.followUp({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Aqua", "Interaction ended.")]
+                                embeds: [embed_interaction_expired(locale)]
                             });
                         }
                     );
@@ -399,7 +404,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -414,7 +419,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         .setCustomId("select-user-trust")
                         .setMinValues(1)
                         .setMaxValues(10)
-                        .setPlaceholder("Select users to be trusted and granted access.")
+                        .setPlaceholder(t(locale, "systems.autovoice.interface.collector.trust.select_placeholder"))
                         .setDefaultUsers(userListOnRoom);
 
                     const selectUsersRow = new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(selectUsers);
@@ -437,7 +442,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (member.voice.channelId !== room.id) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It looks like you left the channel while performing this action...")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.left_while_selecting"))]
                                 });
                                 collector.stop();
                                 return;
@@ -447,7 +452,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (!isStillOwner) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It seems like you are no longer the owner of this room!")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.no_longer_owner"))]
                                 });
                                 collector.stop();
                                 return;
@@ -456,7 +461,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (selectInteraction.values.includes(member.id)) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("You can not target yourself!")]
+                                    embeds: [embed_error(t(locale, "common.block_self_target"))]
                                 });
                                 collector.stop();
                                 return;
@@ -469,8 +474,8 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                     flags: MessageFlags.Ephemeral,
                                     embeds: [
                                         embed_error(
-                                            "One or more of the members selected are being blocked by you or they have you on their blocklist!",
-                                            "Mutual restriction"
+                                            t(locale, "systems.autovoice.interface.collector.target_block.description"),
+                                            t(locale, "systems.autovoice.interface.collector.target_block.title")
                                         )
                                     ]
                                 });
@@ -482,7 +487,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             const botSelected = await anyBots(guild, selectInteraction.values);
                             if (botSelected) {
                                 await selectInteraction.reply({
-                                    embeds: [embed_error("You can not target bots!")],
+                                    embeds: [embed_error(t(locale, "common.block_bot_target"))],
                                     flags: MessageFlags.Ephemeral
                                 });
                                 collector.stop();
@@ -492,7 +497,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             const staffSelected = await anyStaff(guild, selectInteraction.values);
                             if (staffSelected) {
                                 await selectInteraction.reply({
-                                    embeds: [embed_error("You can not target staff members!")],
+                                    embeds: [embed_error(t(locale, "common.block_staff_target"))],
                                     flags: MessageFlags.Ephemeral
                                 });
                                 collector.stop();
@@ -514,7 +519,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 embeds: [
                                     embed_message(
                                         "Green",
-                                        `${allowedMembers} ${selectInteraction.values.length > 1 ? "are" : "is"} now trusted on your room.`
+                                        `${t(locale, "dictionary.Trusting")}: ${allowedMembers}`
                                     )
                                 ]
                             });
@@ -523,7 +528,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         async () => {
                             await buttonInteraction.followUp({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Red", "Interaction ended.")]
+                                embeds: [embed_interaction_expired(locale)]
                             });
                             try {
                                 await buttonInteraction.deleteReply();
@@ -539,7 +544,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -554,7 +559,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         .setCustomId("select-user-untrust")
                         .setMinValues(1)
                         .setMaxValues(10)
-                        .setPlaceholder("Select users to be untrusted and denied access.")
+                        .setPlaceholder(t(locale, "systems.autovoice.interface.collector.untrust.select_placeholder"))
                         .setDefaultUsers(userListOnRoom);
 
                     const selectUsersRow = new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(selectUsers);
@@ -577,7 +582,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (member.voice.channelId !== room.id) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It looks like you left the channel while performing this action...")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.left_while_selecting"))]
                                 });
                                 collector.stop();
                                 return;
@@ -587,7 +592,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (!isStillOwner) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It seems like you are no longer the owner of this room!")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.no_longer_owner"))]
                                 });
                                 collector.stop();
                                 return;
@@ -596,7 +601,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (selectInteraction.values.includes(member.id)) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("You can not target yourself!")]
+                                    embeds: [embed_error(t(locale, "common.block_self_target"))]
                                 });
                                 collector.stop();
                                 return;
@@ -609,8 +614,8 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                     flags: MessageFlags.Ephemeral,
                                     embeds: [
                                         embed_error(
-                                            "One or more of the members selected are being blocked by you or they have you on their blocklist!",
-                                            "Mutual restriction"
+                                            t(locale, "systems.autovoice.interface.collector.target_block.description"),
+                                            t(locale, "systems.autovoice.interface.collector.target_block.title")
                                         )
                                     ]
                                 });
@@ -622,7 +627,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             const botSelected = await anyBots(guild, selectInteraction.values);
                             if (botSelected) {
                                 await selectInteraction.reply({
-                                    embeds: [embed_error("You can not target bots!")],
+                                    embeds: [embed_error(t(locale, "common.block_bot_target"))],
                                     flags: MessageFlags.Ephemeral
                                 });
                                 collector.stop();
@@ -632,7 +637,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             const staffSelected = await anyStaff(guild, selectInteraction.values);
                             if (staffSelected) {
                                 await selectInteraction.reply({
-                                    embeds: [embed_error("You can not target staff members!")],
+                                    embeds: [embed_error(t(locale, "common.block_staff_target"))],
                                     flags: MessageFlags.Ephemeral
                                 });
                                 collector.stop();
@@ -664,7 +669,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 embeds: [
                                     embed_message(
                                         "Green",
-                                        `${deniedMembers} ${selectInteraction.values.length > 1 ? "are" : "is"} now untrusted on your room.`
+                                        `${t(locale, "dictionary.Untrusting")}: ${deniedMembers}`
                                     )
                                 ]
                             });
@@ -673,7 +678,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         async () => {
                             await buttonInteraction.followUp({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Red", "Interaction ended.")]
+                                embeds: [embed_interaction_expired(locale)]
                             });
 
                             try {
@@ -690,7 +695,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -736,7 +741,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -748,7 +753,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     const blocklist = await BlockSystemRepo.getMemberBlockList(guild.id, member.id);
                     if (blocklist.length === 0) {
                         await buttonInteraction.editReply({
-                            embeds: [embed_message("Aqua", "Your blocklist is empty")]
+                            embeds: [embed_message("Aqua", t(locale, "systems.block.empty_list"))]
                         });
 
                         return;
@@ -760,7 +765,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (ids.length) {
                         await buttonInteraction.followUp({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_message("Aqua", "Unblocking someone doesn't grant them access to this channel, add them to trusted members.")]
+                            embeds: [embed_message("Aqua", t(locale, "systems.autovoice.interface.collector.unblock"))]
                         });
                     }
 
@@ -770,14 +775,14 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (member.voice.channel === null) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("You must be in an autovoice to do that!")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.not_in_autovoice"))]
                         });
                         return;
                     }
                     if (memberRoomData !== null) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("You already own a room, you can't claim another one!")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.already_owner"))]
                         });
                         return;
                     }
@@ -786,7 +791,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!currentRoomData) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("You must be in an autovoice to do that!")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.not_in_autovoice"))]
                         });
                         return;
                     }
@@ -796,7 +801,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         // the owner is still in the room
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("You can't claim a room when the owner is still there.")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.owner_still_present"))]
                         });
                         return;
                     }
@@ -804,7 +809,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     await AutoVoiceRoomRepo.changeOwnerRoom(guild.id, member.id, room.id);
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_message("Green", `You are now the owner of ${room}`)]
+                        embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.success", { channel: `${room}` }))]
                     });
                     break;
                 }
@@ -813,7 +818,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -824,7 +829,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     const memberList = room.members.map((m) => m).filter((m) => m.id !== member.id);
                     if (memberList.length === 0) {
                         await buttonInteraction.reply({
-                            embeds: [embed_error("You have no one to transfer the ownership to!", "You're the only one in the room")],
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.transfer.no_members.description"), t(locale, "systems.autovoice.interface.collector.transfer.no_members.title"))],
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -835,13 +840,13 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         options.push({
                             label: member.user.username,
                             value: member.id,
-                            description: `Assign ${member.user.username} as the new owner`
+                            description: t(locale, "systems.autovoice.interface.collector.transfer.option_description", { username: member.user.username })
                         });
                     }
 
                     const selectNewOwner = new StringSelectMenuBuilder()
                         .setCustomId("select-new-owner")
-                        .setPlaceholder("Select a new owner from the room...")
+                        .setPlaceholder(t(locale, "systems.autovoice.interface.collector.transfer.select_placeholder"))
                         .setMinValues(1)
                         .setMaxValues(1)
                         .addOptions(options);
@@ -871,7 +876,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             if (!isStillOwner) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
-                                    embeds: [embed_error("It seems like you are no longer the owner of this room!")]
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.no_longer_owner"))]
                                 });
                                 collector.stop();
                                 return;
@@ -889,14 +894,14 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             await AutoVoiceRoomRepo.changeOwnerRoom(guild.id, newOwnerId, room.id);
                             await selectInteraction.reply({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Green", `<@${newOwnerId}> is the new owner of ${room}.`)]
+                                embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.transfer.success", { member_id: newOwnerId, channel: `${room}` }))]
                             });
                             collector.stop();
                         },
                         async () => {
                             await buttonInteraction.followUp({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Aqua", "Interaction ended.")]
+                                embeds: [embed_interaction_expired(locale)]
                             });
                             await buttonInteraction.deleteReply();
                         }
@@ -908,7 +913,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!(room instanceof VoiceChannel)) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error("Failed to fetch your room from database to discord, might no longer exist")]
+                            embeds: [embed_error(t(locale, "systems.autovoice.error.fetch.room"))]
                         });
 
                         // if failed to build channel object, delete the row
@@ -925,7 +930,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_message("Green", "You deleted your own autovoice room.")]
+                        embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.delete"))]
                     });
                     break;
                 }
@@ -940,12 +945,12 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     const cooldown = await AutoVoiceRoomRepo.getCooldown(guild.id, member.id);
                     embed.addFields({
                         name: "Cooldown",
-                        value: `${cooldown ? `<t:${cooldown}:R>` : "None"}`
+                        value: `${cooldown ? `<t:${cooldown}:R>` : t(locale, "dictionary.None")}`
                     });
 
                     embed.addFields({
-                        name: "Currently in",
-                        value: member.voice.channel ? `${member.voice.channel}` : "None"
+                        name: t(locale, "systems.autovoice.interface.collector.status.currently_in"),
+                        value: member.voice.channel ? `${member.voice.channel}` : t(locale, "dictionary.None")
                     });
 
                     if (memberRoomData) {
@@ -954,29 +959,29 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             const everyone = guild.roles.everyone;
                             embed.addFields(
                                 {
-                                    name: "Voice room",
+                                    name: t(locale, "systems.autovoice.interface.collector.status.voice_room"),
                                     value: `${voice}`
                                 },
                                 {
-                                    name: "Visibility",
-                                    value: voice.permissionsFor(everyone).has(PermissionFlagsBits.ViewChannel) ? "Visible" : "Hidden"
+                                    name: t(locale, "dictionary.Visibility"),
+                                    value: voice.permissionsFor(everyone).has(PermissionFlagsBits.ViewChannel) ? t(locale, "dictionary.Visible") : t(locale, "dictionary.Hidden")
                                 },
                                 {
-                                    name: "Accessability",
-                                    value: voice.permissionsFor(everyone).has(PermissionFlagsBits.Connect) ? "Unlocked" : "Locked"
+                                    name: t(locale, "dictionary.Accessability"),
+                                    value: voice.permissionsFor(everyone).has(PermissionFlagsBits.Connect) ? t(locale, "dictionary.Unlocked") : t(locale, "dictionary.Locked")
                                 }
                             );
                         } else {
                             embed.addFields({
-                                name: "Voice room",
-                                value: "None"
+                                name: t(locale, "systems.autovoice.interface.collector.status.voice_room"),
+                                value: t(locale, "dictionary.None")
                             });
                         }
 
                     } else {
                         embed.addFields({
-                            name: "Voice room",
-                            value: "None"
+                            name: t(locale, "systems.autovoice.interface.collector.status.voice_room"),
+                            value: t(locale, "dictionary.None")
                         });
                     }
 

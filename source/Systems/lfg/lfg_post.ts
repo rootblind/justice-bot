@@ -21,7 +21,8 @@ import {
     Snowflake,
     ComponentType,
     GuildEmoji,
-    EmbedAuthorData
+    EmbedAuthorData,
+    Locale
 } from "discord.js";
 import {
     LfgChannelTable,
@@ -45,6 +46,7 @@ import { embed_error, embed_message, embed_interaction_expired } from "../../uti
 import { select_gamemode_label, slots_label, select_roles_label, select_rank_label, add_details_label } from "./lfg_modals.js";
 import { duration_to_seconds, has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import { t } from "../../Config/i18n.js";
 
 /**
  * for the ranks and roles, attempt to fetch their icons if the emoji icon has the same
@@ -75,19 +77,20 @@ export function embed_lfg_post(
     details: string,
     ranks: string,
     roles: string,
+    locale: Locale = Locale.EnglishUS,
     color: ColorResolvable = "DarkRed"
 ) {
     const fields: RestOrArray<APIEmbedField> = [];
     const author: Omit<EmbedAuthorData, "proxyIconURL"> = { name: `🔊 LFG +${slots} ${gamemode}` };
     if (ranks) {
         fields.push({
-            name: "Ranks",
+            name: t(locale, "dictionary.Ranks"),
             value: ranks
         });
     }
     if (roles) {
         fields.push({
-            name: "Roles",
+            name: t(locale, "dictionary.Roles"),
             value: roles
         });
     }
@@ -95,7 +98,7 @@ export function embed_lfg_post(
     if (member.voice.channel) {
         author.url = member.voice.channel.url;
         fields.push({
-            name: "Channel",
+            name: t(locale, "dictionary.Channel"),
             value: `${member.voice.channel}`
         });
     }
@@ -234,11 +237,12 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
             filter: (i) => i.user.id === post.owner_id
         },
         async (buttonInteraction) => {
+            const locale = buttonInteraction.locale;
             const userCooldown = has_cooldown(post.owner_id, cooldowns, cd);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     flags: MessageFlags.Ephemeral,
-                    embeds: [embed_message("Red", `You are pressing the buttons too fast! <t:${userCooldown}:R>`)]
+                    embeds: [embed_message("Red", t(locale, "common.button_inner_cooldown", { cooldown: userCooldown }))]
                 });
                 return;
             }
@@ -250,7 +254,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                     const userCooldown = LfgSystemRepo.getCooldown(post.guild_id, post.owner_id, post.game_id);
                     if (userCooldown) {
                         await buttonInteraction.reply({
-                            embeds: [embed_message("Red", `You can not bump since you are on cooldown! <t:${userCooldown}:R>`)],
+                            embeds: [embed_message("Red", t(locale, "common.action_on_cooldown", { cooldown: userCooldown }))],
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -259,7 +263,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                     if ((buttonInteraction.member as GuildMember).voice.channelId === null && systemConfig.force_voice) {
                         // force voice presence
                         await buttonInteraction.reply({
-                            embeds: [embed_message("Red", "You need to be in a voice channel to do that!")],
+                            embeds: [embed_message("Red", t(locale, "common.not_in_voice"))],
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -269,7 +273,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                     if (expiresAt === 0) {
                         await buttonInteraction.reply({
                             embeds: [
-                                embed_error("Something went wrong and your post couldn't be bumped. Try using the interface instead.")
+                                embed_error(t(locale, "systems.lfg.interface_manager.errors.collector.bump_failed"))
                             ],
                             flags: MessageFlags.Ephemeral
                         });
@@ -277,7 +281,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                     }
 
                     await buttonInteraction.reply({
-                        embeds: [embed_message("Green", `Your post was bumped!\nYou can post or bump again <t:${expiresAt}:R>`)],
+                        embeds: [embed_message("Green", t(locale, "systems.lfg.interface_manager.bump_button.success", { cooldown: expiresAt }))],
                         flags: MessageFlags.Ephemeral
                     });
                     break;
@@ -285,7 +289,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
                 case "delete-post-button": {
                     await delete_lfg_post(message, post.id);
                     await buttonInteraction.reply({
-                        embeds: [embed_message("Green", "Your post has been deleted.")],
+                        embeds: [embed_message("Green", t(locale, "systems.lfg.interface_manager.delete_button.success"))],
                         flags: MessageFlags.Ephemeral
                     });
                     break;
@@ -316,9 +320,10 @@ export async function lfg_post_builder(
 ) {
     // fetch channel object
     const channel = await fetchGuildChannel(guild, lfgChannel.discord_channel_id!);
+    const locale = interaction.locale;
     if (!(channel instanceof TextChannel)) {
         await interaction.reply({
-            embeds: [embed_error("Failed to fetch the selected channel, report this to an admin.")],
+            embeds: [embed_error(t(locale, "systems.lfg.interface_manager.errors.post_builder.selected_channel"))],
             flags: MessageFlags.Ephemeral
         });
         return;
@@ -335,27 +340,27 @@ export async function lfg_post_builder(
     const gamemodes = await LfgSystemRepo.getChannelGamemodesBySnowflake(channel.id);
     if (gamemodes.length) {
         // if there are gamemodes attached to the channel, add a select menu component to the modal
-        modal.addLabelComponents(select_gamemode_label(gamemodes));
+        modal.addLabelComponents(select_gamemode_label(gamemodes, locale));
     }
 
     // add slots input
-    modal.addLabelComponents(slots_label());
+    modal.addLabelComponents(slots_label(locale));
 
     // ranks and roles
     const gameRoles = await LfgSystemRepo.getGameRoles(game.id);
     if (gameRoles.length) {
         const roles = await resolveSnowflakesToRoles(guild, gameRoles.map(row => row.role_id));
-        if (roles.length) modal.addLabelComponents(select_roles_label(roles));
+        if (roles.length) modal.addLabelComponents(select_roles_label(roles, locale));
     }
 
     const gameRanks = await LfgSystemRepo.getGameRanks(game.id);
     if (gameRanks.length) {
         const ranks = await resolveSnowflakesToRoles(guild, gameRanks.map(row => row.role_id));
-        if (ranks.length) modal.addLabelComponents(select_rank_label(ranks));
+        if (ranks.length) modal.addLabelComponents(select_rank_label(ranks, locale));
     }
 
     // additional details
-    modal.addLabelComponents(add_details_label());
+    modal.addLabelComponents(add_details_label(locale));
 
     await interaction.showModal(modal);
     try {
@@ -367,7 +372,7 @@ export async function lfg_post_builder(
         // slots validates if the input is a number
         const slots = Number(submit.fields.getTextInputValue("slots-input"));
         if (Number.isNaN(slots) || slots < 1) {
-            await submit.editReply({ embeds: [embed_error("You must provide a valid number greater than 0.", "Invalid input")] });
+            await submit.editReply({ embeds: [embed_error(t(locale, "systems.lfg.posts.invalid.slots"), t(locale, "common.invalid_input"))] });
             return;
         }
 
@@ -376,7 +381,7 @@ export async function lfg_post_builder(
         const localTriggers = Object.values(local_config.rules.toxic_pattern).flat();
         const badName = await hasBlockedContent(additionalInfo, localTriggers, guild);
         if (badName) {
-            await submit.editReply({ embeds: [embed_error("Bad word usage in the additional info!", "Blocked words detected.")] })
+            await submit.editReply({ embeds: [embed_error(t(locale, "common.bad_word_usage.description"), t(locale, "common.bad_word_usage.title"))] })
             return;
         }
 
@@ -415,7 +420,8 @@ export async function lfg_post_builder(
                     slots,
                     additionalInfo,
                     stringRanks,
-                    stringRoles
+                    stringRoles,
+                    locale
                 )
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
@@ -424,7 +430,15 @@ export async function lfg_post_builder(
         if (lfgLogs) { // log the event if logs are set up
             await lfgLogs.send({
                 embeds: [
-                    embed_lfg_post_log(member, game.game_name, selectedGamemode, slots, additionalInfo, stringRanks, stringRoles)
+                    embed_lfg_post_log(
+                        member,
+                        game.game_name,
+                        selectedGamemode,
+                        slots,
+                        additionalInfo,
+                        stringRanks,
+                        stringRoles
+                    )
                 ]
             });
         }
@@ -474,12 +488,12 @@ export async function lfg_post_builder(
         const expiresTimestamp = await LfgSystemRepo.setCooldown(guild.id, member.id, game.id); // put poster on cooldown
         await submit.editReply({
             embeds: [
-                embed_message("Green", `Your post has been sent in ${channel}.\nYou can post again <t:${expiresTimestamp}:R>`)
+                embed_message("Green", t(locale, "systems.lfg.interface_manager.lfg_button.success", { channel: `${channel}`, cooldown: expiresTimestamp }))
             ]
         });
     } catch (error) {
         console.error(error);
-        await interaction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired()] });
+        await interaction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired(locale)] });
     }
 }
 

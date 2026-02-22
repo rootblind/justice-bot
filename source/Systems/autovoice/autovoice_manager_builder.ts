@@ -85,7 +85,7 @@ export async function autovoice_manager_builder_collector(
                             enabledButtons.push(ButtonBuilder.from(component));
 
                             // fields
-                            const buttonField = AUTOVOICE_BUTTONS.find((button) => button.id === component.customId);
+                            const buttonField = AUTOVOICE_BUTTONS(guild.preferredLocale).find((button) => button.id === component.customId);
                             if (buttonField) {
                                 fields.push(
                                     {
@@ -171,7 +171,7 @@ export async function autovoice_manager_builder_collector(
 
                 // send the interface in managerchannel
                 const manager = await managerchannel.send({
-                    embeds: [embed_autovoice_manager(fields)],
+                    embeds: [embed_autovoice_manager(fields, guild.preferredLocale)],
                     components: enabledFeatures
                 });
 
