@@ -1,7 +1,8 @@
-import { GuildPremiumTier, PermissionFlagsBits, SlashCommandBuilder, TextChannel } from "discord.js";
+import { ColorResolvable, GuildPremiumTier, PermissionFlagsBits, SlashCommandBuilder, TextChannel } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import { fetchGuild, fetchGuildMember } from "../../utility_modules/discord_helpers.js";
-import { EmbedAuthorOptions, EmbedBuilder } from "@discordjs/builders";
+import { EmbedAuthorOptions } from "@discordjs/builders";
+import { EmbedBuilder } from "discord.js";
 import { chunkArray } from "../../utility_modules/utility_methods.js";
 
 const lsCommand: ChatCommand = {
@@ -39,8 +40,9 @@ const lsCommand: ChatCommand = {
                 switch (subcommand) {
                     case "general": {
                         const generalEmbeds: EmbedBuilder[] = [];
+                        const color: ColorResolvable = "Purple"
                         for (const guildAPI of guilds.values()) {
-                            const embed = new EmbedBuilder()
+                            const embed = new EmbedBuilder().setColor(color)
                                 .setFooter({ text: `Guild ID: ${guildAPI.id}` });
                             const author: EmbedAuthorOptions = {
                                 name: guildAPI.name
