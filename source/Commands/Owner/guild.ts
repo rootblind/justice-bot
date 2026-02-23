@@ -27,7 +27,7 @@ const guildCommand: ChatCommand = {
     async execute(interaction, client) {
         const options = interaction.options;
         const subcommands = options.getSubcommand();
-        const ownerId = get_env_var("OWNER_ID");
+        const ownerId = get_env_var("OWNER");
 
         await interaction.deferReply();
         const guilds = await client.guilds.fetch();
@@ -71,6 +71,7 @@ const guildCommand: ChatCommand = {
 
                             try {
                                 await guildFetched.leave();
+
                             } catch (error) {
                                 console.error(error);
                             }
