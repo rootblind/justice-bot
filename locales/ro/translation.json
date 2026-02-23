@@ -195,7 +195,7 @@
         }
       },
       "modals": {
-        "select_gamemode_label": "Selectează modul de joc pe care intenționezi să îl joci.",
+        "select_gamemode_label": "Ce gamemode vrei să joci?",
         "looking_for": "Caut {{string}}",
         "slots_label": "Câți jucători cauți?",
         "select_roles": {

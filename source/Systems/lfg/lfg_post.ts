@@ -328,7 +328,6 @@ export async function lfg_post_builder(
         });
         return;
     }
-
     // the order of the modal elements:
     // 1- gamemode; 2- how many players for the gamemode; 3- What roles (optional); 4- What ranks (optional); 5- Additional info (optional)
     // if the game doesn't have roles or ranks, they won't be added to the modal
