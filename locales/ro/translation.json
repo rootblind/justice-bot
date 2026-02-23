@@ -121,7 +121,7 @@
             },
             "option_description": "Atribuie-l pe {{username}} ca nou proprietar",
             "select_placeholder": "Selectează un nou proprietar din cameră...",
-            "success": "{{member_id}} este noul proprietar al canalului {{channel}}"
+            "success": "{{member}} este noul proprietar al canalului {{channel}}"
           },
           "delete": "Canalul tău autovoice a fost șters.",
           "status": {

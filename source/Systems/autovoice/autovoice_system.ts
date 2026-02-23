@@ -895,16 +895,29 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             await AutoVoiceRoomRepo.changeOwnerRoom(guild.id, newOwnerId, room.id);
                             await selectInteraction.reply({
                                 flags: MessageFlags.Ephemeral,
-                                embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.transfer.success", { member_id: newOwnerId, channel: `${room}` }))]
+                                embeds: [
+                                    embed_message(
+                                        "Green",
+                                        t(
+                                            locale,
+                                            "systems.autovoice.interface.collector.transfer.success",
+                                            {
+                                                member: `${memberList.find(m => m.id === newOwnerId) ?? String(newOwnerId)}`,
+                                                channel: `${room}`
+                                            }
+                                        )
+                                    )
+                                ]
                             });
                             collector.stop();
                         },
                         async () => {
-                            await buttonInteraction.followUp({
-                                flags: MessageFlags.Ephemeral,
-                                embeds: [embed_interaction_expired(locale)]
-                            });
-                            await buttonInteraction.deleteReply();
+                            try {
+                                await buttonInteraction.editReply({
+                                    components: [],
+                                    embeds: [embed_interaction_expired(locale)]
+                                });
+                            } catch { /* do nothing */ }
                         }
                     )
                     break;

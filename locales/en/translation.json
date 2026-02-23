@@ -121,7 +121,7 @@
             },
             "option_description": "Assign {{username}} as the new owner",
             "select_placeholder": "Select a new owner from the room...",
-            "success": "{{member_id}} is the new owner of {{channel}}"
+            "success": "{{member}} is the new owner of {{channel}}"
           },
           "delete": "Your autovoice was deleted.",
           "status": {
