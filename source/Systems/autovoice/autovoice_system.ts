@@ -248,6 +248,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 flags: MessageFlags.Ephemeral,
                                 embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.limit.nan"))]
                             });
+                            return;
                         }
 
                         if (limit < room.members.size && limit > 0) {
@@ -391,9 +392,9 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             })
                         },
                         async () => {
-                            await buttonInteraction.followUp({
-                                flags: MessageFlags.Ephemeral,
-                                embeds: [embed_interaction_expired(locale)]
+                            await buttonInteraction.editReply({
+                                embeds: [embed_interaction_expired(locale)],
+                                components: []
                             });
                         }
                     );
@@ -526,12 +527,11 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             collector.stop();
                         },
                         async () => {
-                            await buttonInteraction.followUp({
-                                flags: MessageFlags.Ephemeral,
-                                embeds: [embed_interaction_expired(locale)]
-                            });
                             try {
-                                await buttonInteraction.deleteReply();
+                                await buttonInteraction.editReply({
+                                    embeds: [embed_interaction_expired(locale)],
+                                    components: []
+                                });
                             } catch (error) {
                                 await errorLogHandle(error);
                             }
@@ -676,13 +676,13 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             collector.stop();
                         },
                         async () => {
-                            await buttonInteraction.followUp({
-                                flags: MessageFlags.Ephemeral,
-                                embeds: [embed_interaction_expired(locale)]
-                            });
+
 
                             try {
-                                await buttonInteraction.deleteReply();
+                                await buttonInteraction.editReply({
+                                    embeds: [embed_interaction_expired(locale)],
+                                    components: []
+                                });
                             } catch (error) {
                                 await errorLogHandle(error);
                             }
@@ -712,6 +712,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     await add_block_collector(reply, member, buttonInteraction)
                         .then(async (blocks) => {
                             const isStillOwner = await AutoVoiceRoomRepo.isRoomOwner(guild.id, member.id, room.id);
+                            if (member.voice.channelId !== room.id) return;
                             if (!isStillOwner) return;
                             for (const userId of blocks) {
                                 try {
@@ -775,14 +776,14 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (member.voice.channel === null) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.not_in_autovoice"))]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.claim.not_in_autovoice"))]
                         });
                         return;
                     }
                     if (memberRoomData !== null) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.already_owner"))]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.claim.already_owner"))]
                         });
                         return;
                     }
@@ -791,7 +792,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     if (!currentRoomData) {
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.not_in_autovoice"))]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.claim.not_in_autovoice"))]
                         });
                         return;
                     }
@@ -801,7 +802,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         // the owner is still in the room
                         await buttonInteraction.reply({
                             flags: MessageFlags.Ephemeral,
-                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.owner_still_present"))]
+                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.claim.owner_still_present"))]
                         });
                         return;
                     }
@@ -809,7 +810,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     await AutoVoiceRoomRepo.changeOwnerRoom(guild.id, member.id, room.id);
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
-                        embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.success", { channel: `${room}` }))]
+                        embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.claim.success", { channel: `${room}` }))]
                     });
                     break;
                 }

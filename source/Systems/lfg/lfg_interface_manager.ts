@@ -266,6 +266,18 @@ export async function interface_manager_collector(message: Message) {
                                 filter: (i) => i.user.id === buttonInteraction.user.id
                             },
                             async (selectInteraction) => {
+                                // check if the member is on lfg cooldown before posting or bumping
+                                const userCooldown = LfgSystemRepo.getCooldown(guild.id, buttonInteraction.user.id, gameTable.id);
+                                if (userCooldown) {
+                                    await selectInteraction.reply({
+                                        embeds: [
+                                            embed_message("Red", t(locale, "common.action_on_cooldown", { cooldown: userCooldown }))
+                                        ],
+                                        flags: MessageFlags.Ephemeral
+                                    });
+                                    coll.stop();
+                                    return;
+                                }
                                 const selectedChannel = lfgChannels
                                     .find((row) => row.discord_channel_id === selectInteraction.values[0])! // the select options are build from this array
                                 await lfg_post_builder(
