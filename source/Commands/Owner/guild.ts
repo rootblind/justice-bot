@@ -60,6 +60,7 @@ const guildCommand: ChatCommand = {
                         time: 300_000
                     },
                     async (selectInteraction) => {
+                        await selectInteraction.deferReply();
                         const guildsIds = [...selectInteraction.values];
                         const failedIds: string[] = [];
                         for (const id of guildsIds) {
@@ -77,7 +78,7 @@ const guildCommand: ChatCommand = {
                             }
                         }
 
-                        await selectInteraction.reply({
+                        await selectInteraction.editReply({
                             embeds: [
                                 embed_message(
                                     "Green",
