@@ -420,7 +420,7 @@ export async function lfg_post_builder(
                     additionalInfo,
                     stringRanks,
                     stringRoles,
-                    locale
+                    guild.preferredLocale // posts are in guild's language
                 )
             ],
             components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
@@ -472,12 +472,13 @@ export async function lfg_post_builder(
             created_at: timestampNow()
         }
 
+        // discord snowflakes for roles and ranks 
+        const selectedSnowflakes = new Set([...rolesSelected, ...ranksSelected].map(r => r.id));
         const lfgPostFull: LfgPostAndRoleIds = {
             post: lfgPostObject,
-            attachedRoleIds: gameRoles.filter(
-                (r) =>
-                    [...rolesSelected, ...ranksSelected].find((role) => role.id === r.role_id
-                    )).map(r => r.id),
+            attachedRoleIds: [...gameRoles, ...gameRanks]
+                .filter(r => selectedSnowflakes.has(r.role_id))
+                .map(r => r.id)
         }
         const lfgPostTable = await LfgSystemRepo.registerPost(lfgPostFull);
 

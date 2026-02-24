@@ -49,7 +49,7 @@ export interface LfgChannelGamemode {
 }
 
 export interface LfgRole {
-    guild_id: Snowflake;                  
+    guild_id: Snowflake;
     game_id: number;
     role_id: Snowflake;
     type: LfgRoleType;
@@ -80,7 +80,7 @@ export interface LfgPostTable extends LfgPost {
 
 export interface LfgPostRole {
     post_id: number;
-    role_id: number;
+    role_id: string;
 }
 
 // full game configuration

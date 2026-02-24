@@ -131,7 +131,8 @@
         }
       },
       "forbidden": {
-        "not_voice_owner": "You must be in your own autovoice room to do that!"
+        "not_voice_owner": "You must be in your own autovoice room to do that!",
+        "transfer_owner_to_owner": "You can't transfer ownership to someone that already owns a room."
       },
       "error": {
         "fetch": {

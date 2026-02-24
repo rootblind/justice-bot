@@ -777,9 +777,9 @@ class LfgSystemRepository {
                     json_agg(
                         json_build_object(
                             'id', r.id,
-                            'guild_id', r.guild_id,
+                            'guild_id', r.guild_id::text,
                             'game_id', r.game_id,
-                            'role_id', r.role_id,
+                            'role_id', r.role_id::text,
                             'type', r.type
                         )
                     ) FILTER (WHERE r.id IS NOT NULL),

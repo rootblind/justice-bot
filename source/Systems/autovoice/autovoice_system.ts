@@ -197,7 +197,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     try {
                         const submit = await buttonInteraction.awaitModalSubmit({
                             filter: (i) => i.user.id === member.id,
-                            time: 120_000
+                            time: 300_000
                         });
 
                         await submit.deferReply({ flags: MessageFlags.Ephemeral });
@@ -239,7 +239,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     try {
                         const submit = await buttonInteraction.awaitModalSubmit({
                             filter: (i) => i.user.id === member.id,
-                            time: 120_000
+                            time: 300_000
                         });
 
                         const limit = Number(submit.fields.getTextInputValue("channel-limit-input"));
@@ -258,6 +258,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 flags: MessageFlags.Ephemeral,
                                 embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.limit.minimum_slots", { room_size: room.members.size }))]
                             });
+                            return;
                         }
 
                         try {
@@ -355,7 +356,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.StringSelect,
-                            time: 120_000,
+                            time: 300_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -389,7 +390,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             await selectInteraction.reply({
                                 flags: MessageFlags.Ephemeral,
                                 embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.region.set", { string: region }))]
-                            })
+                            });
                         },
                         async () => {
                             await buttonInteraction.editReply({
@@ -435,7 +436,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.UserSelect,
-                            time: 120_000,
+                            time: 300_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -552,15 +553,11 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         return;
                     }
 
-                    const userListOnRoom = room.members
-                        .filter((m) => m.user.id !== member.id)
-                        .map((m) => m.user.id);
                     const selectUsers = new UserSelectMenuBuilder()
                         .setCustomId("select-user-untrust")
                         .setMinValues(1)
                         .setMaxValues(10)
                         .setPlaceholder(t(locale, "systems.autovoice.interface.collector.untrust.select_placeholder"))
-                        .setDefaultUsers(userListOnRoom);
 
                     const selectUsersRow = new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(selectUsers);
 
@@ -574,7 +571,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.UserSelect,
-                            time: 120_000,
+                            time: 300_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -676,8 +673,6 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             collector.stop();
                         },
                         async () => {
-
-
                             try {
                                 await buttonInteraction.editReply({
                                     embeds: [embed_interaction_expired(locale)],
@@ -830,7 +825,12 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     const memberList = room.members.map((m) => m).filter((m) => m.id !== member.id);
                     if (memberList.length === 0) {
                         await buttonInteraction.reply({
-                            embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.transfer.no_members.description"), t(locale, "systems.autovoice.interface.collector.transfer.no_members.title"))],
+                            embeds: [
+                                embed_error(
+                                    t(locale, "systems.autovoice.interface.collector.transfer.no_members.description"),
+                                    t(locale, "systems.autovoice.interface.collector.transfer.no_members.title")
+                                )
+                            ],
                             flags: MessageFlags.Ephemeral
                         });
                         return;
@@ -865,7 +865,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         reply,
                         {
                             componentType: ComponentType.StringSelect,
-                            time: 120_000,
+                            time: 300_000,
                             filter: (i) => i.user.id === member.id
                         },
                         async (selectInteraction) => {
@@ -878,6 +878,16 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
                                     embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.no_longer_owner"))]
+                                });
+                                collector.stop();
+                                return;
+                            }
+
+                            const isTargetAlreadyOwner = await AutoVoiceRoomRepo.getMemberRoom(guild.id, newOwnerId);
+                            if (isTargetAlreadyOwner !== null) {
+                                await selectInteraction.reply({
+                                    flags: MessageFlags.Ephemeral,
+                                    embeds: [embed_error(t(locale, "systems.autovoice.forbidden.transfer_owner_to_owner"))]
                                 });
                                 collector.stop();
                                 return;

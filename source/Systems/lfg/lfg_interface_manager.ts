@@ -120,10 +120,10 @@ export async function active_lfg_posts(
             if (!canJoinAndSpeak) continue;
 
             // array of resolved role ranks attached to this post
-            const postRanks: Role[] = ranksResolved.filter(role => row.roles.map(r => r.role_id).includes(role.id));
+            const postRanks: Role[] = ranksResolved.filter(role => row.roles.map(r => String(r.role_id)).includes(String(role.id)));
             const rankString = stringifyRoles(postRanks, guildEmojis);
             activePostStrings.push(
-                `${index++} - ${owner.toString()} \`+${row.slots}\` ${rankString} <t:${row.created_at}:R> [${t(locale, "systems.lfg.interface_manager.active_lfg_posts.jump_to_post")}](${lfg.message.url})`
+                `${index++} - ${owner.toString()} \`+${row.slots}\` ${row.gamemode_name} ${rankString} [${t(locale, "systems.lfg.interface_manager.active_lfg_posts.jump_to_post")}](${lfg.message.url})`
             );
 
 

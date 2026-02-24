@@ -131,7 +131,8 @@
         }
       },
       "forbidden": {
-        "not_voice_owner": "Trebuie să fii în propriul tău canal autovoice pentru a face asta!"
+        "not_voice_owner": "Trebuie să fii în propriul tău canal autovoice pentru a face asta!",
+        "transfer_owner_to_owner": "Nu poți transfera camera unui membru care deține deja o camera de voice."
       },
       "error": {
         "fetch": {
