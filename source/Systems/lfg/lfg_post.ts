@@ -103,6 +103,11 @@ export function embed_lfg_post(
         });
     }
 
+    fields.push({
+        name: t(locale, "dictionary.Member"),
+        value: `${member}`
+    })
+
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTimestamp()
