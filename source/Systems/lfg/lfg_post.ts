@@ -106,9 +106,9 @@ export function embed_lfg_post(
     const embed = new EmbedBuilder()
         .setColor(color)
         .setTimestamp()
-        .setFooter({ text: member.user.username, iconURL: member.displayAvatarURL({ extension: "jpg" }) })
+        .setFooter({ text: member.displayName, iconURL: member.guild.iconURL({ extension: "png" })! })
         .setAuthor(author)
-        .setThumbnail(member.guild.iconURL({ extension: "png" }))
+        .setThumbnail(member.displayAvatarURL({ extension: "jpg" }))
         .setFields(fields)
     if (details) embed.setDescription(details);
 
