@@ -68,7 +68,7 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     const perms: OverwriteResolvable[] = [
         {
             id: member.id,
-            allow: relevantPermissions
+            allow: [...relevantPermissions, PermissionFlagsBits.MoveMembers]
         }
     ];
     const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
