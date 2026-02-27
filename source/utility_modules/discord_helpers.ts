@@ -877,7 +877,7 @@ export async function handleModalCatch(
         | UserSelectMenuInteraction<CacheType>
 ) {
     if (error instanceof Error && error.message.includes("reason: time")) {
-        if (interaction) {
+        if (interaction && interaction.replied) {
             await interaction.followUp({
                 flags: MessageFlags.Ephemeral,
                 embeds: [embed_interaction_expired()]

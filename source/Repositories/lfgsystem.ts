@@ -335,6 +335,19 @@ class LfgSystemRepository {
         await database.query(`DELETE FROM lfg_channels WHERE discord_channel_id=$1`, [channelId])
     }
 
+    async getLfgChannelBySnowflake(channelId: Snowflake): Promise<LfgChannelTable | null> {
+        const { rows: data } = await database.query<LfgChannelTable>(
+            `SELECT * FROM lfg_channels WHERE discord_channel_id=$1`,
+            [channelId]
+        );
+
+        if (data && data[0]) {
+            return data[0];
+        } else {
+            return null;
+        }
+    }
+
     //////////////////////////////////////
     // lfg_gamemodes related repositories
     //////////////////////////////////////
@@ -371,6 +384,19 @@ class LfgSystemRepository {
 
     async deleteGamemodesBulk(ids: number[]) {
         await database.query(`DELETE FROM lfg_gamemodes WHERE id=ANY($1)`, [ids]);
+    }
+
+    async getGamemodeByName(game_id: number, gamemode: string): Promise<LfgGamemodeTable | null> {
+        const { rows: data } = await database.query<LfgGamemodeTable>(
+            `SELECT * FROM lfg_gamemodes WHERE game_id=$1 AND name=$2`,
+            [game_id, gamemode.toUpperCase()]
+        );
+
+        if (data && data[0]) {
+            return data[0];
+        } else {
+            return null;
+        }
     }
 
     //////////////////////////////////////

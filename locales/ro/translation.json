@@ -1,4 +1,17 @@
 {
+  "lolro": {
+    "lfg_parser": {
+      "wrong": {
+        "title": "Format greșit",
+        "description": "Mesajele trebuie formatate în felul următor `+<sloturi> <mod de joc> [roluri] [ranguri] [informații adiționale]`.\n<obligatoriu> [opțional]\nRolurile sunt separate de \"/\" și raza dintre două ranguri este separată de \"-\"",
+        "field": {
+          "name": "Exemple",
+          "value": "+1 solo/duo\n+3 flex mid/top gold-emerald\n+2 arena dia\n+4 flex 4fun"
+        },
+        "footer": "-# Această funcționalitate este experimentală. Dacă acest mesaj este o greșeală, contactează-l pe oppolymorph."
+      }
+    }
+  },
   "commands": {},
   "events": {},
   "systems": {

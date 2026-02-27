@@ -1,5 +1,5 @@
 import type { Event } from "../../Interfaces/event.js";
-import { ActionRowBuilder, ButtonBuilder, type GuildTextBasedChannel, type Message } from "discord.js";
+import { ActionRowBuilder, ButtonBuilder, GuildMember, TextChannel, type GuildTextBasedChannel, type Message } from "discord.js";
 import CustomReactRepo from "../../Repositories/customreact.js";
 import ServerLogsIgnoreRepo from "../../Repositories/serverlogsignore.js";
 import { dumpMessageFile, fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
@@ -8,10 +8,15 @@ import { csv_append, get_env_var } from "../../utility_modules/utility_methods.j
 import { classifier } from "../../Systems/automoderation/classifier.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { ClassifierResponse, LabelsClassification } from "../../Interfaces/helper_types.js";
-import { embed_flagged_message } from "../../utility_modules/embed_builders.js";
+import { embed_flagged_message, embed_message } from "../../utility_modules/embed_builders.js";
 import { adjust_button, confirm_button, false_positive_button } from "../../utility_modules/button_builders.js";
 import { attach_flagged_message_collector } from "../../Systems/automoderation/automoderation_system.js";
 import { LocalConfigSources, local_config } from "../../objects/local_config.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
+import { LfgParsedMessage, parsedPostBuilder, parseLFG, wrong_lfg_format } from "../../lolro_pack/lfg_chat_parser.js";
+import { lfgParserConfig } from "../../lolro_pack/objects/lfg_objects.js";
+import { LfgGamemodeTable } from "../../Interfaces/lfg_system.js";
+import { t } from "../../Config/i18n.js";
 
 const local_config_sources: LocalConfigSources = local_config.sources;
 
@@ -38,16 +43,103 @@ const messageCreate: Event = {
         if (!message.guild || !message.member || message.author.bot) return;
         const guild = message.guild;
         const channel = message.channel as GuildTextBasedChannel;
-
-        const isChannelIgnored = await ServerLogsIgnoreRepo.isChannelIgnored(guild.id, channel.id);
-        if (isChannelIgnored) return;
-
+        const member = message.member as GuildMember;
         await runHooks(message);
+
+        // lfg parser
+        if (channel instanceof TextChannel) {
+            const deleteMessageTimeout = 60_000; // 1 min
+            const lfgChannel = await LfgSystemRepo.getLfgChannelBySnowflake(channel.id);
+            if (lfgChannel) {
+                const lfgConfig = await LfgSystemRepo.getSystemConfigForGuild(guild.id);
+
+                if (
+                    (lfgConfig.force_voice === true && member.voice.channelId !== null)
+                    || lfgConfig.force_voice === false
+                ) {
+                    // if force voice is true, the member must be in a voice channel
+                    const gameId: number = lfgChannel.game_id;
+                    const userCooldown = LfgSystemRepo.getCooldown(guild.id, member.id, gameId);
+                    if (!userCooldown) { // if no cooldown
+                        // if the message is sent in a lfg channel, try to parse the message
+                        const parsedLfg: LfgParsedMessage = parseLFG(message.content, lfgParserConfig);
+                        if (parsedLfg.slots === null || parsedLfg.gamemode === null) {
+                            try {
+                                const wrongLfgMessage = await channel.send({
+                                    content: `${member.toString()}`,
+                                    embeds: [wrong_lfg_format(guild.preferredLocale)]
+                                });
+                                setTimeout(async () => {
+                                    await wrongLfgMessage.delete();
+                                }, deleteMessageTimeout); // remove the message after 10s
+                            } catch (error) {
+                                await errorLogHandle(error);
+                            }
+
+                        } else {
+                            const gamemodeTable: LfgGamemodeTable | null =
+                                await LfgSystemRepo.getGamemodeByName(
+                                    gameId,
+                                    parsedLfg.gamemode
+                                );
+
+                            if (gamemodeTable) {
+                                await parsedPostBuilder(
+                                    lfgChannel,
+                                    gamemodeTable,
+                                    gameId,
+                                    guild,
+                                    parsedLfg,
+                                    member,
+                                    channel
+                                );
+                            } else {
+                                await errorLogHandle(new Error("The gamemode was parsed, but failed to fetch from database."));
+                            }
+                        }
+                    } else {
+                        try {
+                            const memberOnCooldownMessage = await channel.send({
+                                content: `${member.toString()}`,
+                                embeds: [embed_message("Red", t(guild.preferredLocale, "common.action_on_cooldown", { cooldown: userCooldown }))]
+                            });
+                            setTimeout(async () => {
+                                await memberOnCooldownMessage.delete();
+                            }, deleteMessageTimeout); // remove the message after 10s
+                        } catch (error) {
+                            await errorLogHandle(error);
+                        }
+                    }
+                } else {
+                    try {
+                        const forceVoiceMessage = await channel.send({
+                            content: `${member.toString()}`,
+                            embeds: [embed_message("Red", t(guild.preferredLocale, "common.not_in_voice"))]
+                        });
+
+                        setTimeout(async () => {
+                            await forceVoiceMessage.delete();
+                        }, deleteMessageTimeout); // remove the message after 10s
+                    } catch (error) {
+                        await errorLogHandle(error);
+                    }
+                }
+
+                try {
+                    await message.delete(); // clean the user's message
+                } catch (error) {
+                    await errorLogHandle(error);
+                }
+            }
+        }
 
         // handling custom reactions
         const customKeyword = message.content.slice(0, 20).toLowerCase();
         const customReaction = await CustomReactRepo.getKeywordReply(guild.id, customKeyword);
         if (customReaction) await channel.send(customReaction);
+
+        const isChannelIgnored = await ServerLogsIgnoreRepo.isChannelIgnored(guild.id, channel.id);
+        if (isChannelIgnored) return;
 
         // anything related to logs must go below
         const flaggedMessagesLogs = await fetchLogsChannel(guild, "flagged-messages");

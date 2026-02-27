@@ -29,7 +29,7 @@ import { ensureDirectory, downloadFileHTTP, duration_to_seconds, deleteDirectory
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import { claim_button, resolve_button } from "../../utility_modules/button_builders.js";
+import { add_member_button, claim_button, remove_member_button, resolve_button } from "../../utility_modules/button_builders.js";
 import fs from "fs/promises";
 import { createWriteStream } from "fs";
 import archiver from "archiver";
@@ -331,7 +331,12 @@ export async function ticket_collector(message: Message, staffRoleId: string, su
                     await message.edit({
                         components: [
                             new ActionRowBuilder<ButtonBuilder>()
-                                .addComponents(claim_button().setDisabled(true), resolve_button())
+                                .addComponents(
+                                    claim_button().setDisabled(true),
+                                    resolve_button(),
+                                    add_member_button(),
+                                    remove_member_button()
+                                )
                         ]
                     });
                 } catch { /* do nothing */ }

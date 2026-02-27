@@ -603,9 +603,10 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 collector.stop();
                                 return;
                             }
-
+                            /*
                             const mutualRestricted = await BlockSystemRepo.getMutualRestrictedList(guild.id, member.id);
                             const selectedIds = new Set(selectInteraction.values);
+                            
                             if (mutualRestricted.some(id => selectedIds.has(id))) {
                                 await selectInteraction.reply({
                                     flags: MessageFlags.Ephemeral,
@@ -619,7 +620,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
 
                                 collector.stop();
                                 return;
-                            }
+                            }*/
 
                             const botSelected = await anyBots(guild, selectInteraction.values);
                             if (botSelected) {

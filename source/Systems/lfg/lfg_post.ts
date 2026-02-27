@@ -40,9 +40,10 @@ import {
     hasBlockedContent,
     fetchLogsChannel,
     message_collector,
-    fetchMessage
+    fetchMessage,
+    handleModalCatch
 } from "../../utility_modules/discord_helpers.js";
-import { embed_error, embed_message, embed_interaction_expired } from "../../utility_modules/embed_builders.js";
+import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 import { select_gamemode_label, slots_label, select_roles_label, select_rank_label, add_details_label } from "./lfg_modals.js";
 import { duration_to_seconds, has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
@@ -229,6 +230,21 @@ export async function delete_lfg_post(message: Message, postId: number) {
     }
 
     await LfgSystemRepo.deletePostById(postId);
+}
+
+// handle the case where an active post already exists
+export async function deletePostOnLFG(guild: Guild, gameId: number, memberId: Snowflake) {
+    try {
+        const post = await fetchPostMessage(guild, gameId, memberId);
+        if (post) {
+            // if there is a post already, delete it
+            try {
+                await post.message.delete();
+            } catch {/* do nothing */ }
+            await LfgSystemRepo.deletePostById(post.post.id);
+
+        }
+    } catch {/* do nothing */ }
 }
 
 export async function lfg_post_collector(message: Message, post: LfgPostTable) {
@@ -446,22 +462,7 @@ export async function lfg_post_builder(
                 ]
             });
         }
-
-        // handle the case where an active post already exists
-        const deletePostOnLFG = async () => {
-            try {
-                const post = await fetchPostMessage(guild, game.id, member.id);
-                if (post) {
-                    // if there is a post already, delete it
-                    try {
-                        await post.message.delete();
-                    } catch {/* do nothing */ }
-                    await LfgSystemRepo.deletePostById(post.post.id);
-
-                }
-            } catch {/* do nothing */ }
-        }
-        await deletePostOnLFG();
+        await deletePostOnLFG(guild, game.id, member.id);
 
         // register post
         const gamemodeId = gamemodes.find((row) => row.name === selectedGamemode)?.id ?? null;
@@ -497,8 +498,7 @@ export async function lfg_post_builder(
             ]
         });
     } catch (error) {
-        console.error(error);
-        await interaction.followUp({ flags: MessageFlags.Ephemeral, embeds: [embed_interaction_expired(locale)] });
+        await handleModalCatch(error, interaction);
     }
 }
 

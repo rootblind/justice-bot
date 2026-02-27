@@ -1,4 +1,17 @@
 {
+  "lolro": {
+    "lfg_parser": {
+      "wrong": {
+        "title": "Wrong message format",
+        "description": "Messages must be formatted as `+<slots> <gamemode> [roles] [ranks] [additional info]`.\n<required> [optional]\nRoles are separated by \"/\" and the range betweem two ranks is separated by \"-\"",
+        "field": {
+          "name": "Examples",
+          "value": "+1 solo/duo\n+3 flex mid/top gold-emerald\n+2 arena dia\n+4 flex 4fun"
+        },
+        "footer": "This feature is experimental, please report to oppolymorph if you think seeing this message is by mistake."
+      }
+    }
+  },
   "commands": {},
   "events": {},
   "systems": {
