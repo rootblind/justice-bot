@@ -526,3 +526,22 @@ export async function downloadFileHTTP(url: string, filePath: string): Promise<s
     }
 }
 
+export function chunkStrings(lines: string[], limit: number, join_character: string = "\n"): string[] {
+    const chunks: string[] = [];
+    let currentChunk = "";
+
+    for (const line of lines) {
+        if ((currentChunk + join_character + line).length > limit) {
+            chunks.push(currentChunk);
+            currentChunk = line;
+        } else {
+            currentChunk += (currentChunk ? join_character : "") + line;
+        }
+    }
+
+    if (currentChunk) {
+        chunks.push(currentChunk);
+    }
+
+    return chunks;
+}

@@ -17,7 +17,7 @@ import {
     TextChannel
 } from "discord.js";
 import { fetchGuildMember, message_collector, resolveSnowflakesToRoles } from "../../utility_modules/discord_helpers.js";
-import { has_cooldown } from "../../utility_modules/utility_methods.js";
+import { chunkStrings, has_cooldown } from "../../utility_modules/utility_methods.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import { LfgGameTable, LfgPostFullRow } from "../../Interfaces/lfg_system.js";
 import { embed_error, embed_interaction_expired, embed_message } from "../../utility_modules/embed_builders.js";
@@ -90,8 +90,9 @@ export async function active_lfg_posts(
     const rankRows = await LfgSystemRepo.getGameRanks(game.id);
     const ranksResolved: Role[] = await resolveSnowflakesToRoles(guild, rankRows.map(r => r.role_id));
 
+    const EMBED_DESCRIPTION_LIMIT = 4096;
+
     for (const row of posts) {
-        if (index === 10) break; // limit the unfiltered list to 25 results
         try {
             const lfg = await fetchPostMessage(guild, game.id, row.owner_id);
             if (!lfg) continue;
@@ -128,7 +129,21 @@ export async function active_lfg_posts(
 
         } catch { continue; }
     }
-    if (activePostStrings.length > 0) activePostsEmbed.setDescription(activePostStrings.join("\n"));
+
+    const activePostsChunks = chunkStrings(activePostStrings, EMBED_DESCRIPTION_LIMIT, "\n");
+    const embeds: EmbedBuilder[] = [activePostsEmbed];
+    // chunk the strings to not go over embed description limit; also limit embeds to the .send method limit of embeds
+    for (let index = 0; index < activePostsChunks.length && embeds.length < 10; index++) {
+        if (index === 0) {
+            activePostsEmbed.setDescription(activePostsChunks[index]!);
+        } else {
+            embeds.push(
+                new EmbedBuilder()
+                    .setColor("Purple")
+                    .setDescription(activePostsChunks[index]!)
+            );
+        }
+    }
     return activePostsEmbed;
 }
 
