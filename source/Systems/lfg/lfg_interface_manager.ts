@@ -71,12 +71,12 @@ export async function active_lfg_posts(
     game: LfgGameTable,
     member: GuildMember,
     locale: Locale = Locale.EnglishUS
-): Promise<EmbedBuilder> {
+): Promise<EmbedBuilder[]> {
     // TODO: ADD FILTERS FOR RANKS, ROLES AND GAMEMODES
     const activePostsEmbed = new EmbedBuilder().setColor("Purple").setDescription(t(locale, "systems.lfg.interface_manager.active_lfg_posts.empty.description"));
     const posts: LfgPostFullRow[] = await LfgSystemRepo.getPostsFullByGame(guild.id, game.id);
     if (!posts.length) {
-        return activePostsEmbed;
+        return [activePostsEmbed];
     }
 
     activePostsEmbed
@@ -144,7 +144,7 @@ export async function active_lfg_posts(
             );
         }
     }
-    return activePostsEmbed;
+    return embeds;
 }
 
 export function info_lfg(locale: Locale = Locale.EnglishUS): EmbedBuilder {
@@ -319,7 +319,7 @@ export async function interface_manager_collector(message: Message) {
                     await buttonInteraction.deferReply({ flags: MessageFlags.Ephemeral });
                     const activeLFGs = await active_lfg_posts(guild, gameTable, (buttonInteraction.member as GuildMember), locale);
                     await buttonInteraction.editReply({
-                        embeds: [activeLFGs]
+                        embeds: activeLFGs
                     });
                     break;
                 }
