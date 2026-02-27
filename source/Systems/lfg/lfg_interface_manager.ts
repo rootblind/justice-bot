@@ -86,13 +86,12 @@ export async function active_lfg_posts(
     const activePostStrings: string[] = [];
     let index = 1;
     const guildEmojis = await guild.emojis.fetch();
-
     // fetching game roles 
     const rankRows = await LfgSystemRepo.getGameRanks(game.id);
     const ranksResolved: Role[] = await resolveSnowflakesToRoles(guild, rankRows.map(r => r.role_id));
 
     for (const row of posts) {
-        if (index === 25) break; // limit the unfiltered list to 25 results
+        if (index === 10) break; // limit the unfiltered list to 25 results
         try {
             const lfg = await fetchPostMessage(guild, game.id, row.owner_id);
             if (!lfg) continue;

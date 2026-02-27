@@ -63,7 +63,7 @@ export const lfgParserConfig: LfgParserConfig = {
         },
         {
             name: "adc",
-            alias: ["bottom", "bot"]
+            alias: ["bottom", "bot", "ad"]
         },
         {
             name: "supp",
