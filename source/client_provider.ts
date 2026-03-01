@@ -19,19 +19,20 @@ export function __init_client__(intents: number[], partials: Partials[]): Client
         intents: intents,
         partials: partials,
         makeCache: Options.cacheWithLimits({
-            MessageManager: 200,
+            MessageManager: 1000,
             GuildMemberManager: 1000,
             UserManager: 1000,
             PresenceManager: 1000,
             ReactionManager: 200,
             ReactionUserManager: 200,
             ThreadMemberManager: 10,
+            GuildEmojiManager: 200,
+            AutoModerationRuleManager: 100,
 
             // Disabled
             StageInstanceManager: 0,
-            GuildEmojiManager: 0,
             GuildStickerManager: 0,
-            AutoModerationRuleManager: 0
+
         }),
         sweepers: {
             messages: {
@@ -65,6 +66,6 @@ export function setClient(client: Client) {
  * Throws an error if called before the client being initialized
  */
 export function getClient(): Client {
-    if(!botClient) throw new Error("Client not initialized, call setClient or __init_client__ before the getter.");
+    if (!botClient) throw new Error("Client not initialized, call setClient or __init_client__ before the getter.");
     return botClient;
 }

@@ -254,7 +254,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
     const collector = await message_collector<ComponentType.Button>(message,
         {
             componentType: ComponentType.Button,
-            time: duration_to_seconds("6h")! * 1000, // 6 * 60 * 60_000 // 6 hours
+            time: duration_to_seconds("1h")! * 1000, // 1h
             filter: (i) => i.user.id === post.owner_id
         },
         async (buttonInteraction) => {

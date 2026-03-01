@@ -276,7 +276,7 @@ export async function interface_manager_collector(message: Message) {
                         const coll = await message_collector<ComponentType.StringSelect>(reply,
                             {
                                 componentType: ComponentType.StringSelect,
-                                time: 120_000,
+                                time: 300_000,
                                 filter: (i) => i.user.id === buttonInteraction.user.id
                             },
                             async (selectInteraction) => {
@@ -294,6 +294,10 @@ export async function interface_manager_collector(message: Message) {
                                 }
                                 const selectedChannel = lfgChannels
                                     .find((row) => row.discord_channel_id === selectInteraction.values[0])! // the select options are build from this array
+                                await buttonInteraction.editReply({
+                                    components: [],
+                                    embeds: [embed_message("Green", t(locale, "systems.lfg.interface_manager.lfg_button.channel_selected", { string: selectedChannel.name }))]
+                                })
                                 await lfg_post_builder(
                                     selectInteraction,
                                     guild,

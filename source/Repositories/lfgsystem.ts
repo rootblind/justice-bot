@@ -18,8 +18,10 @@ import {
 import { SelfCache } from "../Config/SelfCache.js";
 import { timestampNow } from "../utility_modules/utility_methods.js";
 
+const ONE_DAY_MILLISECONDS = 24 * 60 * 60_000;
+
 ///////////////// caches /////////////////
-const lfgSystemConfigCache = new SelfCache<string, LfgSystemConfig>(24 * 60 * 60); // 24h persistence key: guild_id
+const systemConfigCache = new SelfCache<string, LfgSystemConfig>(ONE_DAY_MILLISECONDS); // 24h persistence key: guild_id
 //////////////////////////////////////////
 
 export const DEFAULT_LFG_COOLDOWN = 15 * 60; // 15min
@@ -28,13 +30,22 @@ export type LfgCooldownEntry = {
 };
 export const lfgCooldowns = new Map<string, LfgCooldownEntry>();
 
-// TODO: ADD CACHING FOR THIS REPOSITORY
+class LfgCache {
+    // key = serial primary key as string
+    readonly gameCache = new SelfCache<string, LfgGameTable>();
+    readonly channelCache = new SelfCache<string, LfgChannelTable>();
+    readonly gmCache = new SelfCache<string, LfgGamemodeTable>();
+    readonly roleCache = new SelfCache<string, LfgRoleTable>();
+    readonly postCache = new SelfCache<string, LfgPostTable>(60 * 60_000);
+}
 
 class LfgSystemRepository {
     /// cooldowns
     private key(guildId: Snowflake, memberId: Snowflake, gameId: number) {
         return `${guildId}:${memberId}:${gameId}`;
     }
+
+    private systemCache = new LfgCache();
     /**
      * Set the member on cooldown for the specific guild-game
      * 
@@ -88,7 +99,7 @@ class LfgSystemRepository {
         );
 
         // caching
-        lfgSystemConfigCache.set(guildId, {
+        systemConfigCache.set(guildId, {
             guild_id: guildId,
             force_voice: true,
             post_cooldown: DEFAULT_LFG_COOLDOWN
@@ -96,6 +107,7 @@ class LfgSystemRepository {
     }
     async deleteSystemConfig(guildId: Snowflake) {
         await database.query(`DELETE FROM lfg_system_config WHERE guild_id=$1`, [guildId]);
+        systemConfigCache.delete(guildId);
     }
     /**
      * The cooldown must be in seconds
@@ -107,7 +119,7 @@ class LfgSystemRepository {
             [guildId, cooldown]
         );
 
-        lfgSystemConfigCache.set(guildId, {
+        systemConfigCache.set(guildId, {
             guild_id: guildId,
             force_voice: data[0]!.force_voice,
             post_cooldown: data[0]!.post_cooldown
@@ -122,7 +134,7 @@ class LfgSystemRepository {
             [guildId, force_voice]
         )
 
-        lfgSystemConfigCache.set(guildId, {
+        systemConfigCache.set(guildId, {
             guild_id: guildId,
             force_voice: data[0]!.force_voice,
             post_cooldown: data[0]!.post_cooldown
@@ -132,15 +144,15 @@ class LfgSystemRepository {
     }
 
     async getSystemConfigForGuild(guildId: Snowflake): Promise<LfgSystemConfig> {
-        const cache = lfgSystemConfigCache.get(guildId);
-        if (cache) return cache
+        const cache = systemConfigCache.get(guildId);
+        if (cache) return cache;
 
         const { rows: data } = await database.query<LfgSystemConfig>(
             `SELECT * FROM lfg_system_config WHERE guild_id=$1`, [guildId]
         );
 
         if (data && data[0]) {
-            lfgSystemConfigCache.set(guildId, {
+            systemConfigCache.set(guildId, {
                 guild_id: guildId,
                 force_voice: data[0].force_voice,
                 post_cooldown: data[0].post_cooldown
@@ -167,6 +179,11 @@ class LfgSystemRepository {
             `SELECT * FROM lfg_games;`
         );
 
+        // populate the cache
+        for (const row of data) {
+            this.systemCache.gameCache.set(String(row.id), row);
+        }
+
         return data;
     }
     /**
@@ -183,6 +200,8 @@ class LfgSystemRepository {
             [guildId, gameName.toUpperCase()]
         )
 
+        this.systemCache.gameCache.set(String(result[0]!.id), result[0]!);
+
         return result[0]!;
     }
 
@@ -190,12 +209,19 @@ class LfgSystemRepository {
      * Fetch the row of the game in the given guild
      */
     async getGame(guildId: Snowflake, gameName: string): Promise<LfgGameTable | null> {
+        const cache = this.systemCache.gameCache.getByValue(
+            (value) => value.guild_id === guildId && value.game_name === gameName
+        );
+
+        if (cache && cache[0]) return cache[0];
+
         const { rows: data } = await database.query<LfgGameTable>(
             `SELECT * FROM lfg_games WHERE guild_id=$1 AND game_name=$2`,
             [guildId, gameName.toUpperCase()]
         );
 
         if (data && data[0]) {
+            this.systemCache.gameCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -206,12 +232,16 @@ class LfgSystemRepository {
      * Fetch the game row by id
      */
     async getGameById(gameId: number): Promise<LfgGameTable | null> {
+        const cache = this.systemCache.gameCache.get(String(gameId));
+        if (cache) return cache;
+
         const { rows: data } = await database.query<LfgGameTable>(
             `SELECT * FROM lfg_games WHERE id=$1`,
             [gameId]
         );
 
         if (data && data[0]) {
+            this.systemCache.gameCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -222,17 +252,47 @@ class LfgSystemRepository {
      * Fetch all registered games within this guild
      */
     async getGuildGames(guildId: Snowflake): Promise<LfgGameTable[]> {
+        const cache = this.systemCache.gameCache.getByValue((value) => value.guild_id === guildId);
+        if (cache && cache.length > 0) return cache;
+
         const { rows: data } = await database.query<LfgGameTable>(
             `SELECT * FROM lfg_games WHERE guild_id=$1`,
             [guildId]
         );
+
+        for (const row of data) {
+            this.systemCache.gameCache.set(String(row.id), row);
+        }
 
         return data;
     }
 
     async deleteGamesBulk(ids: number[]) {
         if (ids.length === 0) return;
-        await database.query(`DELETE FROM lfg_games WHERE id = ANY($1)`, [ids])
+        const idSet = new Set(ids);
+
+        await database.query(`DELETE FROM lfg_games WHERE id = ANY($1)`, [ids]);
+
+        this.systemCache.gameCache.deleteByValue(
+            (_, key) => idSet.has(Number(key))
+        );
+
+        this.systemCache.channelCache.deleteByValue(
+            (value) => idSet.has(value.game_id)
+        );
+
+        this.systemCache.gmCache.deleteByValue(
+            (value) => idSet.has(value.game_id)
+        )
+
+        this.systemCache.roleCache.deleteByValue(
+            (value) => idSet.has(value.game_id)
+        );
+
+        this.systemCache.postCache.deleteByValue(
+            (value) => idSet.has(value.game_id)
+        );
+
     }
 
     /**
@@ -240,15 +300,38 @@ class LfgSystemRepository {
      * @param componentId 
      */
     async onGameComponentDelete(guildId: Snowflake, componentId: Snowflake) {
-        await database.query(
+        const { rows: result } = await database.query<LfgGameTable>(
             `DELETE FROM lfg_games WHERE guild_id=$1
-                AND (category_channel_id=$2 OR manager_channel_id=$2 OR manager_message_id=$2)`,
+                AND (category_channel_id=$2 OR manager_channel_id=$2 OR manager_message_id=$2)
+            RETURNING id;`,
             [guildId, componentId]
         );
+
+        if (result.length === 0) return;
+
+        const deletedIds = new Set<number>(result.map(r => r.id));
+
+        this.systemCache.gameCache.deleteByValue((_, key) => deletedIds.has(Number(key)));
+        this.systemCache.channelCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.gmCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.roleCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.postCache.deleteByValue((value) => deletedIds.has(value.game_id));
     }
 
     async deleteAllGamesFromGuild(guildId: Snowflake) {
-        await database.query(`DELETE FROM lfg_games WHERE guild_id=$1`, [guildId]);
+        const { rows: result } = await database.query<LfgGameTable>(
+            `DELETE FROM lfg_games WHERE guild_id=$1
+            RETURNING id;`,
+            [guildId]
+        );
+
+        if (result.length === 0) return;
+        const deletedIds = new Set<number>(result.map(r => r.id));
+        this.systemCache.gameCache.deleteByValue((_, key) => deletedIds.has(Number(key)));
+        this.systemCache.channelCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.gmCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.roleCache.deleteByValue((value) => deletedIds.has(value.game_id));
+        this.systemCache.postCache.deleteByValue((value) => deletedIds.has(value.game_id));
     }
 
     /**
@@ -265,6 +348,7 @@ class LfgSystemRepository {
             [game.id, game.category_channel_id, game.manager_channel_id, game.manager_message_id]
         );
 
+        this.systemCache.gameCache.set(String(response[0]!.id), response[0]!);
         return response[0]!;
     }
 
@@ -273,6 +357,11 @@ class LfgSystemRepository {
      */
     async deleteGame(id: number) {
         await database.query(`DELETE FROM lfg_games WHERE id=$1`, [id]);
+        this.systemCache.gameCache.delete(String(id));
+        this.systemCache.channelCache.deleteByValue((value) => value.game_id === id);
+        this.systemCache.gmCache.deleteByValue((value) => value.game_id === id);
+        this.systemCache.roleCache.deleteByValue((value) => value.game_id === id);
+        this.systemCache.postCache.deleteByValue((value) => value.game_id === id);
     }
 
     /**
@@ -280,12 +369,19 @@ class LfgSystemRepository {
      * @returns LfgGameTable object or null if there is no game associated with the guild-message pair
      */
     async getGameByInterface(guildId: Snowflake, messageId: Snowflake): Promise<LfgGameTable | null> {
+        const cache = this.systemCache.gameCache.getByValue(
+            (value) => value.guild_id === guildId && value.manager_message_id === messageId
+        );
+
+        if (cache && cache[0]) return cache[0];
+
         const { rows: data } = await database.query<LfgGameTable>(
             `SELECT * FROM lfg_games WHERE guild_id=$1 AND manager_message_id=$2`,
             [guildId, messageId]
         );
 
         if (data && data[0]) {
+            this.systemCache.gameCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -310,6 +406,8 @@ class LfgSystemRepository {
             [channel.game_id, channel.name, channel.discord_channel_id]
         );
 
+        this.systemCache.channelCache.set(String(response[0]!.id), response[0]!);
+
         return response[0]!;
     }
 
@@ -317,31 +415,57 @@ class LfgSystemRepository {
      * @returns LfgChannelTable array of all channels associated with that specific game id  
      */
     async getLfgChannelsByGame(gameId: number): Promise<LfgChannelTable[]> {
+        const cache = this.systemCache.channelCache.getByValue((value) => value.game_id === gameId);
+        if (cache && cache.length > 0) return cache;
+
         const { rows: data } = await database.query<LfgChannelTable>(
             `SELECT * FROM lfg_channels WHERE game_id=$1`, [gameId]
         );
+
+        for (const row of data) {
+            this.systemCache.channelCache.set(String(row.id), row);
+        }
         return data;
     }
 
     async deleteChannel(lfgChannelId: number) {
         await database.query(`DELETE FROM lfg_channels WHERE id=$1`, [lfgChannelId]);
+        this.systemCache.channelCache.delete(String(lfgChannelId));
+        this.systemCache.postCache.deleteByValue((value) => value.channel_id === lfgChannelId);
     }
 
     async deleteChannelsBulk(ids: number[]) {
         await database.query(`DELETE FROM lfg_channels WHERE id=ANY($1)`, [ids]);
+
+        const idSet = new Set(ids);
+        this.systemCache.channelCache.deleteByValue((_, key) => idSet.has(Number(key)));
+        this.systemCache.postCache.deleteByValue((value) => idSet.has(value.channel_id));
     }
 
     async deleteChannelBySnowflake(channelId: Snowflake) {
-        await database.query(`DELETE FROM lfg_channels WHERE discord_channel_id=$1`, [channelId])
+        const { rows: result } = await database.query<LfgChannelTable>(
+            `DELETE FROM lfg_channels WHERE discord_channel_id=$1
+            RETURNING id;`,
+            [channelId]
+        );
+
+        if (result.length === 0) return;
+        const deletedIds = new Set<number>(result.map(r => r.id));
+        this.systemCache.channelCache.deleteByValue((value) => value.discord_channel_id === channelId);
+        this.systemCache.postCache.deleteByValue((value) => deletedIds.has(value.channel_id));
     }
 
     async getLfgChannelBySnowflake(channelId: Snowflake): Promise<LfgChannelTable | null> {
+        const cache = this.systemCache.channelCache.getByValue((value) => value.discord_channel_id === channelId);
+        if (cache && cache[0]) return cache[0];
+
         const { rows: data } = await database.query<LfgChannelTable>(
             `SELECT * FROM lfg_channels WHERE discord_channel_id=$1`,
             [channelId]
         );
 
         if (data && data[0]) {
+            this.systemCache.channelCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -366,33 +490,48 @@ class LfgSystemRepository {
             [gamemode.game_id, gamemode.name]
         );
 
+        this.systemCache.gmCache.set(String(response[0]!.id), response[0]!);
         return response[0]!;
     }
 
     async getGamemodesOfGameId(gameId: number): Promise<LfgGamemodeTable[]> {
+        const cache = this.systemCache.gmCache.getByValue((value) => value.game_id === gameId);
+        if (cache && cache.length > 0) return cache;
+
         const { rows: data } = await database.query<LfgGamemodeTable>(
             `SELECT * FROM lfg_gamemodes WHERE game_id=$1`,
             [gameId]
         )
+
+        for (const row of data) {
+            this.systemCache.gmCache.set(String(row.id), row);
+        }
 
         return data;
     }
 
     async deleteGamemode(id: number) {
         await database.query(`DELETE FROM lfg_gamemodes WHERE id=$1`, [id]);
+        this.systemCache.gmCache.delete(String(id));
     }
 
     async deleteGamemodesBulk(ids: number[]) {
         await database.query(`DELETE FROM lfg_gamemodes WHERE id=ANY($1)`, [ids]);
+
+        const idSet = new Set(ids);
+        this.systemCache.gmCache.deleteByValue((_, key) => idSet.has(Number(key)));
     }
 
     async getGamemodeByName(game_id: number, gamemode: string): Promise<LfgGamemodeTable | null> {
+        const cache = this.systemCache.gmCache.getByValue((value) => value.name === gamemode && value.game_id === game_id);
+        if (cache && cache[0]) return cache[0];
         const { rows: data } = await database.query<LfgGamemodeTable>(
             `SELECT * FROM lfg_gamemodes WHERE game_id=$1 AND name=$2`,
             [game_id, gamemode.toUpperCase()]
         );
 
         if (data && data[0]) {
+            this.systemCache.gmCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -417,6 +556,7 @@ class LfgSystemRepository {
             [role.guild_id, role.game_id, role.role_id, role.type]
         );
 
+        this.systemCache.roleCache.set(String(response[0]!.id), response[0]!);
         return response[0]!;
     }
 
@@ -445,6 +585,10 @@ class LfgSystemRepository {
             [guildIds, gameIds, roleIds, types]
         );
 
+        for (const row of rows) {
+            this.systemCache.roleCache.set(String(row.id), row);
+        }
+
         return rows;
     }
 
@@ -454,11 +598,18 @@ class LfgSystemRepository {
      * @returns All type role roles for the game
      */
     async getGameRoles(gameId: number): Promise<LfgRoleTable[]> {
+        const cache = this.systemCache.roleCache.getByValue(
+            (value) => value.game_id === gameId && value.type === "role"
+        );
+        if (cache && cache.length > 0) return cache;
+
         const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1 AND type='role';`,
             [gameId]
         );
-
+        for (const row of data) {
+            this.systemCache.roleCache.set(String(row.id), row);
+        }
         return data;
     }
 
@@ -466,28 +617,51 @@ class LfgSystemRepository {
      * @returns All type rank roles for the game 
      */
     async getGameRanks(gameId: number): Promise<LfgRoleTable[]> {
+        const cache = this.systemCache.roleCache.getByValue(
+            (value) => value.game_id === gameId && value.type === "rank"
+        );
+        if (cache && cache.length > 0) return cache;
         const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1 AND type='rank';`,
             [gameId]
         );
 
+        for (const row of data) {
+            this.systemCache.roleCache.set(String(row.id), row);
+        }
+
         return data;
     }
 
     async getGameLfgRolesByType(gameId: number, type: LfgRoleType): Promise<LfgRoleTable[]> {
+        const cache = this.systemCache.roleCache.getByValue(
+            (value) => value.game_id === gameId && value.type === type
+        );
+
+        if (cache && cache.length > 0) return cache;
+
         const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1 AND type=$2`,
             [gameId, type]
         );
 
+        for (const row of data) {
+            this.systemCache.roleCache.set(String(row.id), row);
+        }
         return data;
     }
 
     async getAllGameLfgRoles(gameId: number): Promise<LfgRoleTable[]> {
+        const cache = this.systemCache.roleCache.getByValue((value) => value.game_id === gameId);
+        if (cache && cache.length > 0) return cache;
         const { rows: data } = await database.query<LfgRoleTable>(
             `SELECT * FROM lfg_roles WHERE game_id=$1`,
             [gameId]
         );
+
+        for (const row of data) {
+            this.systemCache.roleCache.set(String(row.id), row);
+        }
 
         return data;
     }
@@ -497,16 +671,25 @@ class LfgSystemRepository {
             `DELETE FROM lfg_roles WHERE game_id=$1 AND type=$2`,
             [gameId, type]
         );
+
+        this.systemCache.roleCache.deleteByValue(
+            (value) => value.game_id === gameId && value.type === type
+        );
     }
 
     async deleteLfgRolesBySnowflake(roleIds: string[]) {
         await database.query(
             `DELETE FROM lfg_roles WHERE role_id=ANY($1)`, [roleIds]
         );
+        const idSet = new Set(roleIds);
+        this.systemCache.roleCache.deleteByValue(
+            (value) => idSet.has(value.role_id)
+        );
     }
 
     async deleteOneLfgRoleBySnowflake(roleId: Snowflake) {
         await database.query(`DELETE FROM lfg_roles WHERE role_id=$1`, [roleId]);
+        this.systemCache.roleCache.deleteByValue((value) => value.role_id === roleId);
     }
 
     //////////////////////////////////////
@@ -556,6 +739,7 @@ class LfgSystemRepository {
             )
         }
 
+        this.systemCache.postCache.set(String(postResult[0]!.id), postResult[0]!);
         return postResult[0]!;
     }
 
@@ -563,12 +747,21 @@ class LfgSystemRepository {
      * @param durationSeconds The lifetime of a lfg post message collector in seconds 
      */
     async getExpiredPosts(durationSeconds: number): Promise<LfgPostTable[]> {
+        const expiresAt = timestampNow() - durationSeconds;
+        const cache = this.systemCache.postCache.getByValue(
+            (value) => value.created_at <= expiresAt
+        );
+        if (cache && cache.length > 0) return cache;
         const { rows: data } = await database.query<LfgPostTable>(
             `SELECT *
             FROM lfg_posts
             WHERE created_at <= $1`,
-            [timestampNow() - durationSeconds]
+            [expiresAt]
         );
+
+        for (const row of data) {
+            this.systemCache.postCache.set(String(row.id), row);
+        }
 
         return data;
     }
@@ -577,21 +770,27 @@ class LfgSystemRepository {
      * Delete posts older than @param durationSeconds seconds.
      */
     async deleteExpiredPosts(durationSeconds: number): Promise<void> {
-        await database.query(`DELETE FROM lfg_posts WHERE created_at <= $1`, [timestampNow() - durationSeconds]);
+        const expiresAt = timestampNow() - durationSeconds;
+        await database.query(`DELETE FROM lfg_posts WHERE created_at <= $1`, [expiresAt]);
+        this.systemCache.postCache.deleteByValue(
+            (value) => value.created_at <= expiresAt
+        );
     }
 
     async deletePostById(id: number) {
         await database.query(`DELETE FROM lfg_posts WHERE id=$1`, [id]);
+        this.systemCache.postCache.delete(String(id));
     }
 
     async deletePostBySnowflake(messageId: Snowflake) {
         await database.query(`DELETE FROM lfg_posts WHERE message_id=$1`, [messageId]);
+        this.systemCache.postCache.deleteByValue((value) => value.message_id === messageId);
     }
 
     async postGameCounter(gameId: number): Promise<number> {
         const { rows: [{ count }] } = await database.query(`SELECT COUNT(*) as count FROM lfg_posts WHERE game_id=$1`, [gameId]);
 
-        return count;
+        return Number(count);
     }
     /**
      * 
@@ -605,7 +804,7 @@ class LfgSystemRepository {
             RETURNING *;`,
             [postId, messageId, timestampNow()]
         );
-
+        this.systemCache.postCache.set(String(result[0]!.id), result[0]!);
         return result[0]!;
     }
 
@@ -613,12 +812,17 @@ class LfgSystemRepository {
      * Fetch a post by owner id inside a specific guild-game combination
      */
     async getPostByOwnerId(guildId: Snowflake, gameId: number, ownerId: string): Promise<LfgPostTable | null> {
+        const cache = this.systemCache.postCache.getByValue(
+            (value) => value.guild_id === guildId && value.game_id === gameId && value.owner_id === ownerId
+        );
+        if (cache && cache[0]) return cache[0];
         const { rows: data } = await database.query<LfgPostTable>(
             `SELECT * FROM lfg_posts WHERE guild_id=$1 AND game_id=$2 AND owner_id=$3`,
             [guildId, gameId, ownerId]
         );
 
         if (data && data[0]) {
+            this.systemCache.postCache.set(String(data[0].id), data[0]);
             return data[0];
         } else {
             return null;
@@ -629,6 +833,11 @@ class LfgSystemRepository {
         const { rows: data } = await database.query<LfgPostTable>(
             `SELECT * FROM lfg_posts;`
         );
+
+        // populate cache
+        for (const row of data) {
+            this.systemCache.postCache.set(String(row.id), row);
+        }
         return data;
     }
 
@@ -637,6 +846,7 @@ class LfgSystemRepository {
      * @returns All posts with their discord channel snowflake attached
      */
     async getAllPostsWithChannel(): Promise<LfgPostWithChannelTable[]> {
+
         const { rows: data } = await database.query<LfgPostWithChannelTable>(
             `SELECT
                 p.*,
@@ -729,6 +939,21 @@ class LfgSystemRepository {
         gameId: number,
         ownerId: string
     ): Promise<LfgPostWithChannelTable | null> {
+        const postCache = this.systemCache.postCache.getByValue(
+            (value) =>
+                value.guild_id === guildId
+                && value.game_id === gameId
+                && value.owner_id === ownerId
+        );
+
+        if (postCache && postCache[0]) {
+            const channelCache = this.systemCache.channelCache.get(String(postCache[0].channel_id));
+            if (!channelCache) return null;
+            return {
+                ...postCache[0],
+                discord_channel_id: channelCache.discord_channel_id!
+            }
+        }
         const { rows: data } = await database.query<LfgPostWithChannelTable>(
             `SELECT p.*, c.discord_channel_id
             FROM lfg_posts p
@@ -742,6 +967,9 @@ class LfgSystemRepository {
         );
 
         if (data && data[0]) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { discord_channel_id, ...post } = data[0];
+            this.systemCache.postCache.set(String(post.id), post)
             return data[0];
         } else {
             return null;
@@ -752,6 +980,22 @@ class LfgSystemRepository {
      * Fetch all the posts of a member in a guild, no matter the game
      */
     async getAllMemberPosts(guildId: string, ownerId: string): Promise<LfgPostWithChannelTable[]> {
+        const cacheResult: LfgPostWithChannelTable[] = [];
+        const postCache = this.systemCache.postCache.getByValue(
+            (value) => value.guild_id === guildId && value.owner_id === ownerId
+        );
+        if (postCache) {
+            for (const post of postCache) {
+                const channelCache = this.systemCache.channelCache.get(String(post.channel_id));
+                if (!channelCache) continue;
+                cacheResult.push({
+                    ...post,
+                    discord_channel_id: channelCache.discord_channel_id!
+                });
+            }
+
+            if (cacheResult.length > 0) return cacheResult;
+        }
         const { rows: data } = await database.query<LfgPostWithChannelTable>(
             `SELECT p.*, c.discord_channel_id
             FROM lfg_posts p
@@ -761,6 +1005,12 @@ class LfgSystemRepository {
                 AND p.owner_id=$2`,
             [guildId, ownerId]
         );
+
+        for (const row of data) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { discord_channel_id, ...post } = row;
+            this.systemCache.postCache.set(String(post.id), post);
+        }
 
         return data;
     }

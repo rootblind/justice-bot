@@ -319,8 +319,8 @@ const lfgSystem: ChatCommand = {
                                         (lfgGamemodes.length > 10 ?
                                             lfgGamemodes.map(gm => gm.name)
                                                 .slice(0, 10)
-                                                .join(" ") + `... and ${lfgGamemodes.length - 10} more`
-                                            : lfgGamemodes.map(gm => gm.name).join(" ")
+                                                .join(", ") + `... and ${lfgGamemodes.length - 10} more`
+                                            : lfgGamemodes.map(gm => gm.name).join(", ")
                                         )
                                         : "None"
                                 },

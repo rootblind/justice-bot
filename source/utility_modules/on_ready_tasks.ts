@@ -232,7 +232,7 @@ export const cleanExpiredLfgPosts: OnReadyTaskBuilder = {
     name: "Clean Expired LFGs",
     task: async () => {
         const client = getClient();
-        const expiredPosts = await LfgSystemRepo.getAllExpiredPostsWithChannel(duration_to_seconds("6h")!);
+        const expiredPosts = await LfgSystemRepo.getAllExpiredPostsWithChannel(duration_to_seconds("1h")!);
         for (const row of expiredPosts) {
             try {
                 const guild = await client.guilds.fetch({ guild: row.guild_id, force: true });
@@ -248,7 +248,7 @@ export const cleanExpiredLfgPosts: OnReadyTaskBuilder = {
                 await errorLogHandle(error, `Post Message ID ${row.message_id} | Channel ID ${row.discord_channel_id} | Guild ID ${row.guild_id}`)
             }
         }
-        await LfgSystemRepo.deleteExpiredPosts(duration_to_seconds("6h")!); // clean the database of expired posts
+        await LfgSystemRepo.deleteExpiredPosts(duration_to_seconds("1h")!); // clean the database of expired posts
     },
     runCondition: async () => true
 }

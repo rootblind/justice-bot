@@ -184,7 +184,8 @@
             },
             "lfg_button": {
               "select_channel": "Select the desired channel.",
-              "success": "Your post has been sent in {{channel}}.\nYou can post again <t:{{cooldown}}:R>"
+              "success": "Your post has been sent in {{channel}}.\nYou can post again <t:{{cooldown}}:R>",
+              "channel_selected": "**{{string}}** selected."
             },
             "bump_button": {
               "success": "Your post was bumped!\nYou can post or bump again <t:{{cooldown}}:R>",

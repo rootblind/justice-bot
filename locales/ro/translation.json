@@ -184,7 +184,8 @@
         },
         "lfg_button": {
           "select_channel": "Selectează canalul dorit.",
-          "success": "Postarea ta a fost trimisă în {{channel}}.\nPoți posta din nou <t:{{cooldown}}:R>"
+          "success": "Postarea ta a fost trimisă în {{channel}}.\nPoți posta din nou <t:{{cooldown}}:R>",
+          "channel_selected": "**{{string}}** a fost selectat."
         },
         "bump_button": {
           "success": "Postarea ta a fost readusă în atenție!\nPoți posta sau da bump din nou <t:{{cooldown}}:R>",

@@ -646,6 +646,8 @@ export function embed_adjust_flags() {
  */
 export function embed_message_delete(
     author: User,
+    channel: GuildTextBasedChannel,
+    messageUrl: string,
     color: ColorResolvable = 0xfb0003
 ): EmbedBuilder {
     return new EmbedBuilder()
@@ -655,6 +657,22 @@ export function embed_message_delete(
         })
         .setColor(color)
         .setTitle("🧹Message deleted")
+        .addFields(
+            {
+                name: "Author",
+                value: author.toString(),
+                inline: true
+            },
+            {
+                name: "Channel",
+                value: channel.toString(),
+                inline: true
+            },
+            {
+                name: "Context",
+                value: `[jump to context](${messageUrl})`
+            }
+        )
         .setTimestamp()
         .setFooter({ text: `Author ID: ${author.id}` })
 }

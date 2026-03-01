@@ -47,7 +47,7 @@ const messageDelete: Event = {
 
         // logs related
         if (messagesLogs && !isChannelIgnored && !message.author.bot) {
-            const embed = embed_message_delete(message.author);
+            const embed = embed_message_delete(message.author, channel, message.url);
             if (message.content.length <= 3000) {
                 embed.setDescription(`**Content**:\n${message.content}`);
             } else {

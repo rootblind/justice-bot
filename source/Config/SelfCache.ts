@@ -14,11 +14,13 @@ import { CacheEntry } from "../Interfaces/helper_types.js";
  *
  * Make sure to note that in order to avoid fetching invalid data, methods that delete rows from database
  * must also handle clearing that data from the cache too, if another method cached it in.
+ * 
+ * @param ttlMs Lifetime in milliseconds.
  */
 export class SelfCache<K, V> {
     private cache = new Map<K, CacheEntry<V>>();
 
-    constructor(private readonly ttlMs: number | null = null) {};
+    constructor(private readonly ttlMs: number | null = null) { };
 
     /**
      * Return the entire map of the cache
@@ -34,9 +36,9 @@ export class SelfCache<K, V> {
      */
     get(key: K): V | undefined {
         const entry = this.cache.get(key);
-        if(!entry) return undefined;
+        if (!entry) return undefined;
 
-        if(Date.now() > entry.expiresAt && entry.expiresAt > 0) {
+        if (Date.now() > entry.expiresAt && entry.expiresAt > 0) {
             // expiresAt = 0 persists until bot restart
             this.cache.delete(key);
             return undefined;
@@ -54,8 +56,8 @@ export class SelfCache<K, V> {
         this.cache.set(key, {
             value,
             expiresAt: this.ttlMs ?
-            Date.now() + this.ttlMs :
-            0
+                Date.now() + this.ttlMs :
+                0
         });
     }
 
@@ -79,8 +81,8 @@ export class SelfCache<K, V> {
     ): number {
         let deletedEntries = 0;
 
-        for(const [key, entry] of this.cache.entries()) {
-            if(predicate(entry.value, key)) {
+        for (const [key, entry] of this.cache.entries()) {
+            if (predicate(entry.value, key)) {
                 this.cache.delete(key);
                 ++deletedEntries;
             }
@@ -100,9 +102,9 @@ export class SelfCache<K, V> {
         predicate: (value: V, key: K) => boolean
     ): V[] | undefined {
         const res: V[] = []
-        for(const [key, entry] of this.cache.entries()) {
-            if(predicate(entry.value, key)) {
-                if(Date.now() > entry.expiresAt && entry.expiresAt > 0) {
+        for (const [key, entry] of this.cache.entries()) {
+            if (predicate(entry.value, key)) {
+                if (Date.now() > entry.expiresAt && entry.expiresAt > 0) {
                     // expiresAt = 0 persists until bot restart
                     this.cache.delete(key);
                     continue;
@@ -111,7 +113,7 @@ export class SelfCache<K, V> {
             }
         }
 
-        if(res.length) {
+        if (res.length) {
             return res;
         } else {
             return undefined;
