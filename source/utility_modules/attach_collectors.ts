@@ -6,8 +6,6 @@ import { errorLogHandle } from "./error_logger.js";
 import { attach_autovoice_manager_collector } from "../Systems/autovoice/autovoice_system.js";
 import LfgSystemRepo from "../Repositories/lfgsystem.js";
 import { interface_manager_collector } from "../Systems/lfg/lfg_interface_manager.js";
-import { LfgPostWithChannelTable } from "../Interfaces/lfg_system.js";
-import { lfg_post_collector } from "../Systems/lfg/lfg_post.js";
 import TicketSystemRepo from "../Repositories/ticketsystem.js";
 import { open_ticket_collector } from "../Systems/ticket_support/ticket_manager.js";
 import { ticket_collector } from "../Systems/ticket_support/ticket_collector.js";
@@ -73,6 +71,7 @@ export const lfgInterfaceManagerCollector: OnReadyTaskBuilder = {
     runCondition: async () => true
 }
 
+/* REMOVED SINCE DELETE AND BUMP BUTTONS WERE REMOVED SO THERE IS NOTHNG TO BE COLLECTED
 export const LfgPostsCollector: OnReadyTaskBuilder = {
     name: "LFG Posts Collector",
     task: async () => {
@@ -94,6 +93,7 @@ export const LfgPostsCollector: OnReadyTaskBuilder = {
     },
     runCondition: async () => true
 }
+*/
 
 export const TicketSystemManagerCollector: OnReadyTaskBuilder = {
     name: "Ticket System Manager Collector",

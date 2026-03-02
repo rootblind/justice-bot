@@ -15,7 +15,6 @@ import {
     Role,
     ButtonBuilder,
     ButtonStyle,
-    ActionRowBuilder,
     Message,
     Collection,
     Snowflake,
@@ -194,10 +193,11 @@ export async function bump_lfg_post(message: Message, post: LfgPostTable): Promi
         // repost the message
         const bumpPost = await message.channel.send({
             embeds: [embed],
-            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(lfg_post_buttons())]
+            // components: [new ActionRowBuilder<ButtonBuilder>().addComponents(lfg_post_buttons())]
         });
         // attach collector
-        await lfg_post_collector(bumpPost, post);
+        // delete and bump are no longer attached so there is nothing to collect
+        // await lfg_post_collector(bumpPost, post);
 
         // update database
         await LfgSystemRepo.bumpPostMessageId(post.id, bumpPost.id);
@@ -444,7 +444,7 @@ export async function lfg_post_builder(
                     guild.preferredLocale // posts are in guild's language
                 )
             ],
-            components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
+            // components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
         });
         const lfgLogs = await fetchLogsChannel(guild, "lfg-logs");
         if (lfgLogs) { // log the event if logs are set up
@@ -486,10 +486,12 @@ export async function lfg_post_builder(
                 .filter(r => selectedSnowflakes.has(r.role_id))
                 .map(r => r.id)
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const lfgPostTable = await LfgSystemRepo.registerPost(lfgPostFull);
 
         // attach the collector to the lfg post
-        await lfg_post_collector(postMessage, lfgPostTable);
+        // removed the bump and delete button from posts, so there is nothing to be collected anymore
+        // await lfg_post_collector(postMessage, lfgPostTable);
 
         const expiresTimestamp = await LfgSystemRepo.setCooldown(guild.id, member.id, game.id); // put poster on cooldown
         await submit.editReply({

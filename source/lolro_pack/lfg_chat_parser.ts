@@ -1,9 +1,9 @@
-import { ActionRowBuilder, ButtonBuilder, ColorResolvable, EmbedBuilder, Guild, GuildMember, Locale, TextChannel } from "discord.js";
+import { ColorResolvable, EmbedBuilder, Guild, GuildMember, Locale, TextChannel } from "discord.js";
 import { ConfigElement, LfgParserConfig } from "./objects/lfg_objects.js";
 import { t } from "../Config/i18n.js";
 import { LfgChannelTable, LfgGamemodeTable, LfgPost, LfgPostAndRoleIds } from "../Interfaces/lfg_system.js";
 import LfgSystemRepo from "../Repositories/lfgsystem.js";
-import { stringifyRoles, embed_lfg_post, lfg_post_buttons, embed_lfg_post_log, deletePostOnLFG, lfg_post_collector } from "../Systems/lfg/lfg_post.js";
+import { stringifyRoles, embed_lfg_post, embed_lfg_post_log, deletePostOnLFG } from "../Systems/lfg/lfg_post.js";
 import { resolveSnowflakesToRoles, fetchLogsChannel } from "../utility_modules/discord_helpers.js";
 import { timestampNow } from "../utility_modules/utility_methods.js";
 
@@ -189,7 +189,7 @@ export async function parsedPostBuilder(
                 guild.preferredLocale // posts are in guild's language
             )
         ],
-        components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
+        // components: [new ActionRowBuilder<ButtonBuilder>().addComponents(...lfg_post_buttons())]
     });
 
     // post in logs
@@ -233,9 +233,11 @@ export async function parsedPostBuilder(
             .filter(r => selectedSnowflakes.has(r.role_id))
             .map(r => r.id)
     }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const lfgPostTable = await LfgSystemRepo.registerPost(lfgPostFull);
 
     await LfgSystemRepo.setCooldown(guild.id, member.id, gameId); // put poster on cooldown
     // attach the collector to the lfg post
-    await lfg_post_collector(postMessage, lfgPostTable);
+    // delete and dump buttons were removed so there is nothing to collect
+    // await lfg_post_collector(postMessage, lfgPostTable);
 }
