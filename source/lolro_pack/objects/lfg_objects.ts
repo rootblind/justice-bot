@@ -46,6 +46,18 @@ export const lfgParserConfig: LfgParserConfig = {
         {
             name: "featured gamemode",
             alias: ["urf", "arurf"]
+        },
+        {
+            name: "hyperroll",
+            alias: ["hyper"]
+        },
+        {
+            name: "doubleup",
+            alias: ["double"]
+        },
+        {
+            name: "tft",
+            alias: []
         }
     ],
     roles: [
@@ -54,8 +66,8 @@ export const lfgParserConfig: LfgParserConfig = {
             alias: ["toplane"]
         },
         {
-            name: "jungle",
-            alias: ["jg", "jng", "padure", "padurar"]
+            name: "jg",
+            alias: ["jungle", "jng", "padure", "padurar"]
         },
         {
             name: "mid",
