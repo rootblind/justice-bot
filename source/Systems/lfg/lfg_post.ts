@@ -354,7 +354,10 @@ export async function lfg_post_builder(
     // if the game doesn't have roles or ranks, they won't be added to the modal
     // a minimum modal would be composed of 1, 2 and 5
 
-    const modal = new ModalBuilder().setCustomId("post-modal").setTitle("Post Builder");
+    // if a modal is invoked multiple times, its filter needs to differenciate between instances
+    const now = timestampNow();
+    const modalId = `post-modal-${now}`;
+    const modal = new ModalBuilder().setCustomId(modalId).setTitle("Post Builder");
 
     // fetching the attached gamemodes
     const gamemodes = await LfgSystemRepo.getChannelGamemodesBySnowflake(channel.id);
@@ -387,8 +390,11 @@ export async function lfg_post_builder(
         const submit = await interaction.awaitModalSubmit({
             time: 300_000,
             filter: (i) => i.user.id === interaction.user.id
+                && i.customId === modalId,
+
         });
-        await submit.deferReply({ flags: MessageFlags.Ephemeral });
+
+        if (!submit.deferred && !submit.replied) await submit.deferReply({ flags: MessageFlags.Ephemeral });
         // slots validates if the input is a number
         const slots = Number(submit.fields.getTextInputValue("slots-input"));
         if (Number.isNaN(slots) || slots < 1) {
