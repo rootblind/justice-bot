@@ -132,6 +132,7 @@
               "description": "You have no one to transfer the ownership to!",
               "title": "You're the only one in the room"
             },
+            "failed_to_fetch_member": "Something went wrong while fetching the selected user...",
             "option_description": "Assign {{username}} as the new owner",
             "select_placeholder": "Select a new owner from the room...",
             "success": "{{member}} is the new owner of {{channel}}"

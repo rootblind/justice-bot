@@ -24,6 +24,8 @@ export function select_block_row() {
     return new ActionRowBuilder<UserSelectMenuBuilder>().addComponents(selectUsersBlock);
 }
 
+export const BLOCKED_GUILDMEMBER_LIMIT = 1024;
+
 export async function add_block_collector(
     message: Message,
     member: GuildMember,
@@ -42,13 +44,13 @@ export async function add_block_collector(
             async (selectInteraction) => {
                 if (selectInteraction.customId !== "select-users-block") return;
                 const blockedCount = await BlockSystemRepo.blockedByMemberCount(guild.id, member.id);
-                if (blockedCount >= 32) {
+                if (blockedCount >= BLOCKED_GUILDMEMBER_LIMIT) {
                     await selectInteraction.reply({
                         flags: MessageFlags.Ephemeral,
                         embeds: [
                             embed_error(
                                 "Your blocked list is full!\nYou can make room by unblocking some users.",
-                                "Maximum amount of blocked users reached [32/32]"
+                                `Maximum amount of blocked users reached [${blockedCount} / ${BLOCKED_GUILDMEMBER_LIMIT}]`
                             )
                         ]
                     });

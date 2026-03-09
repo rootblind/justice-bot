@@ -132,6 +132,7 @@
               "description": "Nu ai cui să transferi proprietatea!",
               "title": "Ești singur în cameră"
             },
+            "failed_to_fetch_member": "Ceva nu a mers bine în timpul preluării membrului selectat ...",
             "option_description": "Atribuie-l pe {{username}} ca nou proprietar",
             "select_placeholder": "Selectează un nou proprietar din cameră...",
             "success": "{{member}} este noul proprietar al canalului {{channel}}"

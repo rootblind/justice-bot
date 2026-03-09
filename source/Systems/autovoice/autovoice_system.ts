@@ -823,7 +823,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         return;
                     }
 
-                    const memberList = room.members.map((m) => m).filter((m) => m.id !== member.id);
+                    const memberList = room.members.map((m) => m).filter((m) => m.id !== member.id && !m.user.bot);
                     if (memberList.length === 0) {
                         await buttonInteraction.reply({
                             embeds: [
@@ -872,7 +872,17 @@ export async function attach_autovoice_manager_collector(message: Message) {
                         async (selectInteraction) => {
                             if (selectInteraction.customId !== "select-new-owner") return;
                             if (!selectInteraction.values[0]) return;
+
                             const newOwnerId = selectInteraction.values[0];
+                            const newOwnerMember = room.members.get(newOwnerId);
+
+                            if (!newOwnerMember) {
+                                await selectInteraction.reply({
+                                    flags: MessageFlags.Ephemeral,
+                                    embeds: [embed_error(t(locale, "systems.autovoice.interface.collector.transfer.failed_to_fetch_member"))]
+                                });
+                                return;
+                            }
 
                             const isStillOwner = await AutoVoiceRoomRepo.isRoomOwner(guild.id, member.id, room.id);
                             if (!isStillOwner) {
@@ -895,7 +905,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
                             }
 
                             // give perms to the new owner
-                            await room.permissionOverwrites.edit(newOwnerId, {
+                            await room.permissionOverwrites.edit(newOwnerMember, {
                                 ViewChannel: true,
                                 SendMessages: true,
                                 Connect: true,
