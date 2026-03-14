@@ -12,7 +12,35 @@
       }
     }
   },
-  "commands": {},
+  "commands": {
+    "moderator": {
+      "custom_react": {
+        "description": "Setează bot-ul pentru a răspunde unor cuvinte sau fraze.",
+        "subcommands": {
+          "add": {
+            "name": "adaugă",
+            "description": "Adaugă o nouă reacție",
+            "success": "Reacție adaugată cu succes"
+          },
+          "remove": {
+            "name": "elimină",
+            "description": "Elimină o reacție custom",
+            "success": "**{{string}}** a fost eliminat",
+            "no_delete": "Cuvântul cheie introdus nu există. Nimic nu a fost eliminat."
+          },
+          "list": {
+            "name": "listă",
+            "description": "Listează toate reacțiile custom",
+            "empty_list": {
+              "title": "Nu există reacții",
+              "description": "Setează reacții folosind `/custom-react adaugă`."
+            },
+            "author": "{{string}} reacții custom"
+          }
+        }
+      }
+    }
+  },
   "events": {},
   "systems": {
     "autovoice": {

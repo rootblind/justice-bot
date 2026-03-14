@@ -12,7 +12,35 @@
       }
     }
   },
-  "commands": {},
+  "commands": {
+    "moderator": {
+      "custom_react": {
+        "description": "Set up the bot to reply to a specific key word or phrase.",
+        "subcommands": {
+          "add": {
+            "name": "add",
+            "description": "Add a new custom reaction.",
+            "success": "Custom reaction added successfully"
+          },
+          "remove": {
+            "name": "remove",
+            "description": "Remove a custom reaction",
+            "success": "**{{string}}** has been removed",
+            "no_delete": "The keyword provided does not exist. Nothing was removed."
+          },
+          "list": {
+            "name": "list",
+            "description": "List all custom reactions",
+            "empty_list": {
+              "title": "No custom reactions added.",
+              "description": "Set some with `/custom-react add`."
+            },
+            "author": "{{string}} custom reactions"
+          }
+        }
+      }
+    }
+  },
   "events": {},
   "systems": {
     "autovoice": {
