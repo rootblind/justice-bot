@@ -117,10 +117,9 @@ export async function delete_autovoice_room(voiceRoom: VoiceChannel) {
     const guild = voiceRoom.guild;
     const isAutoVoiceRoom = await AutoVoiceRoomRepo.isAutoVoiceRoom(guild.id, voiceRoom.id);
     if (!isAutoVoiceRoom) return; // if the channel is not autovoice room, ignore it
-
+    await AutoVoiceRoomRepo.deleteRoom(guild.id, voiceRoom.id);
     try {
-        voiceRoom.delete();
-        await AutoVoiceRoomRepo.deleteRoom(guild.id, voiceRoom.id);
+        await voiceRoom.delete();
     } catch (error) {
         await errorLogHandle(error);
     }

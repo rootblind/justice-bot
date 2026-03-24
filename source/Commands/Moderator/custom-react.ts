@@ -74,7 +74,7 @@ const customReact: ChatCommand = {
                 await interaction.reply({
                     embeds: [embed_message("Green",
                         `**${key}**: ${reply}`,
-                        t(locale, "commands.moderator.custom_reaction.subcommands.add.success")
+                        t(locale, "commands.moderator.custom_react.subcommands.add.success")
                     )]
                 });
                 break;
