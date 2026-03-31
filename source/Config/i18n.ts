@@ -1,4 +1,4 @@
-import i18next, { TOptions } from "i18next";
+import i18next, { type TFunction, type TOptions } from "i18next";
 import Backend from "i18next-fs-backend";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -38,10 +38,10 @@ export function t(
     key: string,
     options?: TOptions
 ): string {
-    const fixedT = i18next.getFixedT(lang);
+    const fixedT: TFunction = i18next.getFixedT<string>(lang) as TFunction;
 
     return options
-        ? fixedT(key, options)
+        ? fixedT(key, options as Record<string, unknown>)
         : fixedT(key);
 }
 

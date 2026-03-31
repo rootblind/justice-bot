@@ -9,7 +9,7 @@ import { rm } from "fs/promises";
 import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
 import PremiumKeyRepo from "../Repositories/premiumkey.js";
-import { LabelsClassification, TimeStringUnit } from "../Interfaces/helper_types.js";
+import { HexcolorRole, LabelsClassification, TimeStringUnit } from "../Interfaces/helper_types.js";
 import csvWriter from "csv-write-stream";
 import csvParse from "csv-parser";
 import path from "path";
@@ -544,4 +544,24 @@ export function chunkStrings(lines: string[], limit: number, join_character: str
     }
 
     return chunks;
+}
+
+export function hexcolorParser(hexcode: string, pattern: RegExp):
+    null | HexcolorRole {
+
+    const match = hexcode.match(pattern);
+    if (!match || !match[1]) return null;
+    const color1 = match[1];
+    const color2 = match[2] ?? null;
+
+    return { color1, color2 };
+}
+
+/**
+ * 
+ * @param hexcode Hexadecimal number with values only. Ex: 0561ba
+ * @returns The value as a number
+ */
+export function numifyHexString(hexcode: string): number {
+    return Number("0x" + hexcode);
 }

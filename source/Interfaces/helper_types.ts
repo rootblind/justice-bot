@@ -111,6 +111,11 @@ export interface TicketSubjectContext {
   staffRole: Role
 }
 
+export interface HexcolorRole {
+  color1: string,
+  color2: string | null
+};
+
 export type {
   PresenceConfig,
   PresencePreset,
