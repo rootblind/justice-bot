@@ -247,3 +247,11 @@ export interface GuildPlanTable {
     planSince: string,
     expiresAt: string | null
 }
+
+export interface DailyMessageObject {
+    guild: Snowflake,
+    channel: Snowflake,
+    messageid: Snowflake,
+    message: string,
+    schedule: string
+}

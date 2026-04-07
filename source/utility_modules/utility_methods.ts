@@ -361,6 +361,42 @@ export function isSnowflake(value: Snowflake): value is string {
 }
 
 
+const DAY_TIME_PATTERN = /^(\d{2}):(\d{2})$/;
+/**
+ * 
+ * @param time A string
+ * @returns True if time respects the 24h time format such as "12:23" or false if it doesn't
+ */
+export function isDayTime(time: string): boolean {
+    const match = time.match(DAY_TIME_PATTERN);
+
+    if (!match) return false;
+
+    const [, hourStr, minuteStr] = match;
+    const hour = Number(hourStr);
+    const minute = Number(minuteStr);
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return false;
+
+    return true;
+}
+
+/**
+ * 
+ * @param time A string expected to represent the time of the day
+ * @returns The cron schedule string
+ * @throws Error if the given string is invalid
+ */
+export function dayTimeToCron(time: string): string {
+    const isValid = isDayTime(time);
+    if (!isValid) throw new Error("dayTimeToCron was called on an invalid string: " + time);
+    // isValid guarantees the string is valid
+    const match = time.match(DAY_TIME_PATTERN)!;
+    const [, hourStr, minuteStr] = match;
+
+    return `${minuteStr} ${hourStr} * * *`;
+}
+
 /**
  * Regex to match duration inputs such as 1m (one minute); 2h (two hours); 99y (ninety nine years)
  */

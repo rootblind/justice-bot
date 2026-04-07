@@ -22,6 +22,8 @@ import AutoVoiceRoomRepo from "../Repositories/autovoiceroom.js";
 import { EmbedBuilder, Message, TextChannel, VoiceChannel } from "discord.js";
 import TicketSystemRepo from "../Repositories/ticketsystem.js";
 import LfgSystemRepo from "../Repositories/lfgsystem.js";
+import DailyMessageRepo from "../Repositories/dailymessage.js";
+import { build_cron_daily_message, init_daily_message_task } from "../Systems/components/dailymessage.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -249,6 +251,25 @@ export const cleanExpiredLfgPosts: OnReadyTaskBuilder = {
             }
         }
         await LfgSystemRepo.deleteExpiredPosts(duration_to_seconds("1h")!); // clean the database of expired posts
+    },
+    runCondition: async () => true
+}
+
+export const startDailyMessageSchedulers: OnReadyTaskBuilder = {
+    name: "Daily Message Schedulers",
+    task: async () => {
+        const client = getClient();
+        const rows = await DailyMessageRepo.getTable();
+        for (const row of rows) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const task = await init_daily_message_task(guild, row);
+                await build_cron_daily_message(task);
+            } catch (error) {
+                await errorLogHandle(error);
+                await DailyMessageRepo.delete(row.guild, row.messageid);
+            }
+        }
     },
     runCondition: async () => true
 }

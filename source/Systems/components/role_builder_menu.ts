@@ -8,7 +8,6 @@ import {
     ModalBuilder,
     PermissionResolvable,
     Role,
-    RoleColors,
     RoleColorsResolvable,
     RoleCreateOptions,
     TextInputBuilder,
