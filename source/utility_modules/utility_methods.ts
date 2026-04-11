@@ -582,7 +582,7 @@ export function chunkStrings(lines: string[], limit: number, join_character: str
     return chunks;
 }
 
-export function hexcolorParser(hexcode: string, pattern: RegExp):
+export function hexcolorParser(hexcode: string, pattern: RegExp = /^([0-9A-Fa-f]{6})(?:-([0-9A-Fa-f]{6}))?$/):
     null | HexcolorRole {
 
     const match = hexcode.match(pattern);

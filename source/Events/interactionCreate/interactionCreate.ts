@@ -134,7 +134,7 @@ const interactonCreate: Event = {
 
                     return await interaction.reply({
                         embeds: [embed_error(
-                            `You have lack permission \`${permission_names(permission)[0]}\` to use /${command.data.name}`
+                            `You lack permission \`${permission_names(permission)[0]}\` to use /${command.data.name}`
                         )],
                         flags: MessageFlags.Ephemeral
                     });

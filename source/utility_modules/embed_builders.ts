@@ -19,6 +19,7 @@ import type {
     TextChannel,
     RestOrArray,
     APIEmbedField,
+    Role,
 } from "discord.js";
 import { decryptor, formatDate, formatTime } from "./utility_methods.js";
 import { ClassifierResponse } from "../Interfaces/helper_types.js";
@@ -1168,4 +1169,46 @@ export function embed_new_autorule(
         })
         .setTimestamp()
         .setFooter({ text: `Admin ID: ${admin.id}` });
+}
+
+export function embed_role_details(
+    role: Role,
+    description?: string,
+    title?: string,
+    color: ColorResolvable = "Green"
+): EmbedBuilder {
+    const colorsString = `${role.colors.primaryColor}${role.colors.secondaryColor ? `- ${role.colors.secondaryColor}` : ""}`;
+    const embed = new EmbedBuilder()
+        .setColor(color)
+        .setFields(
+            {
+                name: "Name",
+                value: role.name
+            },
+            {
+                name: "Color",
+                value: colorsString
+            },
+            {
+                name: "Created",
+                value: `<t:${Math.floor(role.createdTimestamp / 1000)}:R>`
+            },
+            {
+                name: "Member count",
+                value: `${role.members.size}`
+            },
+            {
+                name: "Permissions",
+                value: `✒️ ${permission_names(role.permissions).join(", ")}`
+            },
+            {
+                name: "Position",
+                value: `${role.position}`
+            }
+        )
+    if (role.iconURL()) embed.setThumbnail(role.iconURL());
+    if (description) embed.setDescription(description);
+    if (title) embed.setTitle(title);
+
+    return embed;
 }

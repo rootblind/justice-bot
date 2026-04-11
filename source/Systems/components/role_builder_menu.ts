@@ -44,7 +44,8 @@ export function role_create_modal(): ModalBuilder {
         .setTextInputComponent(hexcolorTextInput)
 
     const iconFileInput: FileUploadBuilder = new FileUploadBuilder()
-        .setCustomId("icon-file-input");
+        .setCustomId("icon-file-input")
+        .setRequired(false);
     const iconFileLabel: LabelBuilder = new LabelBuilder()
         .setLabel("Icon")
         .setDescription("Upload the role icon (under 256KB).")
@@ -119,7 +120,7 @@ export async function role_builder(
     guild: Guild,
     name: string,
     hexcolors: HexcolorRole,
-    icon: Attachment,
+    icon?: Attachment,
     position?: number,
     permissions?: PermissionResolvable
 ): Promise<Role> {
@@ -138,7 +139,7 @@ export async function role_builder(
     };
     if (position) roleOptions.position = position;
 
-    if (guild.premiumTier > GuildPremiumTier.Tier2) roleOptions.icon = icon.url;
+    if (guild.premiumTier > GuildPremiumTier.Tier2 && icon) roleOptions.icon = icon.url;
 
     const role: Role = await guild.roles.create(roleOptions);
     return role;
