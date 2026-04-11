@@ -1,6 +1,7 @@
 import { GuildMember, PermissionFlagsBits, SlashCommandBuilder } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import { role_create_modal } from "../../Systems/components/role_builder_menu.js";
+import { handleModalCatch } from "../../utility_modules/discord_helpers.js";
 
 const roleCommand: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -45,7 +46,7 @@ const roleCommand: ChatCommand = {
 
                     console.log(iconFile);
                 } catch (error) {
-                    console.error(error);
+                    await handleModalCatch(error);
                 }
                 break;
             }

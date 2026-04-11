@@ -1,4 +1,4 @@
-import { Guild, TextChannel } from "discord.js";
+import { DiscordAPIError, Guild } from "discord.js";
 import { DailyMessageObject } from "../../Interfaces/database_types.js";
 import { CronString, CronTaskBuilder } from "../../Interfaces/helper_types.js";
 import DailyMessageRepo from "../../Repositories/dailymessage.js";
@@ -18,15 +18,17 @@ export async function init_daily_message_task(guild: Guild, dailyMessageObj: Dai
         job: async () => {
             try {
                 const channel = await fetchGuildChannel(guild, dailyMessageObj.channel);
-                if (!(channel instanceof TextChannel)) throw new Error("Daily message channel failed to fetch " + dailyMessageObj.channel);
+                if (!channel?.isTextBased()) throw new Error("Daily message channel failed to fetch " + dailyMessageObj.channel);
                 const oldMessage = await fetchMessage(channel, dailyMessageObj.messageid);
                 const newMessage = await channel.send(dailyMessageObj.message);
-
                 await DailyMessageRepo.update(guild.id, dailyMessageObj.messageid, newMessage.id);
+                dailyMessageObj.messageid = newMessage.id;
                 if (oldMessage) await oldMessage.delete();
             } catch (error) {
                 console.error(error);
-                DailyMessageRepo.delete(dailyMessageObj.guild, dailyMessageObj.messageid);
+                if (error instanceof DiscordAPIError && error.code === 10004) {
+                    DailyMessageRepo.delete(dailyMessageObj.guild, dailyMessageObj.messageid);
+                }
             }
         },
         runCondition: async () => await run_condition(dailyMessageObj.guild, dailyMessageObj.messageid)
