@@ -6,7 +6,7 @@ export const GUILD_PLANS = {
   },
   premium: {
     autoVoiceSystem: {
-      maxSlots: 4
+      maxSlots: 10
     }
   }
 } as const;
