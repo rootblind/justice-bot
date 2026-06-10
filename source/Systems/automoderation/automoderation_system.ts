@@ -85,6 +85,7 @@ export async function attach_flagged_message_collector(message: Message, respons
                         content: `Confirmed labels: ${response.labels.join(", ")}\nMessage ID: ${message.id}`
                     });
                     if (local_config_sources.flag_data) csv_append(response.text, flagTags, "flag_data.csv");
+                    buttonCollector.stop();
                     break;
                 case "adjust": {
                     const tags = ["Aggro", "Violence", "Sexual", "Hateful"];
