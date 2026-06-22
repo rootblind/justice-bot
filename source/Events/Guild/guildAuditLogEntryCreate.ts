@@ -64,7 +64,7 @@ const guildAuditLogEntryCreate: Event = {
                 const targetMember = await fetchGuildMember(guild, auditLogEntry.target.id);
                 if (targetMember && targetMember.isCommunicationDisabled()) {
                     const expirationTimestamp = Math.floor(targetMember.communicationDisabledUntilTimestamp / 1000);
-                    const expirationString = seconds_to_duration(expirationTimestamp);
+                    const expirationString = seconds_to_duration(expirationTimestamp - Math.floor(Date.now() / 1000));
                     const executorMember = await fetchGuildMember(guild, auditLogEntry.executorId!);
                     try {
                         await moderationLogsChannel.send({
