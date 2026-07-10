@@ -472,6 +472,18 @@ export function duration_to_seconds(durationString: string): number | null {
 }
 
 /**
+ * Uses duration_to_seconds for conversions.
+ * 
+ * @param durationString durationRegex compatible string ex: "3h"
+ * @returns Duration in milliseconds or null if the string given is invalid.
+ */
+export function duration_to_milliseconds(durationString: string): number | null {
+    const seconds = duration_to_seconds(durationString);
+    if (seconds) return seconds * 1000;
+    return null;
+}
+
+/**
  * Calculates the size in bytes of the number given and returns a string of the value and unit
  */
 export function formatBytes(bytes: number, decimals = 2): string {

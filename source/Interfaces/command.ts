@@ -23,20 +23,27 @@ export interface ChatCommandMetadata {
     disabled?: boolean
 }
 
-export type ChatCommandGroup =
-    | "global"
-    | "premium"
-    | "autovoice"
-    | "block"
-    | "lfg"
-    | "moderation"
-    | "ticket"
+export const CHAT_COMMAND_GROUPS = [
+    "global",
+    "premium",
+    "autovoice",
+    "block",
+    "lfg",
+    "moderation",
+    "ticket",
+] as const;
+
+export type ChatCommandGroup = typeof CHAT_COMMAND_GROUPS[number];
+
+export const CHAT_COMMAND_CATEGORIES = [
+    "Info",
+    "Administrator",
+    "Owner",
+    "Social",
+    "Staff",
+    "Moderator",
+    "Miscellaneous",
+] as const;
 
 export type ChatCommandCategory =
-    | "Info"
-    | "Administrator"
-    | "Owner"
-    | "Social"
-    | "Staff"
-    | "Moderator"
-    | "Miscellaneous"
+    typeof CHAT_COMMAND_CATEGORIES[number];

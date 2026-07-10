@@ -23,6 +23,20 @@ class GuildModulesRepository {
     }
 
     /**
+     * Set the disabled modules, overriding previous data
+     */
+    async set(guildId: Snowflake, groups: string[]) {
+        guildModulesCache.set(guildId, [...new Set(groups)]);
+        await database.query(
+            `INSERT INTO guildmodules (guild, disabled_groups)
+            VALUES ($1, $2)
+            ON CONFLICT (guild) DO UPDATE
+            SET disabled_groups = EXCLUDED.disabled_groups`,
+            [guildId, [...new Set(groups)]]
+        );
+    }
+
+    /**
      * Enabling/disabling works on a negative logic, everything in the array is disabled 
      * so disable adds the groups to the array
      * @param guildId Guild Snowflake
@@ -102,7 +116,7 @@ class GuildModulesRepository {
             `SELECT * FROM guildmodules`
         );
 
-        for(const row of data) {
+        for (const row of data) {
             guildModulesCache.set(row.guild, row.disabled_groups);
         }
         return data;
