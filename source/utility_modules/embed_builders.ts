@@ -1177,7 +1177,7 @@ export function embed_role_details(
     title?: string,
     color: ColorResolvable = "Green"
 ): EmbedBuilder {
-    const colorsString = `${role.colors.primaryColor}${role.colors.secondaryColor ? `- ${role.colors.secondaryColor}` : ""}`;
+    const colorsString = `${role.colors.primaryColor}${role.colors.secondaryColor ? ` - ${role.colors.secondaryColor}` : ""}`;
     const embed = new EmbedBuilder()
         .setColor(color)
         .setFields(
@@ -1198,14 +1198,16 @@ export function embed_role_details(
                 value: `${role.members.size}`
             },
             {
-                name: "Permissions",
-                value: `✒️ ${permission_names(role.permissions).join(", ")}`
-            },
-            {
                 name: "Position",
                 value: `${role.position}`
             }
         )
+    if (role.permissions.toArray().length > 1) {
+        embed.addFields({
+            name: "Permissions",
+            value: `✒️ ${permission_names(role.permissions.toArray()).join(", ")}`
+        });
+    }
     if (role.iconURL()) embed.setThumbnail(role.iconURL());
     if (description) embed.setDescription(description);
     if (title) embed.setTitle(title);

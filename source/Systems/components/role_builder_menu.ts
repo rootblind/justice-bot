@@ -10,6 +10,7 @@ import {
     Role,
     RoleColorsResolvable,
     RoleCreateOptions,
+    RoleEditOptions,
     TextInputBuilder,
     TextInputStyle
 } from "discord.js";
@@ -19,17 +20,14 @@ import { HexcolorRole } from "../../Interfaces/helper_types.js";
 import { hexcolorParser, numifyHexString } from "../../utility_modules/utility_methods.js";
 
 export const HEXCOLOR_PATTERN = /^([0-9A-Fa-f]{6})(?:-([0-9A-Fa-f]{6}))?$/;
-export function role_create_modal(): ModalBuilder {
+
+export function role_input_modal() {
     const nameTextInput: TextInputBuilder = new TextInputBuilder()
         .setCustomId("role-name-input")
         .setMinLength(1)
         .setMaxLength(100)
         .setStyle(TextInputStyle.Short)
         .setRequired(true)
-    const nameLabel: LabelBuilder = new LabelBuilder()
-        .setLabel("Name")
-        .setDescription("The name of the role.")
-        .setTextInputComponent(nameTextInput);
 
     const hexcolorTextInput: TextInputBuilder = new TextInputBuilder()
         .setCustomId("hexcolor-input")
@@ -38,24 +36,45 @@ export function role_create_modal(): ModalBuilder {
         .setStyle(TextInputStyle.Short)
         .setPlaceholder("Ex: 2596be or 2596be-0561ba for gradient.")
         .setRequired(true)
+
+    const iconFileInput: FileUploadBuilder = new FileUploadBuilder()
+        .setCustomId("icon-file-input")
+        .setMaxValues(1)
+        .setRequired(false);
+
+    return { nameTextInput, hexcolorTextInput, iconFileInput };
+}
+
+/**
+ * Build the modal used to fetch input for role creation.
+ * 
+ * Contains name, hexcolor and icon.
+ * 
+ * @param edit_mode Set all input fields to be optional. Used for editing a role instead.
+ */
+export function role_create_modal(edit_mode: boolean = false): ModalBuilder {
+    const { nameTextInput, hexcolorTextInput, iconFileInput } = role_input_modal();
+    if (edit_mode === true) {
+        nameTextInput.setRequired(false);
+        hexcolorTextInput.setRequired(false);
+        iconFileInput.setRequired(false);
+    }
+    const nameLabel: LabelBuilder = new LabelBuilder()
+        .setLabel("Name")
+        .setDescription("The name of the role.")
+        .setTextInputComponent(nameTextInput);
     const hexcolorLabel: LabelBuilder = new LabelBuilder()
         .setLabel("Hexcolor")
         .setDescription("The hexcolor or hexcolors of the role.")
         .setTextInputComponent(hexcolorTextInput)
-
-    const iconFileInput: FileUploadBuilder = new FileUploadBuilder()
-        .setCustomId("icon-file-input")
-        .setRequired(false);
     const iconFileLabel: LabelBuilder = new LabelBuilder()
         .setLabel("Icon")
         .setDescription("Upload the role icon (under 256KB).")
         .setFileUploadComponent(iconFileInput);
-
     const roleCreateModal = new ModalBuilder()
         .setCustomId("role-create-modal")
         .setTitle("Create Role")
         .addLabelComponents(nameLabel, hexcolorLabel, iconFileLabel);
-
     return roleCreateModal;
 }
 
@@ -143,4 +162,44 @@ export async function role_builder(
 
     const role: Role = await guild.roles.create(roleOptions);
     return role;
+}
+
+export interface RoleModificationOptions {
+    name?: string,
+    colors?: HexcolorRole,
+    icon?: Attachment,
+    position?: number
+    // permissions not added
+}
+
+export async function role_editor_safe(
+    role: Role,
+    modify: RoleModificationOptions
+): Promise<Role> {
+    const guild = role.guild;
+    const roleEditOptions: RoleEditOptions = {};
+    const { name, colors, icon, position } = modify;
+    if (name) {
+        roleEditOptions.name = name
+    }
+    if (colors) {
+        const roleColors: RoleColorsResolvable = {
+            primaryColor: numifyHexString(colors.color1)
+        };
+        if (guild.features.includes(GuildFeature.EnhancedRoleColors) && colors.color2) {
+            roleColors.secondaryColor = numifyHexString(colors.color2);
+        }
+        roleEditOptions.colors = roleColors;
+    }
+
+    if (icon) {
+        if (guild.premiumTier > GuildPremiumTier.Tier2) roleEditOptions.icon = icon.url;
+    }
+
+    if (position) {
+        roleEditOptions.position = position;
+    }
+
+    const modifiedRole: Role = await role.edit(roleEditOptions);
+    return modifiedRole;
 }
