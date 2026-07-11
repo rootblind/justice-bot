@@ -60,7 +60,7 @@ export const lfgParserConfig: LfgParserConfig = {
             alias: []
         },
         {
-            name: "5v5s",
+            name: "5v5",
             alias: ["5v5", "5s"]
         }
     ],
