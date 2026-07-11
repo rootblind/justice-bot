@@ -58,6 +58,10 @@ export const lfgParserConfig: LfgParserConfig = {
         {
             name: "tft",
             alias: []
+        },
+        {
+            name: "5v5s",
+            alias: ["5v5", "5s"]
         }
     ],
     roles: [
