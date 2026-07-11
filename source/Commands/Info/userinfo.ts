@@ -40,6 +40,7 @@ const userInfo: ChatCommand = {
             .setFooter({ text: `User ID: ${user.id}` });
 
         if (member) {
+            embed.setImage(member.bannerURL({ size: 1024 }));
             embed.addFields({ name: "Tag", value: `${member}` });
             if (member.premiumSinceTimestamp) {
                 embed.addFields({
