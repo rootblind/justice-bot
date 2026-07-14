@@ -9,9 +9,9 @@ class BotConfigRepository {
      * @returns Bot's current stored configuration
      */
     async getConfig(): Promise<BotConfig | null> {
-        const {rows: res} = await database.query(`SELECT * FROM botconfig`);
-        
-        if(res.length) {
+        const { rows: res } = await database.query(`SELECT * FROM botconfig`);
+
+        if (res.length) {
             return res[0];
         } else {
             return null;
@@ -23,9 +23,9 @@ class BotConfigRepository {
      * @returns The backup schedule as CronString
      */
     async getBackupSchedule(): Promise<CronString | null> {
-        const {rows: res} = await database.query(`SELECT backup_db_schedule FROM botconfig`);
+        const { rows: res } = await database.query(`SELECT backup_db_schedule FROM botconfig`);
 
-        if(res.length && res[0].backup_db_schedule) {
+        if (res.length && res[0].backup_db_schedule) {
             return res[0].backup_db_schedule as CronString
         } else {
             return null;
@@ -37,16 +37,25 @@ class BotConfigRepository {
      * @returns Sets the default row for the bot's stored configuration
      */
     async setDefault(): Promise<BotConfig | null> {
-        const {rows: res} = await database.query(
+        const { rows: res } = await database.query(
             `INSERT INTO botconfig(id) VALUES($1) RETURNING *`,
-            [ get_env_var("CLIENT_ID") ]
+            [get_env_var("CLIENT_ID")]
         );
 
-        if(res.length) {
+        if (res.length) {
             return res[0];
         } else {
             return null;
         }
+    }
+
+    async updateBackupSchedule(schedule: CronString | null): Promise<BotConfig> {
+        const { rows: res } = await database.query(
+            `UPDATE botconfig SET backup_db_schedule=$1 RETURNING *;`,
+            [schedule]
+        );
+
+        return res[0]!.backup_db_schedule;
     }
 }
 

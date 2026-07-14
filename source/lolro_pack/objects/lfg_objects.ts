@@ -61,7 +61,7 @@ export const lfgParserConfig: LfgParserConfig = {
         },
         {
             name: "5v5",
-            alias: ["5v5", "5s"]
+            alias: ["5v5s", "5s"]
         }
     ],
     roles: [

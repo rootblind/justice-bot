@@ -15,9 +15,13 @@ import csvParse from "csv-parser";
 import path from "path";
 import GuildModulesRepo from "../Repositories/guildmodules.js";
 import { ChatCommandGroup } from "../Interfaces/command.js";
-import { URL } from "url";
+import { fileURLToPath, URL } from "url";
 import https from "https";
 import { pipeline } from "stream/promises";
+import { spawn } from "child_process";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * 
@@ -612,4 +616,60 @@ export function hexcolorParser(hexcode: string, pattern: RegExp = /^([0-9A-Fa-f]
  */
 export function numifyHexString(hexcode: string): number {
     return Number("0x" + hexcode);
+}
+
+export function generateBackupFileName() {
+    return `db_bk_${new Date()
+        .toISOString()
+        .replace(/:/g, "_")
+        .replace(/\..+/, "")}.sql`;
+}
+
+interface BackupDumpResponse {
+    fileName: string,
+    path: string,
+    created: string
+};
+
+export function createBackupDump(): Promise<BackupDumpResponse> {
+    return new Promise((resolve, reject) => {
+        const dumpDir = path.join(__dirname, "../../backup-db");
+        const fileName = generateBackupFileName();
+        const output = path.join(dumpDir, fileName);
+
+        const username = get_env_var("DBUSER");
+        const database = get_env_var("DBNAME");
+        const password = get_env_var("DBPASS");
+
+        const child = spawn(
+            "pg_dump",
+            [
+                "-U", username,
+                "-d", database,
+                "-Fc",
+                "-f", output
+            ],
+            {
+                env: {
+                    PGPASSWORD: password
+                }
+            }
+        );
+
+        let stderr = "";
+
+        child.stderr.on("data", data => {
+            stderr += data.toString();
+        });
+
+        child.on("error", reject);
+
+        child.on("close", code => {
+            if (code !== 0) {
+                reject(new Error(stderr));
+            } else {
+                resolve({ fileName, path: output, created: `${timestampNow()}` });
+            }
+        });
+    });
 }

@@ -138,8 +138,7 @@ export function wrong_lfg_format(locale: Locale = Locale.EnglishUS, color: Color
         .addFields({
             name: t(locale, "lolro.lfg_parser.wrong.field.name"),
             value: t(locale, "lolro.lfg_parser.wrong.field.value")
-        })
-        .setFooter({ text: t(locale, "lolro.lfg_parser.wrong.footer") })
+        });
 }
 
 export async function parsedPostBuilder(
