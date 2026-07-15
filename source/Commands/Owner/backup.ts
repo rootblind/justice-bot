@@ -9,7 +9,7 @@ import {
 import { ChatCommand } from "../../Interfaces/command.js";
 import fs from "fs/promises";
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
-import { createBackupDump } from "../../utility_modules/utility_methods.js";
+import { archive_directory, createBackupDump, timestampNow } from "../../utility_modules/utility_methods.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import cron, { ScheduledTask } from "node-cron";
 import { CronString } from "../../Interfaces/helper_types.js";
@@ -17,8 +17,7 @@ import BotConfigRepo from "../../Repositories/botconfig.js";
 import { build_cron } from "../../utility_modules/cronHandler.js";
 import { message_collector } from "../../utility_modules/discord_helpers.js";
 import path from "path";
-import archiver from "archiver";
-import { createWriteStream } from "fs";
+import { local_config } from "../../objects/local_config.js";
 
 let schedule: ScheduledTask | null = null; // declaring the schedule here for session persistence
 
@@ -62,7 +61,7 @@ const backupCommand: ChatCommand = {
     metadata: {
         userPermissions: [],
         botPermissions: [],
-        cooldown: 1, // testing 
+        cooldown: 10,
         group: "global",
         scope: "global",
         category: "Owner",
@@ -72,7 +71,7 @@ const backupCommand: ChatCommand = {
         const options = interaction.options;
         const subcommand = options.getSubcommand();
 
-        const dirPath = "./backup-db"; // the backup directory path
+        const dirPath = local_config.sources.backup_db; // the backup directory path
         const dumpFiles = (await fs.readdir(dirPath)).map(file => file);
         await interaction.deferReply();
 
@@ -260,25 +259,13 @@ const backupCommand: ChatCommand = {
                         await buttonInteraction.deferReply();
 
                         try {
-                            const archivePath = "./temp/backup_dump.tar";
-                            const outputStream = createWriteStream(archivePath);
-                            const archive = archiver("tar");
-                            archive.on("error", (error) => { throw error; });
-                            archive.directory(dirPath, false);
-                            archive.pipe(outputStream);
-
-                            await new Promise<void>((resolve, reject) => {
-                                outputStream.on("close", resolve);
-                                outputStream.on("end", resolve);
-                                archive.on("error", reject);
-                                outputStream.on("error", reject);
-                                archive.finalize().catch(reject);
-                            });
+                            const archivePath = `${local_config.sources.temp}/backup_dump_${timestampNow()}.tar`;
+                            const archiveOutput = await archive_directory(dirPath, archivePath)
 
                             await buttonInteraction.editReply({
                                 embeds: [
                                     embed_message("Green",
-                                        `Database dump size: ${archive.pointer()} bytes.`
+                                        `Database dump size: ${archiveOutput.byte_size} bytes.`
                                     )
                                 ],
                                 files: [archivePath]

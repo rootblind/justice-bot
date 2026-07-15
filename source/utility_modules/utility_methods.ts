@@ -19,6 +19,8 @@ import { fileURLToPath, URL } from "url";
 import https from "https";
 import { pipeline } from "stream/promises";
 import { spawn } from "child_process";
+import { createWriteStream } from "fs";
+import archiver from "archiver";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -672,4 +674,41 @@ export function createBackupDump(): Promise<BackupDumpResponse> {
             }
         });
     });
+}
+
+export interface ArchiveDirectoryResponse {
+    output_path: string,
+    byte_size: number
+}
+/**
+ * Usage of this method should always go wrapped between try-catch.
+ * 
+ * The method doesn't clean up the archive so deleting the archive after dumping must be handled separately.
+ * 
+ * @param directorySource The directory to be archived
+ * @param outputArchivePath The destination to archive the directory source to. (full path and name)
+ * @returns The output path back
+ */
+export async function archive_directory(
+    directorySource: string,
+    outputArchivePath: string
+): Promise<ArchiveDirectoryResponse> {
+    const outputStream = createWriteStream(outputArchivePath);
+    const archive = archiver("tar");
+    archive.on("error", (error) => { throw error; });
+    archive.directory(directorySource, false);
+    archive.pipe(outputStream);
+
+    await new Promise<void>((resolve, reject) => {
+        outputStream.on("close", resolve);
+        outputStream.on("end", resolve);
+        archive.on("error", reject);
+        outputStream.on("error", reject);
+        archive.finalize().catch(reject);
+    });
+
+    return {
+        output_path: outputArchivePath,
+        byte_size: archive.pointer()
+    }
 }

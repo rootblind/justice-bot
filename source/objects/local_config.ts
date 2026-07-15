@@ -12,6 +12,8 @@ export const local_config: LocalConfig = {
         flag_data: "./flag_data.csv",
         self_flag_data: "./self_flag_data.csv",
         error_dumps: "./error_dumps",
+        backup_db: "./backup-db",
+        temp: "./temp",
         event_hooks: "./event_hooks.js",
         attach_collectors: "./attach_collectors.js"
     },
@@ -44,6 +46,8 @@ export interface LocalConfigSources {
     flag_data: string,
     self_flag_data: string,
     error_dumps: string,
+    backup_db: string,
+    temp: string,
     event_hooks: string,
     attach_collectors: string
 }
