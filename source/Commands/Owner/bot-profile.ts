@@ -239,7 +239,7 @@ const botProfile: ChatCommand = {
                             ],
                             status: "online"
                         });
-                        presenceConfig.status = "disabled";
+                        presenceConfig.status = "disable";
                         try {
                             await write_json_async(presenceConfigPath, presenceConfig);
                             await interaction.editReply({
@@ -247,7 +247,7 @@ const botProfile: ChatCommand = {
                                     embed_message(
                                         "Green",
                                         `${botUser.username} is now **${activityString}**\n` +
-                                        "Auto-update status is now set to **disabled**.",
+                                        "Auto-update status is now set to **disable**.",
                                         "Bot presence updated"
                                     )
                                 ]
