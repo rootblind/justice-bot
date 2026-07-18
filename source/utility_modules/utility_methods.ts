@@ -156,6 +156,33 @@ export function read_json_async(filePath: string, encoding: string = "utf-8") {
 }
 
 /**
+ * Writes a JSON object to a file.
+ *
+ * @param filePath string path to the JSON file
+ * @param data the value to serialize as JSON
+ * @param encoding string encoding to be used, defaults to "utf-8"
+ * @throws Error if the file is not a JSON file or the data cannot be serialized
+ */
+export async function write_json_async(
+    filePath: string,
+    data: unknown,
+    encoding: BufferEncoding = "utf-8"
+): Promise<void> {
+    if (!filePath.endsWith(".json")) {
+        throw new Error("write_json_async writes only JSON files.");
+    }
+
+    let json: string;
+    try {
+        json = JSON.stringify(data, null, 4);
+    } catch {
+        throw new Error("Failed to serialize data as JSON.");
+    }
+
+    await fs.writeFile(filePath, json, { encoding });
+}
+
+/**
  * Pseudo random number from minimum (default 0) to maximum
  * 
  * Swaps maximum and minimum if minimum > maximum so order doesn't matter

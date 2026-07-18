@@ -8,6 +8,7 @@ import {
     APIApplicationCommandSubcommandGroupOption,
     APIApplicationCommandSubcommandOption,
     ApplicationCommandOptionType,
+    Attachment,
     AutoModerationRuleTriggerType,
     ButtonInteraction,
     CacheType,
@@ -910,4 +911,16 @@ export async function gatewayStability(client: Client, silent: boolean = false) 
     }
 
     await new Promise(res => setTimeout(res, 5_000));
+}
+
+/**
+ * 
+ * @param file The attachment object to be validated as an image
+ * @param max_size The maximum size in bytes for the file size to be compared to
+ * @returns True if the file is an image of a byte size under max_size. Returns false otherwise 
+ */
+export function discord_image_validator(file: Attachment, max_size: number): boolean {
+    if (!file.contentType?.includes("image")) return false;
+    if (file.size >= max_size) return false;
+    return true;
 }

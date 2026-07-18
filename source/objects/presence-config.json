@@ -1,5 +1,5 @@
 {
-  "status": "enable",
-  "delay": 80000,
-  "type": 0
+    "status": "disabled",
+    "delay": 80000,
+    "type": 0
 }

@@ -57,6 +57,18 @@ class BotConfigRepository {
 
         return res[0]!.backup_db_schedule;
     }
+
+    /**
+     * Set the scope of the application to global or test
+     */
+    async setScope(scope: "global" | "test"): Promise<BotConfig> {
+        const { rows: res } = await database.query(
+            `UPDATE botconfig SET application_scope=$1 RETURNING *;`,
+            [scope]
+        );
+
+        return res[0]!.application_scope;
+    }
 }
 
 const BotConfigRepo = new BotConfigRepository();

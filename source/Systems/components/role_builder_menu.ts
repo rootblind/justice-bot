@@ -14,7 +14,7 @@ import {
     TextInputBuilder,
     TextInputStyle
 } from "discord.js";
-import { hasBlockedContent } from "../../utility_modules/discord_helpers.js";
+import { discord_image_validator, hasBlockedContent } from "../../utility_modules/discord_helpers.js";
 import { local_config } from "../../objects/local_config.js";
 import { HexcolorRole } from "../../Interfaces/helper_types.js";
 import { hexcolorParser, numifyHexString } from "../../utility_modules/utility_methods.js";
@@ -89,9 +89,8 @@ export async function role_name_validator(name: string, guild: Guild, use_filter
 }
 
 export function role_icon_validator(icon: Attachment): boolean {
-    if (!icon.contentType?.includes("image")) return false;
-    if (icon.size >= 256_000) return false;
-    return true;
+    const max_icon_size = 256_000;
+    return discord_image_validator(icon, max_icon_size);
 }
 
 /**
