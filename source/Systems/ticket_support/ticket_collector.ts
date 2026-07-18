@@ -250,7 +250,7 @@ export async function ticket_collector(message: Message, staffRoleId: string, su
 
                             // format message contents as: username [date] : message_content
                             messageLogString +=
-                                `${ticketMessage.author.username} [${ticketMessage.createdAt}] : ${ticketMessage.content}\n`;
+                                `[${ticketMessage.createdAt}] @${ticketMessage.author.username} : ${ticketMessage.content}\n`;
 
                             if (ticketMessage.attachments.size > 0) {
                                 // if the message has attachments, mark that fact in the message log
