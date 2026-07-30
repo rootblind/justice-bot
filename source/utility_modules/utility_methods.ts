@@ -8,7 +8,6 @@ import { mkdir } from "fs/promises";
 import { rm } from "fs/promises";
 import { errorLogHandle } from "./error_logger.js";;
 import crypto from "crypto";
-import PremiumKeyRepo from "../Repositories/premiumkey.js";
 import { HexcolorRole, LabelsClassification, TimeStringUnit } from "../Interfaces/helper_types.js";
 import csvWriter from "csv-write-stream";
 import csvParse from "csv-parser";
@@ -21,6 +20,7 @@ import { pipeline } from "stream/promises";
 import { spawn } from "child_process";
 import { createWriteStream } from "fs";
 import archiver from "archiver";
+import PremiumSystemRepo from "../Repositories/premiumsystem.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -290,19 +290,16 @@ export function decryptor(data: string): string {
  * a random plaintext code of length `min` to `max`, encrypts it, and checks
  * against existing encrypted codes for the guild to ensure uniqueness.
  * Repeats generation until a unique encrypted code is produced.
- *
- * @param guildId The ID of the guild for which the code is being generated.
  * @param min The minimum length of the plaintext code before encryption (default: 5).
  * @param max The maximum length of the plaintext code before encryption (default: 10).
  * @returns A unique encrypted code as a hex string.
  */
 export async function generate_unique_code(
-    guildId: Snowflake,
     min: number = 5,
     max: number = 10
 ): Promise<string> {
     let code = encryptor(random_code_generation(min, max)); // generate a code between 5-10 characters
-    const codes = await PremiumKeyRepo.getAllGuildCodes(guildId);
+    const codes = await PremiumSystemRepo.getAllCodes();
 
     // while the code already exists in the database for this guild, continue generating
     while (codes.includes(code)) code = encryptor(random_code_generation(min, max));

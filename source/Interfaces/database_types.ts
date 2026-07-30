@@ -62,19 +62,23 @@ export interface ServerRoles extends GuildTable {
 }
 
 export interface PremiumKey extends GuildTable {
-    code: Buffer,
-    generatedby: Snowflake,
-    createdat: Snowflake,
-    expiresat: Snowflake,
-    usesnumber: number,
-    dedicateduser: Snowflake | null,
+    code: Buffer;
+    tier: number;
+    generatedby: Snowflake;
+    createdat: number;
+    expiresat: number;
+    usesnumber: number;
+    dedicateduser: Snowflake | null;
 }
 
-export interface PremiumMembers extends GuildTable {
-    member: Snowflake,
-    code: Buffer,
-    customrole: Snowflake | null,
-    from_boosting: boolean
+export interface PremiumMember extends GuildTable {
+    member: Snowflake;
+    premiumkey_id: number;
+}
+
+export interface PremiumCustomRole {
+    premiummember_id: number;
+    role: Snowflake;
 }
 
 export interface BotConfig {
@@ -227,12 +231,6 @@ export const EVENT_GUILD_LOGS = [
 ] as const;
 
 export type EventGuildLogsString = typeof EVENT_GUILD_LOGS[number];
-
-export interface GuildMemberCustomRole {
-    guild: Snowflake,
-    member: Snowflake,
-    customrole: Snowflake | null
-};
 
 export type DbCacheKey = string;
 

@@ -3,8 +3,8 @@ import type { Event } from "../../Interfaces/event.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
-import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type roleDeleteHook = (role: Role) => Promise<void>;
 const hooks: roleDeleteHook[] = [];
@@ -13,10 +13,10 @@ export function extend_roleDelete(hook: roleDeleteHook) {
 }
 
 async function runHooks(role: Role) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(role);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -29,20 +29,20 @@ const roleDelete: Event = {
          * Deleting a role used or registered by one or more database tables must be curated
          */
         const guild: Guild = role.guild;
-        const property: ColumnValuePair = {column: "role", value: role.id}
+        const property: ColumnValuePair = { column: "role", value: role.id }
         const roleTablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
-        for(const table of roleTablesToBeCleaned) {
+        for (const table of roleTablesToBeCleaned) {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
 
         property.column = "roleid";
         const roleIdTablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
-        for(const table of roleIdTablesToBeCleaned) {
+        for (const table of roleIdTablesToBeCleaned) {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
 
-        // if the role is a custom role, nullify it from the table
-        await PremiumMembersRepo.nullifyCustomRole(guild.id, role.id);
+        // if the role is a custom role, remove it from the table
+        await PremiumSystemRepo.removeCustomRole(role.id);
         await runHooks(role);
 
         // clean lfg-system related roles

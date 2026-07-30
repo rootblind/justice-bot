@@ -45,7 +45,9 @@ export const toxic_patterns: LocalConfigToxicPatterns = {
 		"esti muist",
 		"suck my dick",
 		"fuck you",
-		"pizda"
+		"pizda",
+		"futere",
+		"futem"
 	],
 
 	Hateful: [

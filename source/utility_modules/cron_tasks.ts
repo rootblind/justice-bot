@@ -7,7 +7,7 @@
  */
 
 import { CronTaskBuilder } from "../Interfaces/helper_types.js";
-import { formatDate, formatTime, generate_unique_code, get_env_var } from "./utility_methods.js";
+import { formatDate, formatTime, generate_unique_code, get_env_var, timestampNow } from "./utility_methods.js";
 import StaffStrikeRepo from "../Repositories/staffstrike.js";
 import BanListRepo from "../Repositories/banlist.js";
 import { errorLogHandle } from "./error_logger.js";
@@ -15,10 +15,9 @@ import type { Guild } from "discord.js";
 import { fetchGuild, fetchGuildMember, fetchLogsChannel } from "./discord_helpers.js";
 import { embed_unban } from "./embed_builders.js";
 import { getClient } from "../client_provider.js";
-import PremiumMembersRepo from "../Repositories/premiummembers.js";
-import PremiumKeyRepo from "../Repositories/premiumkey.js";
 import { remove_premium_from_member } from "../Systems/premium/premium_system.js";
 import { check_api_status } from "../Systems/automoderation/automod_model_methods.js";
+import PremiumSystemRepo from "../Repositories/premiumsystem.js";
 
 // checking if the mod model api is responsive
 export const report_modapi_downtime: CronTaskBuilder = {
@@ -98,8 +97,8 @@ export const expiredPremium: CronTaskBuilder = {
     name: "Expired premium handle",
     schedule: "1 * * * *",
     job: async () => {
-        const expiredMembers = await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
-        if (!expiredMembers) return; // if no membership is expired, there is nothing to execute
+        const expiredMembers = await PremiumSystemRepo.getExpiredGuildMemberCustomRole(); // await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
+        if (expiredMembers.length === 0) return; // if no membership is expired, there is nothing to execute
 
         const client = getClient();
         for (const expiredUser of expiredMembers) { // handling members whom codes expired
@@ -111,11 +110,20 @@ export const expiredPremium: CronTaskBuilder = {
                 // if the member is boosting the server while premium expired
                 // replace its code with a from_boosting one
 
-                const code = await generate_unique_code(guild.id);
+                const code = await generate_unique_code();
 
                 try { // register the new key
-                    await PremiumKeyRepo.newKey(code, guild.id, client.user!.id, 0, 0, member.id);
-                    await PremiumMembersRepo.updateMemberCode(guild.id, member.id, code, true);
+                    const newKey = await PremiumSystemRepo.newKey({
+                        code: Buffer.from(code, "hex"),
+                        tier: 0,
+                        guild: guild.id,
+                        generatedby: client.user!.id,
+                        createdat: timestampNow(),
+                        expiresat: 0,
+                        usesnumber: 0,
+                        dedicateduser: member.id
+                    });
+                    await PremiumSystemRepo.updateMemberCode(guild.id, member.id, newKey.id!);
                     continue;
                 } catch (error) {
                     await errorLogHandle(error, "There was a problem while trying to insert a new premium key");
@@ -127,7 +135,7 @@ export const expiredPremium: CronTaskBuilder = {
         }
 
         // clear the rest of the codes
-        await PremiumKeyRepo.clearExpiredKeys();
+        await PremiumSystemRepo.clearExpiredKeys();
     },
     runCondition: async () => true
 }

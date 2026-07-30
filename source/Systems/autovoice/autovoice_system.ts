@@ -68,7 +68,7 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     const perms: OverwriteResolvable[] = [
         {
             id: member.id,
-            allow: [...relevantPermissions]
+            allow: [...relevantPermissions, PermissionFlagsBits.SetVoiceChannelStatus]
         }
     ];
     const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
@@ -803,6 +803,14 @@ export async function attach_autovoice_manager_collector(message: Message) {
                     }
 
                     await AutoVoiceRoomRepo.changeOwnerRoom(guild.id, member.id, room.id);
+                    // give perms to the new owner
+                    await room.permissionOverwrites.edit(member, {
+                        ViewChannel: true,
+                        SendMessages: true,
+                        Connect: true,
+                        Speak: true,
+                        SetVoiceChannelStatus: true
+                    });
                     await buttonInteraction.reply({
                         flags: MessageFlags.Ephemeral,
                         embeds: [embed_message("Green", t(locale, "systems.autovoice.interface.collector.claim.success", { channel: `${room}` }))]
@@ -908,7 +916,8 @@ export async function attach_autovoice_manager_collector(message: Message) {
                                 ViewChannel: true,
                                 SendMessages: true,
                                 Connect: true,
-                                Speak: true
+                                Speak: true,
+                                SetVoiceChannelStatus: true
                             });
 
 

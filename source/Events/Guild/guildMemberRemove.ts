@@ -3,8 +3,8 @@ import type { GuildMember } from "discord.js";
 import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
 import { embed_member_left } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import { remove_premium_from_member } from "../../Systems/premium/premium_system.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type guildMemberRemoveHook = (member: GuildMember) => Promise<void>;
 const hooks: guildMemberRemoveHook[] = [];
@@ -13,10 +13,10 @@ export function extend_guildMemberRemove(hook: guildMemberRemoveHook) {
 }
 
 async function runHooks(member: GuildMember) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(member);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -25,27 +25,27 @@ async function runHooks(member: GuildMember) {
 const guildMemberRemove: Event = {
     name: "guildMemberRemove",
     async execute(member: GuildMember) {
-        if(member.user.bot) return;
-        
+        if (member.user.bot) return;
+
         await runHooks(member);
-        
+
         const guild = member.guild;
         const userActivityLogs = await fetchLogsChannel(guild, "user-activity");
-        if(userActivityLogs) {
+        if (userActivityLogs) {
             try {
                 userActivityLogs.send({
                     embeds: [
                         embed_member_left(member)
                     ]
                 });
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error);
             }
         }
 
-        const isBooster = await PremiumMembersRepo.isPremiumFromBoosting(guild.id, member.id);
-        if(isBooster) {
-            // if the member has premium membership from boosting, as it left the guild, they must lose the status
+        const premiumTier = await PremiumSystemRepo.getMembershipTier(guild.id, member.id);
+        if (premiumTier === 0) { // tier 0 is from nitro boosting
+            // if the member has premium membership from boosting, as they left the guild, they must lose the status
             await remove_premium_from_member(guild.client, member.id, guild);
         }
     }

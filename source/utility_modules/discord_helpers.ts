@@ -46,12 +46,12 @@ import { errorLogHandle } from "./error_logger.js";
 import ServerLogsRepo from "../Repositories/serverlogs.js";
 import type { EventGuildLogsString } from "../Interfaces/database_types.js";
 import ServerRolesRepo from "../Repositories/serverroles.js";
-import PremiumMembersRepo from "../Repositories/premiummembers.js";
 import fs from "graceful-fs";
 import { escapeRegex } from "./curate_data.js";
 import { regexClassifier } from "./regex_classifier.js";
 import ServerLogsIgnoreRepo from "../Repositories/serverlogsignore.js";
 import { embed_interaction_expired } from "./embed_builders.js";
+import PremiumSystemRepo from "../Repositories/premiumsystem.js";
 
 /**
  * 
@@ -431,7 +431,7 @@ export async function fetchMemberCustomRole(client: Client,
     if (!guildObject) return null; // invalid guild
 
     const memberId = typeof member === "string" ? member : member.id;
-    const customRoleId = await PremiumMembersRepo.getMemberCustomRole(guildObject.id, memberId);
+    const customRoleId = await PremiumSystemRepo.getMemberCustomRole(guildObject.id, memberId);
     if (!customRoleId) return null; // the member doesn't have a customrole registered
 
     const customRole = await fetchGuildRole(guildObject, customRoleId);

@@ -5,8 +5,14 @@
  */
 
 import type { CronTaskBuilder, OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
-import { fetchGuildMember, fetchGuild, fetchGuildChannel, fetchLogsChannel, fetchMessage, hasVoiceMembers } from "./discord_helpers.js";
-import PremiumMembersRepo from "../Repositories/premiummembers.js";
+import {
+    fetchGuildMember,
+    fetchGuild,
+    fetchGuildChannel,
+    fetchLogsChannel,
+    fetchMessage,
+    hasVoiceMembers
+} from "./discord_helpers.js";
 import { getClient } from "../client_provider.js";
 import BotConfigRepo from "../Repositories/botconfig.js";
 import { build_cron } from "./cronHandler.js";
@@ -24,6 +30,7 @@ import TicketSystemRepo from "../Repositories/ticketsystem.js";
 import LfgSystemRepo from "../Repositories/lfgsystem.js";
 import DailyMessageRepo from "../Repositories/dailymessage.js";
 import { build_cron_daily_message, init_daily_message_task } from "../Systems/components/dailymessage.js";
+import PremiumSystemRepo from "../Repositories/premiumsystem.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -34,9 +41,10 @@ import { build_cron_daily_message, init_daily_message_task } from "../Systems/co
 export const checkExpiredBoosters: OnReadyTaskBuilder = {
     name: "Handle Expired Boosters on Downtime",
     task: async () => {
-        const allBoosters = await PremiumMembersRepo.getAllPremiumBoosters();
+        const tier0 = 0;
+        const allBoosters = await PremiumSystemRepo.getAllMembershipsWithTier(tier0);
 
-        if (!allBoosters) return; // if there are no premium roles or no boosters, there is nothing to be done
+        if (allBoosters.length === 0) return; // if there are no boosters, there is nothing to be done
 
         const client = getClient();
 

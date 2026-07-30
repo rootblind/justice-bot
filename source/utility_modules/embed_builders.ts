@@ -359,7 +359,7 @@ export function embed_member_update_name(
  * @param encrypted_code The premium code redeemed in its encrypted form
  * @param duration The duration of the code. 0 if permanent or from boosting
  * @param usesnumber The number of uses left
- * @param from_boosting Whether the premium came from boosting the guild
+ * @param tier The tier of membership
  * @param color The embed color
  * @returns Embed
  */
@@ -368,7 +368,7 @@ export function embed_new_premium_membership(
     encrypted_code: string,
     duration: number | string,
     usesnumber: number,
-    from_boosting: boolean = false,
+    tier: number = 0,
     color: ColorResolvable = 0xd214c7
 ): EmbedBuilder {
     const code = decryptor(encrypted_code);
@@ -401,8 +401,9 @@ export function embed_new_premium_membership(
                 value: `${usesnumber}`,
             },
             {
-                name: "From boosting",
-                value: `${String(from_boosting)}`
+                name: "Tier",
+                value: String(tier),
+                inline: true
             }
         )
         .setTimestamp()
@@ -415,7 +416,7 @@ export function embed_new_premium_membership(
  * @param member The premium member
  * @param encrypted_code The premium key code in encrypted form
  * @param duration The duration of membership. 0 = permanent
- * @param from_boosting Whether the membership comes from boosting or not
+ * @param tier The tier of this membership
  * @param color The embed color
  * @returns Embed
  */
@@ -424,17 +425,16 @@ export function embed_premium_member_notification(
     member: GuildMember,
     encrypted_code: string,
     duration: string | number,
-    from_boosting: boolean = false,
+    tier: number = 0,
     color: ColorResolvable = 0xd214c7
 ): EmbedBuilder {
     const code = decryptor(encrypted_code);
-    const booster_description =
-        `Thank you **${member.user.username}** for boosting the server!
-        Your premium membership will last as long as you are boosting the server.\n`;
+    const thanks_description =
+        `Thank you **${member.user.username}** for becoming a premium member!\n`;
     const description = "You can access your premium perks using `/premium dashboard` on the server.";
     const expiresAt = duration === 0 ? "Permanent" : `<t:${duration}:R>`;
 
-    return new EmbedBuilder()
+    const embed = new EmbedBuilder()
         .setTitle("You are now a premium member")
         .setAuthor({
             name: `${guild.name} premium member`,
@@ -443,7 +443,7 @@ export function embed_premium_member_notification(
         .setColor(color)
         .setImage(guild.bannerURL({ size: 1024 }))
         .setThumbnail(guild.iconURL({ extension: "png" }))
-        .setDescription(from_boosting ? booster_description + description : description)
+        .setDescription(thanks_description + description)
         .setFields(
             {
                 name: "Code",
@@ -454,10 +454,16 @@ export function embed_premium_member_notification(
                 value: expiresAt
             },
             {
-                name: "From boosting",
-                value: String(from_boosting)
+                name: "Tier",
+                value: `${tier}`
             }
-        )
+        );
+
+    if (tier === 0) {
+        embed.setFooter({ text: "Tier 0 membership expires once your server boost expires." })
+    }
+
+    return embed;
 }
 
 /**
@@ -1202,12 +1208,6 @@ export function embed_role_details(
                 value: `${role.position}`
             }
         )
-    if (role.permissions.toArray().length > 1) {
-        embed.addFields({
-            name: "Permissions",
-            value: `✒️ ${permission_names(role.permissions.toArray()).join(", ")}`
-        });
-    }
     if (role.iconURL()) embed.setThumbnail(role.iconURL());
     if (description) embed.setDescription(description);
     if (title) embed.setTitle(title);

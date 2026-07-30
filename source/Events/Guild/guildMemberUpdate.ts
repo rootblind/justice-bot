@@ -3,8 +3,8 @@ import type { Guild, GuildMember } from "discord.js";
 import { fetchLogsChannel, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { embed_member_update_name } from "../../utility_modules/embed_builders.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import { assign_premium_to_member, remove_premium_from_member } from "../../Systems/premium/premium_system.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type guildMemberUpdateHook = (oldMember: GuildMember, newMember: GuildMember) => Promise<void>;
 const hooks: guildMemberUpdateHook[] = [];
@@ -58,17 +58,16 @@ const guildMemberUpdate: Event = {
         // boosting premium events
         // premium membership must be removed from boosters that are no longer boosting
         // checking if 
-        //      1- member has premium membership and from boosting 
+        //      1- member has premium membership and tier = 0
         //      2- checking if member still has nitro booster role
         const premiumRole = await fetchPremiumRole(guild.client, guild);
         if (premiumRole) {
             const premiumLogs = await fetchLogsChannel(guild, "premium-activity");
-            const hasPremium = await PremiumMembersRepo.checkUserMembership(guild.id, newMember.id);
-            const hasPremiumFromBoosting = await PremiumMembersRepo.isPremiumFromBoosting(guild.id, newMember.id);
-            if (!oldMember.premiumSince && newMember.premiumSince && !hasPremium) {
+            const premiumTier = await PremiumSystemRepo.getMembershipTier(guild.id, newMember.id);
+            if (!oldMember.premiumSince && newMember.premiumSince && premiumTier === null) {
                 // if the member was not boosting before, but is boosting now and does not currently have premium
                 const expiresAt = 0; // 0 = permanent for boosters
-                const from_boosting = true;
+                const tier = 0;
                 const usesnumber = 1;
                 const dedicatedmember = true;
                 await assign_premium_to_member(
@@ -78,10 +77,10 @@ const guildMemberUpdate: Event = {
                     expiresAt,
                     usesnumber,
                     dedicatedmember,
-                    from_boosting,
+                    tier,
                     premiumLogs
                 );
-            } else if (hasPremiumFromBoosting && !newMember.premiumSince) {
+            } else if (premiumTier === 0 && !newMember.premiumSince) {
                 // when a member stops boosting, premiumSince is null
                 await remove_premium_from_member(
                     guild.client,

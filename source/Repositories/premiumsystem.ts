@@ -1,0 +1,334 @@
+import { Snowflake } from "discord.js";
+import database from "../Config/database.js";
+import { PremiumCustomRole, PremiumKey, PremiumMember } from "../Interfaces/database_types.js";
+import { encryptor, timestampNow } from "../utility_modules/utility_methods.js";
+
+interface GuildMemberRole { guild: Snowflake, member: Snowflake, role: Snowflake | null };
+
+class PremiumSystemRepository {
+    async getGuildMembership(guildId: Snowflake, memberId: Snowflake): Promise<PremiumMember | null> {
+        const { rows: data } = await database.query<PremiumMember>(
+            `
+            SELECT * FROM premiummember WHERE guild=$1 AND member=$2
+            `,
+            [guildId, memberId]
+        );
+
+        return data[0] ?? null;
+    }
+    /**
+     * @param guildId Guild Snowflake
+     * @param userId User Snowflake
+     * @returns The tier of the membership or null if the user is not registered as a premium user.
+     */
+    async getMembershipTier(guildId: Snowflake, userId: Snowflake): Promise<number | null> {
+        const { rows: data } = await database.query<{ tier: number }>(
+            `
+            SELECT pk.tier
+            FROM premiummember pm
+            JOIN premiumkey pk
+                ON pm.premiumkey_id = pk.id
+            WHERE pm.member = $2 AND pm.guild = $1
+            `,
+            [guildId, userId]
+        );
+
+        return data[0]?.tier ?? null;
+
+    }
+
+    /**
+     * @param tier The tier of the memberships to look for
+     * @returns Array of all premium members from all guilds that have the tier given
+     */
+    async getAllMembershipsWithTier(tier: number): Promise<PremiumMember[]> {
+        const { rows: memberships } = await database.query<PremiumMember>(
+            `
+            SELECT pm.*
+            FROM premiummember pm
+            JOIN premiumkey pk
+                ON pm.premiumkey_id = pk.id
+            WHERE pk.tier = $1
+            `,
+            [tier]
+        );
+
+        return memberships;
+    }
+
+    /**
+     * Remove the targeted member's premium status from the given guild id
+     * @param guildId Guild Snowflake
+     * @param memberId Member/User Snowflake
+     */
+    async removeGuildMembership(guildId: Snowflake, memberId: Snowflake): Promise<void> {
+        await database.query(
+            `DELETE FROM premiummember WHERE guild=$1 AND member=$2`,
+            [guildId, memberId]
+        );
+    }
+
+    /**
+     * Fetch the custom role discord snowflake by member id.
+     * 
+     * @param guildId Guild Snowflake
+     * @param memberId Member/User Snowflake
+     * @returns The snowflake of premium member's custom role if it exists or null otherwise
+     */
+    async getMemberCustomRole(guildId: Snowflake, memberId: Snowflake): Promise<Snowflake | null> {
+        const { rows: data } = await database.query<{ role: Snowflake }>(
+            `
+            SELECT pcr.role
+            FROM premium_custom_role pcr
+            JOIN premiummember pm
+                ON pm.id = pcr.premiummember_id
+            WHERE pm.guild = $1 AND pm.member = $2
+            `,
+            [guildId, memberId]
+        );
+
+        return data[0]?.role ?? null;
+    }
+
+
+    /**
+     * Fetch the guild, member id and custom role id from all the premiummembers rows with expired codes
+     */
+    async getExpiredGuildMemberCustomRole(): Promise<GuildMemberRole[]> {
+        const { rows: expiredMembers } = await database.query<GuildMemberRole>(
+            `
+            SELECT pm.guild, pm.member, pcr.role 
+            FROM premiummember pm
+            JOIN premiumkey pk
+                ON pm.premiumkey_id = pk.id
+            LEFT JOIN premium_custom_role pcr
+                ON pcr.premiummember_id = pm.id
+            WHERE pk.expiresat <= $1 AND pk.expiresat > 0`,
+            [timestampNow()]
+        );
+
+        return expiredMembers;
+    }
+
+    /**
+     * 
+     * @param guildId Guild Snowflake
+     * @param memberId Member Snowflake
+     * @param premiumKeyId The ID of the premiumkey.
+     */
+    async updateMemberCode(
+        guildId: Snowflake,
+        memberId: Snowflake,
+        premiumKeyId: number
+    ): Promise<PremiumMember> {
+        const { rows: data } = await database.query<PremiumMember>(
+            `
+            UPDATE premiummember SET premiumkey_id=$3
+            WHERE guild=$1 AND member=$2
+            RETURNING *;
+            `,
+            [guildId, memberId, premiumKeyId]
+        );
+
+        return data[0]!;
+    }
+
+    /**
+     * Insert row
+     * @param memberId Member Snowflake
+     * @param guildId Guild Snowflake
+     * @param premiumKeyId The premiumkey ID that enables this membership
+     */
+    async newMembership(
+        memberId: Snowflake,
+        guildId: Snowflake,
+        premiumKeyId: number
+    ): Promise<PremiumMember> {
+        const { rows: data } = await database.query<PremiumMember>(
+            `
+            INSERT INTO premiummember(member, guild, premiumkey_id)
+            VALUES($1, $2, $3)
+            RETURNING *;
+            `,
+            [memberId, guildId, premiumKeyId]
+        );
+
+        return data[0]!;
+    }
+
+    /**
+     * 
+     * @param membershipId The ID of the membership this role is assigned to
+     * @param roleId The Snowflake of the role to be assigned as custom role
+     */
+    async assignCustomRole(
+        membershipId: number,
+        roleId: Snowflake
+    ): Promise<PremiumCustomRole> {
+        const { rows: data } = await database.query<PremiumCustomRole>(
+            `
+            INSERT INTO premium_custom_role (premiummember_id, role)
+            VALUES ($1, $2)
+            ON CONFLICT (premiummember_id)
+            DO UPDATE
+            SET role = EXCLUDED.role
+
+            RETURNING *;
+            `,
+            [membershipId, roleId]
+        );
+
+        return data[0]!;
+    }
+
+    /**
+     * Based on role snowflake, remove a custom role
+     * @param roleId Role Snowflake
+     */
+    async removeCustomRole(roleId: Snowflake) {
+        await database.query(
+            `DELETE FROM premium_custom_role WHERE role=$1`,
+            [roleId]
+        );
+    }
+
+    /**
+     * @param guildId Guild snowflake
+     * @returns Array of all codes as hex strings from the specified guild (codes are stored encrypted)
+     */
+    async getAllGuildCodes(guildId: Snowflake): Promise<string[]> {
+        const { rows: codes } = await database.query<{ code: Buffer }>(
+            `SELECT code FROM premiumkey WHERE guild=$1`,
+            [guildId]
+        );
+
+        return codes.map(row => row.code.toString("hex"));
+    }
+
+    /**
+     * 
+     * @returns Array of all codes in the database as strings
+     */
+    async getAllCodes(): Promise<string[]> {
+        const { rows: codes } = await database.query<{ code: Buffer }>(
+            `SELECT code FROM premiumkey;`
+        );
+
+        return codes.map(row => row.code.toString("hex"));
+    }
+
+    /**
+     * Register a new key to the database.
+     * 
+     * @param premiumKey PremiumKey object to be inserted. 
+     * 
+     * @returns The new key
+     */
+    async newKey(premiumKey: PremiumKey): Promise<PremiumKey> {
+        const { rows: data } = await database.query<PremiumKey>(
+            `
+            INSERT INTO premiumkey(code, tier, guild, generatedby, createdat, expiresat, usesnumber, dedicateduser)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *;
+            `,
+            [
+                premiumKey.code,
+                premiumKey.tier,
+                premiumKey.guild,
+                premiumKey.generatedby,
+                premiumKey.createdat,
+                premiumKey.expiresat,
+                premiumKey.usesnumber,
+                premiumKey.dedicateduser
+            ]
+        );
+
+        return data[0]!;
+    }
+
+    /**
+     * Based on its id, update key details.
+     * 
+     * @param newKey PremiumKey
+     * @returns 
+     */
+    async updateKey(newKey: PremiumKey & { id: number }): Promise<PremiumKey & { id: number }> {
+        const { rows: data } = await database.query<PremiumKey & { id: number }>(
+            `UPDATE premiumkey SET tier=$2, expiresat=$3, usesnumber=$4, dedicateduser=$5
+            WHERE id=$1
+            RETURNING *;`,
+            [
+                newKey.id,
+                newKey.tier,
+                newKey.expiresat,
+                newKey.usesnumber,
+                newKey.dedicateduser
+            ]
+        );
+
+        return data[0]!;
+    }
+
+    /**
+     * Deletes all entries of expired keys
+     */
+    async clearExpiredKeys() {
+        const now = timestampNow();
+        await database.query(
+            `DELETE FROM premiumkey WHERE expiresat <= $1 AND expiresat > 0`,
+            [now]
+        );
+    }
+
+    /**
+     * Delete a premium key by its code from a guild.
+     * 
+     * @param guild The guild Snowflake
+     * @param code The code in plain text
+     */
+    async deleteGuildKeyCode(guild: Snowflake, code: string) {
+        const encryptedCode = encryptor(code);
+        await database.query(`DELETE FROM premiumkey WHERE guild=$1 AND code=$2`, [guild, encryptedCode]);
+    }
+
+    /**
+     * Fetches a premium key by its code from a guild.
+     * 
+     * @param guild The guild Snowflake
+     * @param code The code in plain text
+     */
+    async getGuildKeyByCode(guild: Snowflake, code: string): Promise<PremiumKey & { id: number } | null> {
+        const encryptedCode = Buffer.from(encryptor(code), "hex");
+        const { rows: data } = await database.query<PremiumKey & { id: number }>(
+            `SELECT * FROM premiumkey WHERE guild=$1 AND code=$2`,
+            [guild, encryptedCode]
+        );
+
+        return data[0] ?? null;
+    }
+
+    /**
+     * Fetch the PremiumKey object by its database ID
+     */
+    async getKeyById(id: number): Promise<PremiumKey & { id: number } | null> {
+        const { rows: data } = await database.query<PremiumKey & { id: number }>(
+            `SELECT * FROM premiumkey WHERE id=$1`, [id]
+        );
+
+        return data[0] ?? null;
+    }
+
+    /**
+     * Fetch the PremiumKey object by its database ID but restrict it to the guild
+     */
+    async getGuildKeyById(id: number, guildId: string): Promise<PremiumKey & { id: number } | null> {
+        const { rows: data } = await database.query<PremiumKey & { id: number }>(
+            `SELECT * FROM premiumkey WHERE id=$1 AND guild=$2`, [id, guildId]
+        );
+
+        return data[0] ?? null;
+    }
+}
+
+const PremiumSystemRepo = new PremiumSystemRepository();
+export default PremiumSystemRepo;

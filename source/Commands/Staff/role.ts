@@ -133,7 +133,8 @@ const roleCommand: ChatCommand = {
                                 `${newRole} has been created.`,
                                 "Role Created"
                             )
-                        ]
+                        ],
+                        flags: MessageFlags.Ephemeral
                     });
 
                 } catch (error) {
@@ -204,7 +205,8 @@ const roleCommand: ChatCommand = {
                                 `${modifiedRole} has been modified.`,
                                 "Role Edited"
                             )
-                        ]
+                        ],
+                        flags: MessageFlags.Ephemeral
                     });
 
                 } catch (error) {

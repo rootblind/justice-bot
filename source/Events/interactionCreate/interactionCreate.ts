@@ -22,9 +22,9 @@ import { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/u
 import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
-import PremiumMembersRepo from "../../Repositories/premiummembers.js";
 import GuildPlanRepo from "../../Repositories/guildplan.js";
 import ServerRolesRepo from "../../Repositories/serverroles.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type interactionCreateHook = (interaction: ChatInputCommandInteraction, client: Client) => Promise<void>;
 const hooks: interactionCreateHook[] = [];
@@ -103,12 +103,12 @@ const interactonCreate: Event = {
                     });
                 }
                 if (command.metadata.category !== "Administrator") {
-                    const isPremium = await PremiumMembersRepo.checkUserMembership(
+                    const premiumTier = await PremiumSystemRepo.getMembershipTier(
                         interaction.guild.id,
-                        interaction.member.id
+                        interaction.user.id
                     );
 
-                    if (!isPremium) {
+                    if (premiumTier === null) {
                         return await interaction.reply({
                             embeds: [embed_error("This command is for premium members only!")],
                             flags: MessageFlags.Ephemeral

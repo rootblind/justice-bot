@@ -6,7 +6,7 @@ import { ban_handler } from "../../Systems/moderation/ban_system.js";
 import { fetchLogsChannel, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_member_joined } from "../../utility_modules/embed_builders.js";
-import PremiumMembersRepo from "../../Repositories/premiummembers.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type guildMemberAddHook = (member: GuildMember) => Promise<void>;
 const hooks: guildMemberAddHook[] = [];
@@ -15,10 +15,10 @@ export function extend_guildMemberAdd(hook: guildMemberAddHook) {
 }
 
 async function runHooks(member: GuildMember) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(member);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -28,8 +28,8 @@ const guildMemberAdd: Event = {
     name: "guildMemberAdd",
     async execute(member: GuildMember) {
         const guild: Guild = member.guild;
-        if(member.user.bot) return;
-        
+        if (member.user.bot) return;
+
         await runHooks(member);
 
         // enforcing perma bans
@@ -66,26 +66,26 @@ const guildMemberAdd: Event = {
 
         // log as user-activity
         const userActivityLogs = await fetchLogsChannel(guild, "user-activity");
-        if(userActivityLogs) {
+        if (userActivityLogs) {
             try {
                 userActivityLogs.send({
                     embeds: [
                         embed_member_joined(member)
                     ]
                 });
-            } catch(error) {
+            } catch (error) {
                 await errorLogHandle(error);
             }
         }
 
         // check if the member has active premium membership
         const premiumRole = await fetchPremiumRole(guild.client, guild);
-        if(premiumRole) {
-            const hasPremium = await PremiumMembersRepo.checkUserMembership(guild.id, member.id);
-            if(hasPremium) {
+        if (premiumRole) {
+            const hasPremium = await PremiumSystemRepo.getMembershipTier(guild.id, member.id);
+            if (hasPremium !== null) {
                 try {
                     await member.roles.add(premiumRole);
-                } catch(error) {
+                } catch (error) {
                     await errorLogHandle(error);
                 }
             }

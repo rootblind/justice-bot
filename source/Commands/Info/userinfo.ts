@@ -1,6 +1,6 @@
 import { EmbedBuilder, Guild, GuildMember, SlashCommandBuilder } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
-import { fetchGuildMember, permission_names } from "../../utility_modules/discord_helpers.js";
+import { fetchGuildMember } from "../../utility_modules/discord_helpers.js";
 
 const userInfo: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -60,12 +60,6 @@ const userInfo: ChatCommand = {
                     value: `<t:${Math.floor(member.communicationDisabledUntilTimestamp / 1000)}:R>`
                 });
             }
-
-            const permissionsArray = permission_names(member.permissions.toArray());
-            embed.addFields({
-                name: "Permissions",
-                value: `${permissionsArray.length <= 10 ? permissionsArray.join(", ") : `${permissionsArray.slice(0, 10).join(", ")} and ${permissionsArray.length - 10} more...`}`
-            })
 
             if (member.joinedTimestamp) {
                 embed.addFields(
