@@ -43,6 +43,15 @@ const roleCommand: ChatCommand = {
                         .setRequired(true)
                 )
         )
+        .addSubcommand(subcommand =>
+            subcommand.setName("info")
+                .setDescription("Show info about a role.")
+                .addRoleOption(option =>
+                    option.setName("target")
+                        .setDescription("The targeted role")
+                        .setRequired(true)
+                )
+        )
         .toJSON(),
     metadata: {
         cooldown: 10,
@@ -229,6 +238,25 @@ const roleCommand: ChatCommand = {
                         flags: MessageFlags.Ephemeral
                     });
                 }
+                break;
+            }
+            case "info": {
+                const targetRole = options.getRole("target", true) as Role;
+                const infoEmbed = embed_role_details(targetRole, "Information about the targeted role", "Role Info", "Aqua");
+                const roleMembers = targetRole.members.map(m => m.toString());
+
+                if (roleMembers.length) {
+                    const roleMembersFieldValueString =
+                        roleMembers.length <= 5 ?
+                            roleMembers.join(" ") :
+                            roleMembers.slice(0, 5).join(" ") + ` and ${roleMembers.length - 5} more...`
+                    infoEmbed.addFields({
+                        name: "Members",
+                        value: roleMembersFieldValueString
+                    });
+                }
+
+                await interaction.reply({ embeds: [infoEmbed] });
                 break;
             }
         }

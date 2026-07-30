@@ -372,7 +372,7 @@ export function embed_new_premium_membership(
     color: ColorResolvable = 0xd214c7
 ): EmbedBuilder {
     const code = decryptor(encrypted_code);
-    const expires = duration === 0 ? "Permanent" : `<t:${duration}:R>`;
+    const expires = Number(duration) === 0 ? "Permanent" : `<t:${duration}:R>`;
 
     return new EmbedBuilder()
         .setAuthor({

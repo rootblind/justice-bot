@@ -28,6 +28,11 @@ const roleDelete: Event = {
         /**
          * Deleting a role used or registered by one or more database tables must be curated
          */
+
+
+        // if the role is a custom role, remove it from the table
+        await PremiumSystemRepo.removeCustomRole(role.id);
+
         const guild: Guild = role.guild;
         const property: ColumnValuePair = { column: "role", value: role.id }
         const roleTablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
@@ -41,8 +46,7 @@ const roleDelete: Event = {
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
 
-        // if the role is a custom role, remove it from the table
-        await PremiumSystemRepo.removeCustomRole(role.id);
+
         await runHooks(role);
 
         // clean lfg-system related roles

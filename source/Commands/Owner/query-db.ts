@@ -42,7 +42,7 @@ const queryDbCommand: ChatCommand = {
                 clientResponse += columns + joinedRows;
             }
 
-            if (clientResponse.length < 3000) {
+            if (clientResponse.length < 2000) {
                 await interaction.editReply(clientResponse);
             } else {
                 // create and dump a file with the contents of the response

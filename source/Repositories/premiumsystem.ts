@@ -4,10 +4,11 @@ import { PremiumCustomRole, PremiumKey, PremiumMember } from "../Interfaces/data
 import { encryptor, timestampNow } from "../utility_modules/utility_methods.js";
 
 interface GuildMemberRole { guild: Snowflake, member: Snowflake, role: Snowflake | null };
+interface MembershipTierKeyIdRole { premiumkey_id: number, tier: number, member: Snowflake, role: Snowflake | null }
 
 class PremiumSystemRepository {
-    async getGuildMembership(guildId: Snowflake, memberId: Snowflake): Promise<PremiumMember | null> {
-        const { rows: data } = await database.query<PremiumMember>(
+    async getGuildMembership(guildId: Snowflake, memberId: Snowflake): Promise<PremiumMember & { id: number } | null> {
+        const { rows: data } = await database.query<PremiumMember & { id: number }>(
             `
             SELECT * FROM premiummember WHERE guild=$1 AND member=$2
             `,
@@ -111,6 +112,40 @@ class PremiumSystemRepository {
     }
 
     /**
+     * Fetches a member's premium membership information for a specific guild.
+     *
+     * The returned data includes the premium key ID assigned to the member,
+     * the premium tier granted by that key, and the member's custom role
+     * snowflake if one exists.
+     *
+     * @param guild Guild Snowflake.
+     * @param memberId Member/User Snowflake.
+     * @returns The member's premium membership information, or `null` if the
+     * member does not have a premium membership in the specified guild.
+     */
+    async getGuildMembershipFeatures(guild: Snowflake, memberId: Snowflake): Promise<MembershipTierKeyIdRole | null> {
+        const { rows: data } = await database.query<MembershipTierKeyIdRole>(
+            `
+            SELECT
+                pm.premiumkey_id,
+                pk.tier,
+                pm.member,
+                pcr.role
+            FROM premiummember pm
+            JOIN premiumkey pk
+                ON pm.premiumkey_id = pk.id
+            LEFT JOIN premium_custom_role pcr
+                ON pcr.premiummember_id=pm.id
+            WHERE pm.guild=$1
+                AND pm.member=$2
+            `,
+            [guild, memberId]
+        );
+
+        return data[0] ?? null;
+    }
+
+    /**
      * 
      * @param guildId Guild Snowflake
      * @param memberId Member Snowflake
@@ -179,6 +214,17 @@ class PremiumSystemRepository {
         );
 
         return data[0]!;
+    }
+
+    /**
+     * Fetch the database row of a custom role by its role snowflake
+     */
+    async getCustomRoleBySnowflake(roleId: Snowflake): Promise<PremiumCustomRole | null> {
+        const { rows: data } = await database.query<PremiumCustomRole>(
+            `SELECT * FROM premium_custom_role WHERE role=$1`, [roleId]
+        );
+
+        return data[0] ?? null;
     }
 
     /**

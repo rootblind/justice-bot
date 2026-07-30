@@ -1,30 +1,46 @@
 import {
+    EmbedBuilder,
     GuildMember,
     MessageFlags,
     ModalBuilder,
     PermissionFlagsBits,
+    Role,
     SlashCommandBuilder
 } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import {
+    assign_premium_to_member,
     is_code_unique,
     key_details_string,
     premium_key_labels,
     validate_expiration_duration,
     validate_usesnumber
 } from "../../Systems/premium/premium_system.js";
-import { fetchGuildMember, fetchLogsChannel, fetchPremiumRole, handleModalCatch } from "../../utility_modules/discord_helpers.js";
-import { embed_error, embed_message, embed_new_premium_membership } from "../../utility_modules/embed_builders.js";
+import {
+    fetchGuildMember,
+    fetchGuildRole,
+    fetchLogsChannel,
+    fetchPremiumRole,
+    handleModalCatch
+} from "../../utility_modules/discord_helpers.js";
+import {
+    embed_error,
+    embed_message,
+    embed_new_premium_membership,
+    embed_role_details
+} from "../../utility_modules/embed_builders.js";
 import {
     decryptor,
     duration_to_seconds,
     encryptor,
     generate_unique_code,
+    hexcolorParser,
     timestampNow
 } from "../../utility_modules/utility_methods.js";
 import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { PremiumKey } from "../../Interfaces/database_types.js";
+import { role_create_modal, role_input_validator, role_builder } from "../../Systems/components/role_builder_menu.js";
 
 const premiumAdminCommand: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -679,6 +695,316 @@ const premiumAdminCommand: ChatCommand = {
                                 await errorLogHandle(error);
                             }
                         }
+                        break;
+
+                    }
+                    case "create-role": {
+                        const user = options.getUser("user", true);
+                        const member = await fetchGuildMember(guild, user.id);
+
+                        if (!member) {
+                            await interaction.reply({
+                                embeds: [embed_message("Red", "You can not assign a custom role to someone that is not a member of this guild.")],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        const membership = await PremiumSystemRepo.getGuildMembership(guild.id, user.id);
+                        if (!membership) {
+                            await interaction.reply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The specified user is not a premium member of this server.",
+                                        "Invalid target"
+                                    )
+                                ],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        await interaction.showModal(role_create_modal())
+                        try {
+                            const submit = await interaction.awaitModalSubmit({
+                                time: 300_000,
+                                filter: (i) => i.user.id === interaction.user.id
+                            });
+
+                            const roleName = submit.fields.getTextInputValue("role-name-input");
+                            const hexColor = submit.fields.getTextInputValue("hexcolor-input");
+                            const iconFile = submit.fields.getUploadedFiles("icon-file-input", false);
+
+                            const validatorResponse = await role_input_validator(
+                                guild,
+                                roleName,
+                                hexColor,
+                                iconFile?.first()
+                            );
+
+                            if (!validatorResponse.valid) {
+                                await submit.reply({
+                                    embeds: [
+                                        embed_message("Red", validatorResponse.message ?? "Unknown error.")
+                                    ],
+                                    flags: MessageFlags.Ephemeral
+                                });
+
+                                return;
+                            }
+
+                            await submit.deferReply({ flags: MessageFlags.Ephemeral });
+
+                            const hexcolors = hexcolorParser(hexColor)!; // validator assures reaching this line has a valid hexcolor
+
+                            const newRole = await role_builder(
+                                guild,
+                                roleName,
+                                hexcolors,
+                                iconFile?.first(),
+                                premiumRole.position // put custom roles of premium members under the premium role
+                            );
+
+                            // check if the member already has a custom role
+                            const oldCustomRoleId = await PremiumSystemRepo.getMemberCustomRole(guild.id, user.id);
+                            if (oldCustomRoleId) {
+                                const oldCustomRole = await fetchGuildRole(guild, oldCustomRoleId);
+                                if (oldCustomRole) {
+                                    try {
+                                        await oldCustomRole.delete(`Custom role replaced by ${interaction.user.username}`);
+                                    } catch { /* do nothing */ }
+                                }
+                            }
+
+                            try {
+                                await member.roles.add(newRole);
+                            } catch (error) {
+                                await errorLogHandle(error);
+                                await submit.editReply({
+                                    embeds: [
+                                        embed_error("An error occured while trying to assign the member with the new custom role.")
+                                    ]
+                                });
+                                return;
+                            }
+
+                            // register the new role
+                            await PremiumSystemRepo.assignCustomRole(membership.id, newRole.id)
+
+                            await submit.editReply({
+                                embeds: [
+                                    embed_role_details(
+                                        newRole,
+                                        `${newRole} has been created and assigned to ${member}.`,
+                                        "Custom Role Created"
+                                    )
+                                ]
+                            });
+
+                        } catch (error) {
+                            await handleModalCatch(error);
+                        }
+                        break;
+                    }
+                    case "set-role": {
+                        const user = options.getUser("user", true);
+                        const member = await fetchGuildMember(guild, user.id);
+
+                        if (!member) {
+                            await interaction.reply({
+                                embeds: [embed_message("Red", "You can not assign a custom role to someone that is not a member of this guild.")],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        const membership = await PremiumSystemRepo.getGuildMembership(guild.id, user.id);
+                        if (!membership) {
+                            await interaction.reply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The specified user is not a premium member of this server.",
+                                        "Invalid target"
+                                    )
+                                ],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+
+                        const role = options.getRole("role") as Role;
+                        const botMember = await guild.members.fetchMe();
+                        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+                        const oldCustomRoleId = await PremiumSystemRepo.getMemberCustomRole(guild.id, user.id);
+                        if (
+                            role.managed ||
+                            botMember.roles.highest.position <= role.position ||
+                            member.roles.highest.position <= role.position
+                        ) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The role must be positioned under your and my highest role and it can not be a bot role.",
+                                        "Invalid role given"
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        if (role.id === oldCustomRoleId) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "The role given is already the custom role of this member.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const lookupRole = await PremiumSystemRepo.getCustomRoleBySnowflake(role.id);
+                        if (lookupRole) {
+                            // if the given role is already in the premium custom role table, then it's already in use.
+                            await interaction.editReply({
+                                embeds: [embed_message("Red", "The role given is already someone else's custom role.")]
+                            });
+                            return;
+                        }
+
+                        if (oldCustomRoleId) {
+                            // if the set-role is valid, the old one can be cleaned up if it exists
+                            const oldCustomRole = await fetchGuildRole(guild, oldCustomRoleId);
+                            if (oldCustomRole) {
+                                try {
+                                    await oldCustomRole.delete(`Custom role replaced by ${interaction.user.username}`);
+                                } catch { /* do nothing */ }
+                            }
+                        }
+
+                        try {
+                            await role.setPosition(premiumRole.position - 1); // make sure the role is in the right place
+                            await member.roles.add(role);
+                        } catch (error) {
+                            await errorLogHandle(error);
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_error("An error occured while trying to assign the member with the new custom role.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        // register the newly set role
+                        await PremiumSystemRepo.assignCustomRole(membership.id, role.id)
+
+                        await interaction.editReply({
+                            embeds: [
+                                embed_role_details(
+                                    role,
+                                    `${role} has been set and assigned to ${member}.`,
+                                    "Custom Role Set"
+                                )
+                            ]
+                        });
+                        break;
+                    }
+                    case "details": {
+                        const user = options.getUser("user", true);
+                        const membership = await PremiumSystemRepo.getGuildMembershipFeatures(guild.id, user.id);
+                        if (!membership) {
+                            await interaction.reply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The specified user is not a premium member of this server.",
+                                        "Invalid target"
+                                    )
+                                ],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        const embedMembership = new EmbedBuilder()
+                            .setColor("Aqua")
+                            .setAuthor({ name: `${user.username} premium membership`, iconURL: user.displayAvatarURL({ extension: "png" }) })
+                            .setFields(
+                                {
+                                    name: "Tier",
+                                    value: `${membership.tier}`,
+                                    inline: true
+                                },
+                                {
+                                    name: "Key ID",
+                                    value: `${membership.premiumkey_id}`,
+                                    inline: true
+                                }
+                            );
+
+                        if (membership.role) {
+                            const customRole = await fetchGuildRole(guild, membership.role);
+                            if (customRole) {
+                                embedMembership.addFields({
+                                    name: "Custom role",
+                                    value: customRole.toString()
+                                });
+                            }
+                        }
+
+                        await interaction.reply({
+                            embeds: [embedMembership],
+                            flags: MessageFlags.Ephemeral
+                        });
+                        break;
+                    }
+                    case "migrate-boosters": {
+                        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+                        const boosterRole = guild.roles.premiumSubscriberRole;
+                        if (!boosterRole) {
+                            await interaction.editReply({
+                                embeds: [embed_message("Red", "The booster role couldn't be found.")]
+                            });
+                            return;
+                        }
+
+                        ;
+                        const boosterMembers = (await guild.members.fetch()).map(m => m).filter(m => m.roles.cache.has(boosterRole.id))
+                        let newMembershipsGenerated = boosterMembers.length;
+                        let errorLogs = "";
+                        for (const member of boosterMembers) {
+                            const membership = await PremiumSystemRepo.getGuildMembership(guild.id, member.id);
+                            if (membership) {
+                                newMembershipsGenerated -= 1;
+                                continue; // skip members with active membership
+                            }
+
+                            try {
+                                await assign_premium_to_member(
+                                    premiumRole,
+                                    member,
+                                    interactionMember,
+                                    0, // nitro booster memberships do not expire in time
+                                    1, // usesnumber
+                                    true // nitro booster keys are dedicated to them
+                                );
+                            } catch (error) {
+                                await errorLogHandle(error);
+                                newMembershipsGenerated -= 1;
+                                errorLogs += `A problem occured at member ID ${member.id}\n`;
+                            }
+                        }
+
+                        await interaction.editReply({
+                            embeds: [
+                                embed_message(
+                                    "Green",
+                                    `**New memberships**: ${newMembershipsGenerated}\n` +
+                                    `**Errors**: ${errorLogs.length ? errorLogs : "None"}`)
+                            ]
+                        });
                         break;
                     }
                 }

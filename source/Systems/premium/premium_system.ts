@@ -120,15 +120,16 @@ export async function assign_premium_to_member(
         } catch (error) {
             await errorLogHandle(error);
         }
+
+        try { // send the member a notification if possible
+            await member.send({
+                embeds: [
+                    embed_premium_member_notification(guild, member, code, expiresAt, tier)
+                ]
+            });
+        } catch {/* do nothing */ }
     }
 
-    try { // send the member a notification if possible
-        await member.send({
-            embeds: [
-                embed_premium_member_notification(guild, member, code, expiresAt, tier)
-            ]
-        });
-    } catch {/* do nothing */ }
 }
 
 export const TIER_SELECT_OPTIONS: RestOrArray<APISelectMenuOption> = [
