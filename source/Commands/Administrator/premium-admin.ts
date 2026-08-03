@@ -13,6 +13,7 @@ import {
     is_code_unique,
     key_details_string,
     premium_key_labels,
+    remove_premium_from_member,
     validate_expiration_duration,
     validate_usesnumber
 } from "../../Systems/premium/premium_system.js";
@@ -298,9 +299,23 @@ const premiumAdminCommand: ChatCommand = {
                         break;
                     }
                     case "delete": {
+                        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
                         const code = options.getString("code", true);
                         const premiumKey = await PremiumSystemRepo.getGuildKeyByCode(guild.id, code);
                         if (premiumKey) {
+                            const keyMembers = await PremiumSystemRepo.getMembersOfKeyId(guild.id, premiumKey.id);
+                            for (const member_id of keyMembers) {
+                                // when a key gets deleted, the premium members that are members of the server
+                                // have to get their perks removed
+                                const memberObject = await fetchGuildMember(guild, member_id);
+                                if (memberObject) {
+                                    try {
+                                        await remove_premium_from_member(client, member_id, guild);
+                                    } catch (error) {
+                                        await errorLogHandle(error);
+                                    }
+                                }
+                            }
                             await PremiumSystemRepo.deleteGuildKeyCode(guild.id, code);
                             const embedSuccess = embed_message(
                                 "Green",
@@ -312,7 +327,7 @@ const premiumAdminCommand: ChatCommand = {
                                     value: key_details_string(premiumKey)
                                 })
                                 .setTimestamp()
-                            await interaction.reply({ embeds: [embedSuccess], flags: MessageFlags.Ephemeral });
+                            await interaction.editReply({ embeds: [embedSuccess] });
 
                             if (logChannel) {
                                 try {
@@ -341,11 +356,10 @@ const premiumAdminCommand: ChatCommand = {
                         const code = options.getString("code", true);
                         const premiumKey = await PremiumSystemRepo.getGuildKeyByCode(guild.id, code);
                         if (!premiumKey) {
-                            await interaction.reply({
+                            await interaction.editReply({
                                 embeds: [
                                     embed_message("Red", "No such key by this code.")
-                                ],
-                                flags: MessageFlags.Ephemeral
+                                ]
                             });
                             return;
                         }
@@ -660,7 +674,7 @@ const premiumAdminCommand: ChatCommand = {
 
                         if (member) {
                             try {
-                                member.roles.remove(premiumRole);
+                                await remove_premium_from_member(client, member.id, guild);
                             } catch (error) {
                                 await errorLogHandle(error);
                                 await interaction.reply({
@@ -669,8 +683,6 @@ const premiumAdminCommand: ChatCommand = {
                                 });
                             }
                         }
-
-                        await PremiumSystemRepo.removeGuildMembership(guild.id, user.id); // clear row
 
                         await interaction.reply({
                             embeds: [

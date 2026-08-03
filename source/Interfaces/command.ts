@@ -43,6 +43,7 @@ export const CHAT_COMMAND_CATEGORIES = [
     "Staff",
     "Moderator",
     "Miscellaneous",
+    "Premium"
 ] as const;
 
 export type ChatCommandCategory =

@@ -102,7 +102,7 @@ const interactonCreate: Event = {
                         flags: MessageFlags.Ephemeral
                     });
                 }
-                if (command.metadata.category !== "Administrator") {
+                if (command.metadata.category === "Premium") {
                     const premiumTier = await PremiumSystemRepo.getMembershipTier(
                         interaction.guild.id,
                         interaction.user.id
