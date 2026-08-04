@@ -97,11 +97,12 @@ const roleCommand: ChatCommand = {
 
         switch (subcommand) {
             case "create": {
-                await interaction.showModal(role_create_modal(false, `role-create-modal-${interaction.id}`))
+                const modalId = `role-create-modal-${crypto.randomUUID()}`;
+                await interaction.showModal(role_create_modal(false, modalId))
                 try {
                     const submit = await interaction.awaitModalSubmit({
                         time: 300_000,
-                        filter: (i) => i.user.id === member.id
+                        filter: (i) => i.user.id === member.id && i.customId === modalId
                     });
 
                     const roleName = submit.fields.getTextInputValue("role-name-input");
@@ -152,11 +153,12 @@ const roleCommand: ChatCommand = {
                 break;
             }
             case "edit": {
-                await interaction.showModal(role_create_modal(true, `role-create-modal-${interaction.id}`)); // edit_mode = true
+                const modalId = `role-edit-modal-${crypto.randomUUID()}`;
+                await interaction.showModal(role_create_modal(true, modalId)) // edit_mode = true
                 try {
                     const submit = await interaction.awaitModalSubmit({
                         time: 300_000,
-                        filter: (i) => i.user.id === member.id
+                        filter: (i) => i.user.id === member.id && i.customId === modalId
                     });
 
                     const roleName = submit.fields.getTextInputValue("role-name-input");
