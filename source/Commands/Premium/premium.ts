@@ -20,6 +20,7 @@ import {
     fetchGuildMember,
     fetchGuildRole,
     fetchMemberCustomRole,
+    fetchPremiumRole,
     handleModalCatch,
     message_collector
 } from "../../utility_modules/discord_helpers.js";
@@ -294,12 +295,13 @@ const premiumCommand: ChatCommand = {
                                             }
 
                                             const hexcolors = hexcolorParser(hexColor)!; // validator assures reaching this line has a valid hexcolor
-
+                                            const premiumRole = await fetchPremiumRole(client, guild)!;
                                             customRole = await role_builder(
                                                 guild,
                                                 roleName,
                                                 hexcolors,
-                                                iconFile?.first()
+                                                iconFile?.first(),
+                                                premiumRole?.position
                                             );
 
                                             // register the custom role
