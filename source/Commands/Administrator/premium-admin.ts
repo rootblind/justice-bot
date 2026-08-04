@@ -185,15 +185,16 @@ const premiumAdminCommand: ChatCommand = {
             case "key": {
                 switch (subcommand) {
                     case "generate": {
+                        const newkeyModalId = `new-key-modal-${crypto.randomUUID()}`
                         const newKeyModal = new ModalBuilder()
                             .setTitle("Generate premium key")
-                            .setCustomId("new-key-modal")
+                            .setCustomId(newkeyModalId)
                             .setLabelComponents(premium_key_labels())
                         await interaction.showModal(newKeyModal);
                         try {
                             const submit = await interaction.awaitModalSubmit({
                                 time: 300_000,
-                                filter: (i) => i.user.id === interaction.user.id
+                                filter: (i) => i.user.id === interaction.user.id && i.customId === newkeyModalId
                             });
 
                             // selecting the tier is required and guarantees single selection.
@@ -364,8 +365,9 @@ const premiumAdminCommand: ChatCommand = {
                             return;
                         }
 
+                        const editKeyModalId = `edit-key-modal-${crypto.randomUUID()}`
                         const editKeyModal = new ModalBuilder()
-                            .setCustomId("edit-key-modal")
+                            .setCustomId(editKeyModalId)
                             .setTitle("Edit key")
                             .setLabelComponents(premium_key_labels(true));
 
@@ -373,7 +375,7 @@ const premiumAdminCommand: ChatCommand = {
                         try {
                             const submit = await interaction.awaitModalSubmit({
                                 time: 300_000,
-                                filter: (i) => i.user.id === interaction.user.id
+                                filter: (i) => i.user.id === interaction.user.id && i.customId === editKeyModalId
                             });
 
                             const tierSelection = submit.fields.getStringSelectValues("select-tier");
@@ -736,12 +738,12 @@ const premiumAdminCommand: ChatCommand = {
                             });
                             return;
                         }
-
-                        await interaction.showModal(role_create_modal(false, `role-create-modal-${interaction.id}`));
+                        const modalId = `role-create-modal-${crypto.randomUUID()}`;
+                        await interaction.showModal(role_create_modal(false, modalId));
                         try {
                             const submit = await interaction.awaitModalSubmit({
                                 time: 300_000,
-                                filter: (i) => i.user.id === interaction.user.id
+                                filter: (i) => i.user.id === interaction.user.id && i.customId === modalId
                             });
 
                             const roleName = submit.fields.getTextInputValue("role-name-input");

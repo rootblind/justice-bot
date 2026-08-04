@@ -346,12 +346,13 @@ const premiumCommand: ChatCommand = {
                                         break;
                                     }
                                     case "edit-button": {
-                                        const modal = role_create_modal(true, `role-edit-modal-${buttonInteraction.id}`);
-                                        await buttonInteraction.showModal(modal); // edit_mode = true
+                                        const modalId = `role-edit-modal-${crypto.randomUUID()}`;
+                                        const modal = role_create_modal(false, modalId);
+                                        await buttonInteraction.showModal(modal);
                                         try {
                                             const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
-                                                filter: (i) => i.user.id === member.id
+                                                filter: (i) => i.user.id === member.id && i.customId === modalId
                                             });
 
                                             const roleName = submit.fields.getTextInputValue("role-name-input");
