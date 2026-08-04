@@ -219,7 +219,10 @@ const premiumCommand: ChatCommand = {
                                 const innerCooldown = 5; // 5 seconds
                                 const now = timestampNow();
                                 if (now < cooldownExpires) {
-                                    await buttonInteraction.reply(`You are pressing the buttons too fast! <t:${cooldownExpires}:R>`);
+                                    await buttonInteraction.reply({
+                                        content: `You are pressing the buttons too fast! <t:${cooldownExpires}:R>`,
+                                        flags: MessageFlags.Ephemeral
+                                    });
                                     return;
                                 }
                                 cooldownExpires = now + innerCooldown;
@@ -295,13 +298,13 @@ const premiumCommand: ChatCommand = {
                                             }
 
                                             const hexcolors = hexcolorParser(hexColor)!; // validator assures reaching this line has a valid hexcolor
-                                            const premiumRole = await fetchPremiumRole(client, guild)!;
+                                            const premiumRole = (await fetchPremiumRole(client, guild))!;
                                             customRole = await role_builder(
                                                 guild,
                                                 roleName,
                                                 hexcolors,
                                                 iconFile?.first(),
-                                                premiumRole?.position
+                                                premiumRole.position
                                             );
 
                                             // register the custom role
