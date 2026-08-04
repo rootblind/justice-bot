@@ -267,7 +267,7 @@ const premiumCommand: ChatCommand = {
                                         }
                                         await buttonInteraction.showModal(role_create_modal());
                                         try {
-                                            const submit = await interaction.awaitModalSubmit({
+                                            const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
                                                 filter: (i) => i.user.id === member.id
                                             });
@@ -329,7 +329,7 @@ const premiumCommand: ChatCommand = {
                                     case "edit-button": {
                                         await buttonInteraction.showModal(role_create_modal(true)); // edit_mode = true
                                         try {
-                                            const submit = await interaction.awaitModalSubmit({
+                                            const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
                                                 filter: (i) => i.user.id === member.id
                                             });
