@@ -17,7 +17,7 @@ import {
 import { discord_image_validator, hasBlockedContent } from "../../utility_modules/discord_helpers.js";
 import { local_config } from "../../objects/local_config.js";
 import { HexcolorRole } from "../../Interfaces/helper_types.js";
-import { hexcolorParser, numifyHexString, timestampNow } from "../../utility_modules/utility_methods.js";
+import { hexcolorParser, numifyHexString } from "../../utility_modules/utility_methods.js";
 
 export const HEXCOLOR_PATTERN = /^([0-9A-Fa-f]{6})(?:-([0-9A-Fa-f]{6}))?$/;
 
@@ -52,7 +52,7 @@ export function role_input_modal() {
  * 
  * @param edit_mode Set all input fields to be optional. Used for editing a role instead.
  */
-export function role_create_modal(edit_mode: boolean = false): ModalBuilder {
+export function role_create_modal(edit_mode: boolean = false, modalId: string | number): ModalBuilder {
     const { nameTextInput, hexcolorTextInput, iconFileInput } = role_input_modal();
     if (edit_mode === true) {
         nameTextInput.setRequired(false);
@@ -72,7 +72,7 @@ export function role_create_modal(edit_mode: boolean = false): ModalBuilder {
         .setDescription("Upload the role icon (under 256KB).")
         .setFileUploadComponent(iconFileInput);
     const roleCreateModal = new ModalBuilder()
-        .setCustomId(`role-create-modal-${timestampNow()}`)
+        .setCustomId(`${modalId}`)
         .setTitle("Create Role")
         .addLabelComponents(nameLabel, hexcolorLabel, iconFileLabel);
     return roleCreateModal;

@@ -268,7 +268,8 @@ const premiumCommand: ChatCommand = {
                                             (await collector).stop();
                                             return;
                                         }
-                                        await buttonInteraction.showModal(role_create_modal());
+                                        const modal = role_create_modal(false, `role-create-modal-${buttonInteraction.id}`);
+                                        await buttonInteraction.showModal(modal);
                                         try {
                                             const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
@@ -299,6 +300,20 @@ const premiumCommand: ChatCommand = {
 
                                             const hexcolors = hexcolorParser(hexColor)!; // validator assures reaching this line has a valid hexcolor
                                             const premiumRole = (await fetchPremiumRole(client, guild))!;
+                                            // re-check the membership
+                                            membership = await PremiumSystemRepo.getGuildFullMembership(
+                                                guild.id,
+                                                member.id
+                                            );
+                                            if (!membership || membership.role !== null) {
+                                                if (!submit.replied || !submit.deferred) {
+                                                    await submit.reply({
+                                                        content: "A custom role already exists.",
+                                                        flags: MessageFlags.Ephemeral
+                                                    });
+                                                }
+                                                return;
+                                            }
                                             customRole = await role_builder(
                                                 guild,
                                                 roleName,
@@ -330,7 +345,8 @@ const premiumCommand: ChatCommand = {
                                         break;
                                     }
                                     case "edit-button": {
-                                        await buttonInteraction.showModal(role_create_modal(true)); // edit_mode = true
+                                        const modal = role_create_modal(true, `role-edit-modal-${buttonInteraction.id}`);
+                                        await buttonInteraction.showModal(modal); // edit_mode = true
                                         try {
                                             const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
