@@ -268,12 +268,13 @@ const premiumCommand: ChatCommand = {
                                             (await collector).stop();
                                             return;
                                         }
-                                        const modal = role_create_modal(false, `role-create-modal-${buttonInteraction.id}`);
+                                        const modalId = `role-create-modal-${crypto.randomUUID()}`;
+                                        const modal = role_create_modal(false, modalId);
                                         await buttonInteraction.showModal(modal);
                                         try {
                                             const submit = await buttonInteraction.awaitModalSubmit({
                                                 time: 300_000,
-                                                filter: (i) => i.user.id === member.id
+                                                filter: (i) => i.user.id === member.id && i.customId === modalId
                                             });
 
                                             const roleName = submit.fields.getTextInputValue("role-name-input");
