@@ -737,7 +737,7 @@ const premiumAdminCommand: ChatCommand = {
                             return;
                         }
 
-                        await interaction.showModal(role_create_modal())
+                        await interaction.showModal(role_create_modal(false, `role-create-modal-${interaction.id}`));
                         try {
                             const submit = await interaction.awaitModalSubmit({
                                 time: 300_000,

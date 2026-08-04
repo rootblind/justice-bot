@@ -97,7 +97,7 @@ const roleCommand: ChatCommand = {
 
         switch (subcommand) {
             case "create": {
-                await interaction.showModal(role_create_modal())
+                await interaction.showModal(role_create_modal(false, `role-create-modal-${interaction.id}`))
                 try {
                     const submit = await interaction.awaitModalSubmit({
                         time: 300_000,
@@ -152,7 +152,7 @@ const roleCommand: ChatCommand = {
                 break;
             }
             case "edit": {
-                await interaction.showModal(role_create_modal(true)); // edit_mode = true
+                await interaction.showModal(role_create_modal(true, `role-create-modal-${interaction.id}`)); // edit_mode = true
                 try {
                     const submit = await interaction.awaitModalSubmit({
                         time: 300_000,
