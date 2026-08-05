@@ -654,7 +654,7 @@ const premiumCommand: ChatCommand = {
                                 acceptButton.setDisabled(true);
                                 refuseButton.setDisabled(true);
                                 try {
-                                    await reply.edit({ components: [inviteButtonsRow] });
+                                    await reply.edit({ components: [] });
                                 } catch {/* do nothing */ }
                             }
                         )

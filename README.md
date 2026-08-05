@@ -1,81 +1,23 @@
 
-# JUSTICE
+# JUSTICE-BOT
 
  
- Discord.js bot developed for [League of Legends Romania Discord](https://discord.com/invite/lolro) and multi purpose features.
-
+ Discord.js bot developed for [League of Legends Romania Discord](https://discord.com/invite/lolro) dedicated to moderation and cutomizable features.
 
 ![Banner](https://i.ibb.co/FWShYyQ/Ephoto360-com-16587092ed1a60.jpg)
 
-## Key modules
+## Features
 
-You can find them [here](https://github.com/rootblind/justice-bot/tree/main/Commands).
+- Moderation commands
+- Multi-layered autovoice
+- Customizable LFG (Looking For Group) general scoped system
+- Logging events
+- Keys based premium system
+- Ticket support system
 
-- Moderation
-- Administration
-- Server Management
-- Miscellaneous
-- Plenty of features planned
-
-## Demo / Tutorial
-This section will be updated at a later date when the project is mature enough.
-
-## How to Use
-
-Clone the project
-
-```bash
-  # HTTP
-  git clone https://github.com/rootblind/justice-bot.git
-
-  # SSH
-  git@github.com:rootblind/justice-bot.git
-```
-
-Go to the project directory
-
-```bash
-  cd justice-bot
-```
-
-Install dependencies
-
-```bash
-  npm install
-  #make sure to be in the project folder
-```
-
-Use Nodejs to run the bot
-
-```bash
-  node -r dotenv/config ./dist/justice.js
-```
-
-## NPM scripts
-
-```bash
-# Compile the TypeScript sources into JavaScript
-npm run build
-
-# Start the bot
-npm run start 
-
-# Build and start the bot, on source change, re-build and re-start the bot using nodemon
-npm run dev
-
-# Empty the dist/ directory
-npm run clean
-
-# Scan the code using ESlint
-npm run lint
-
-# Scan the code and automatically fix ESlint errors if possible
-npm run lint:fix
-```
-
-## Database
-
-Justice-bot uses Postgresql, while the database can be replaced with not much effort, you can learn about Postgres [here](https://www.youtube.com/watch?v=SpfIwlAYaKk).
+## Demo
+This is a demo of a few of the systems above, showing how a logging channel looks like, using the autovoice system to send an LFG post and then opening and closing a ticket.
+[demo]()
 
 ## Get the latest Nodejs version from here:
 [Click](https://nodejs.org/en/)

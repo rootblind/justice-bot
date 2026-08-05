@@ -1,12 +1,18 @@
 // Interfaces and types to help across the code-base wuth specific object formats
 
 import {
+  ButtonInteraction,
   CacheType,
+  ChannelSelectMenuInteraction,
+  ChatInputCommandInteraction,
   Guild,
   GuildMember,
   MessageComponentInteraction,
   ReadonlyCollection,
   Role,
+  RoleSelectMenuInteraction,
+  StringSelectMenuInteraction,
+  UserSelectMenuInteraction,
 
 } from "discord.js";
 
@@ -115,6 +121,14 @@ export interface HexcolorRole {
   color1: string,
   color2: string | null
 };
+
+export type AnyDiscordInteraction =
+  | ChatInputCommandInteraction<CacheType>
+  | ButtonInteraction<CacheType>
+  | StringSelectMenuInteraction<CacheType>
+  | RoleSelectMenuInteraction<CacheType>
+  | ChannelSelectMenuInteraction<CacheType>
+  | UserSelectMenuInteraction<CacheType>
 
 export type {
   PresenceConfig,

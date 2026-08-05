@@ -10,31 +10,31 @@ import {
     ApplicationCommandOptionType,
     Attachment,
     AutoModerationRuleTriggerType,
-    ButtonInteraction,
+    AwaitModalSubmitOptions,
     CacheType,
     CategoryChannel,
-    ChannelSelectMenuInteraction,
     ChannelType,
-    ChatInputCommandInteraction,
     Client, Collection, Guild, GuildBan, GuildBasedChannel, GuildMember,
     InteractionCollector,
+    LabelBuilder,
     MappedInteractionTypes,
     Message,
     MessageComponentInteraction,
     MessageComponentType,
     MessageFlags,
+    ModalBuilder,
+    ModalSubmitInteraction,
     NonThreadGuildBasedChannel,
     OverwriteResolvable,
-    PermissionResolvable, Role, RoleSelectMenuInteraction, SendableChannels, Snowflake,
-    StringSelectMenuInteraction,
+    PermissionResolvable, Role, SendableChannels, Snowflake,
     TextChannel,
     User,
-    UserSelectMenuInteraction,
     VoiceChannel,
 } from "discord.js";
 import { EmbedBuilder, PermissionFlagsBits, ActivityType } from "discord.js";
 import { get_env_var, random_number, read_json_async } from "./utility_methods.js";
 import {
+    AnyDiscordInteraction,
     CollectorCollectHandler,
     CollectorFilterCustom,
     CollectorStopHandler,
@@ -509,6 +509,96 @@ export async function message_collector<T extends MessageComponentType>(
     return collector;
 }
 
+/**
+ * @param built_modal ModalBuilder object
+ * @param id The custom id set to the modal
+ */
+export interface ModalBuilderMethodResponse {
+    built_modal: ModalBuilder,
+    id: string
+}
+/**
+ * 
+ * @param modal_labels The LabelBuilder objects to be attached to the ModalBuilder
+ * @param title The title of the Modal
+ * @param root_id Custom string at the beginning of the customId of the Modal
+ * @returns An object that contains {built_modal: ModalBuilder, id: string}
+ */
+export function modal_builder(
+    modal_labels: LabelBuilder[],
+    title: string,
+    root_id?: string | number
+): ModalBuilderMethodResponse {
+    const uuid = crypto.randomUUID();
+    const id = root_id ? `${root_id}-${uuid}` : `${uuid}`;
+    return {
+        built_modal: new ModalBuilder()
+            .setTitle(title)
+            .setCustomId(id)
+            .setLabelComponents(modal_labels),
+        id: id
+    }
+}
+
+/**
+ * Shows a modal, waits for its submission, and executes the provided callback.
+ *
+ * The modal's generated custom ID is automatically incorporated into the
+ * submission filter, ensuring that only submissions originating from this
+ * specific modal instance are accepted. Any filter supplied through `options`
+ * is evaluated after the custom ID check.
+ *
+ * If the modal submission succeeds, `onSubmit` is invoked with the
+ * `ModalSubmitInteraction`. If awaiting the submission throws (for example,
+ * due to a timeout), `onError` is invoked when provided; otherwise
+ * `handleModalCatch()` is called.
+ *
+ * @param interaction The interaction used to display the modal. The interaction
+ * must not have already been acknowledged (replied to or deferred).
+ * @param modal The modal created by `modal_builder()`.
+ * @param options Options forwarded to `awaitModalSubmit()`. The supplied filter,
+ * if any, is combined with an additional filter that validates the modal's
+ * generated custom ID.
+ * @param onSubmit Callback executed when the modal is successfully submitted.
+ * @param onError Optional callback executed if awaiting the modal submission
+ * throws. When omitted, `handleModalCatch()` is used.
+ *
+ * @throws {Error} If the interaction has already been replied to or deferred.
+ */
+export async function execute_modal(
+    interaction: AnyDiscordInteraction,
+    modal: ModalBuilderMethodResponse,
+    options: AwaitModalSubmitOptions<ModalSubmitInteraction<CacheType>>,
+    onSubmit: (submit: ModalSubmitInteraction<CacheType>) => Promise<void>,
+    onError?: (error: unknown) => Promise<void>
+): Promise<void> {
+    if (interaction.replied || interaction.deferred) {
+        throw new Error("show_modal() was called on an interaction that already replied or was deferred.")
+    }
+
+    await interaction.showModal(modal.built_modal);
+
+    const optionalFilter = options.filter;
+
+    try {
+        const submit = await interaction.awaitModalSubmit({
+            ...options,
+            filter: (i, collected) => {
+                if (i.customId !== modal.id) return false;
+                return optionalFilter ? optionalFilter(i, collected) : true;
+            }
+        });
+
+        await onSubmit(submit);
+    } catch (error) {
+        if (onError) {
+            await onError(error);
+        } else {
+            await handleModalCatch(error, interaction);
+        }
+    }
+}
+
 export function isSubcommand(
     option: unknown
 ): option is APIApplicationCommandSubcommandOption {
@@ -869,13 +959,7 @@ export async function channel_scrapper(
  */
 export async function handleModalCatch(
     error: unknown,
-    interaction?:
-        | ChatInputCommandInteraction<CacheType>
-        | ButtonInteraction<CacheType>
-        | StringSelectMenuInteraction<CacheType>
-        | RoleSelectMenuInteraction<CacheType>
-        | ChannelSelectMenuInteraction<CacheType>
-        | UserSelectMenuInteraction<CacheType>
+    interaction?: AnyDiscordInteraction
 ) {
     if (error instanceof Error && error.message.includes("reason: time")) {
         if (interaction && interaction.replied) {

@@ -11,3 +11,4 @@ nodemon.json
 dist/
 source/Commands/Owner/test.ts
 source/objects/presence-config.json
+.obsidian
