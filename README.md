@@ -59,7 +59,12 @@ flowchart TD
     Repositories --> Database[(Database)]
 ```
 ## Docs
-- 
+
+For more details, please visit the project documentation.
+
+- [Architecture](https://github.com/rootblind/justice-bot/blob/main/docs/architecture.md) defines the software and its components
+- [Conventions](https://github.com/rootblind/justice-bot/blob/main/docs/conventions.md) rules, guidelines, conventions and recommendations for writing code for this project
+- [Notes](https://github.com/rootblind/justice-bot/blob/main/NOTES.md) changes, decisions and overall notes during development.
 ## How to Use / Install
 
 Running the bot requires Nodejs and PostgreSQL to be installed and set up.
