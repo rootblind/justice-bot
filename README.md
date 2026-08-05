@@ -37,7 +37,7 @@ The bot is split down into the following main parts:
 - Models and Repositories: Compose the layer that provides communication between the bot and the database
 - utility_modules: Repeatable patterns or standardized solutions to specific tasks are under this directory
 
-### Architecture diagram
+ **Architecture diagram**
 The diagram below shows a basic flow of how the Client (the user-end) triggers the Discord APIs by taking actions which includes executing commands, which triggers the event callbacks that, in case of the command, calls the corresponding command to execute which may use systems and repositories. While the events execute directly and may as well use repositories. 
 
 ```mermaid
@@ -58,7 +58,12 @@ flowchart TD
     
     Repositories --> Database[(Database)]
 ```
+## Docs
+- 
 ## How to Use / Install
+
+Running the bot requires Nodejs and PostgreSQL to be installed and set up.
+If you need help with that, please refer to the server setup guide [here](https://github.com/rootblind/justice-bot/blob/main/docs/server_setup_guide.md).
 
 Clone the project
 
@@ -166,12 +171,8 @@ Do note, that project is still in work as well!
 ## Author
 
 - [@rootblind](https://www.github.com/rootblind)
-
-
 ## License
 
-[GPL v3](https://github.com/rootblind/justice-bot/blob/main/LICENSE)
-
-
+- [GPL v3](https://github.com/rootblind/justice-bot/blob/main/LICENSE)
 ## League of Legends Romania
 Justice is a project developed with League of Legends Romania's needs in mind, you can check it out at [discord.gg/lolro](https://discord.com/invite/lolro)
