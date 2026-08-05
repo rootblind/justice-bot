@@ -17,7 +17,7 @@
 
 ## Demo
 This is a demo of a few of the systems above, showing how a logging channel looks like, using the autovoice system to send an LFG post and then opening and closing a ticket.
-[demo]()
+![demo](https://github.com/rootblind/justice-bot/blob/main/screenshots/demo.webp)
 
 ## Get the latest Nodejs version from here:
 [Click](https://nodejs.org/en/)
