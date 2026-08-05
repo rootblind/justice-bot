@@ -19,11 +19,102 @@
 This is a demo of a few of the systems above, showing how a logging channel looks like, using the autovoice system to send an LFG post and then opening and closing a ticket.
 ![demo](https://github.com/rootblind/justice-bot/blob/main/screenshots/demo.webp)
 
-## Get the latest Nodejs version from here:
-[Click](https://nodejs.org/en/)
+## Technologies used
+ - [Nodejs](https://nodejs.org/en/)
+ - [TypeScript](https://www.typescriptlang.org/)
+ - [Discordjs](https://discordjs.guide/#before-you-begin)
+ - [PostgreSQL](https://www.postgresql.org/)
+## Design decisions
+- Typescript is a robust superset of Javascript which prevents bugs at compile time and makes the code easier to read than vanilla JS
+- PostgreSQL is important for relational consistency within the data stored by the bot
+- Discordjs is the most used and feature rich framework for building discord bots. Also Discord is built on Electron, which makes its APIs closer to Javascript than any other language
+## Architecture
 
+The bot is split down into the following main parts:
+- Commands: The active frame through which users call the bot to perform tasks
+- Events: Callback functions for each message sent by Discord over the WebSocket connection to make the bot reactive to changes involving the users and the server. Mainly used for logging actions.
+- Systems: Frameworks for building complex and specific features
+- Models and Repositories: Compose the layer that provides communication between the bot and the database
+- utility_modules: Repeatable patterns or standardized solutions to specific tasks are under this directory
 
+### Architecture diagram
+The diagram below shows a basic flow of how the Client (the user-end) triggers the Discord APIs by taking actions which includes executing commands, which triggers the event callbacks that, in case of the command, calls the corresponding command to execute which may use systems and repositories. While the events execute directly and may as well use repositories. 
+
+```mermaid
+flowchart TD
+    Discord["Discord API"]
+
+    Client -. Triggers Event / Command .-> Discord
     
+    Discord --> Events
+	
+    Commands --> Systems
+    Commands --> Repositories
+    Commands -. Respond .-> Client
+    
+    Events --> Repositories
+    Events -. interactionCreate event .-> Commands
+    Events -. Respond .-> Client 
+    
+    Repositories --> Database[(Database)]
+```
+## How to Use / Install
+
+Clone the project
+
+```bash
+  # HTTP
+  git clone https://github.com/rootblind/justice-bot.git
+
+  # SSH
+  git@github.com:rootblind/justice-bot.git
+```
+
+Go to the project directory
+
+```bash
+  cd justice-bot
+```
+
+Install dependencies
+
+```bash
+  npm install
+  #make sure to be in the project folder
+```
+
+Use Nodejs to run the bot
+
+```bash
+  node -r dotenv/config ./dist/justice.js
+```
+
+## NPM scripts
+
+```bash
+# Compile the TypeScript sources into JavaScript
+npm run build
+
+# Start the bot
+npm run start 
+
+# Build and start the bot, on source change, re-build and re-start the bot using nodemon
+npm run dev
+
+# Empty the dist/ directory
+npm run clean
+
+# Scan the code using ESlint
+npm run lint
+
+# Scan the code and automatically fix ESlint errors if possible
+npm run lint:fix
+```
+
+## Database
+
+Justice-bot uses PostgreSQL, while the database can be replaced with not much effort, you can learn about Postgres [here](https://www.youtube.com/watch?v=SpfIwlAYaKk).
+
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your .env file
@@ -72,13 +163,6 @@ The bot uses an API provided by my own language model. At the moment there is on
 Please visit the ML repository [here](https://github.com/rootblind/opjustice-lm).
 
 Do note, that project is still in work as well!
-
-## Technologies used
- - [Nodejs](https://nodejs.org/en/)
- - [TypeScript](https://www.typescriptlang.org/)
- - [Discordjs](https://discordjs.guide/#before-you-begin)
- - [PostgreSQL](https://www.postgresql.org/)
-
 ## Author
 
 - [@rootblind](https://www.github.com/rootblind)
