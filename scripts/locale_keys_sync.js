@@ -3,7 +3,7 @@ import path from 'path';
 
 let sourceLng = "en";
 let targetLng = "ro";
-const defaultDir = "./locales/";
+const defaultDir = "../locales/";
 const translationFile = "translation.json";
 
 function syncKeys(src, target) {

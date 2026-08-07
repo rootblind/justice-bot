@@ -121,6 +121,13 @@ npm run lint
 npm run lint:fix
 ```
 
+
+## Additional scripts
+
+Inside `scripts/` are tool to help with development.
+
+- locale_keys_sync: syncs the keys of two locale.json files between a source and a target
+- pm2_start and pm2_autostart: Bash scripts to start a pm2 session with specific parameters and save the session and enable it to auto-start on system boot.
 ## Database
 
 Justice-bot uses PostgreSQL, while the database can be replaced with not much effort, you can learn about Postgres [here](https://www.youtube.com/watch?v=SpfIwlAYaKk).
