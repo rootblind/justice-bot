@@ -38,20 +38,12 @@
 
 ## 6. Minimal workflow
 
-Task
- |
-Read relevant architecture
- |
-Find analogous implementation
- |
-Identify existing abstractions
- |
-Implement smallest appropriate change
- |
-Check conventions
- |
-Test / verify
- |
-Document exceptions
- |
-Submit for review
+1. Identify the task
+2. Read relevant architecture
+3. Find analogous implementation
+4. Identify existing abstractions
+5. Implement smallest appropriate change
+6. Check conventions
+7. Test / verify
+8. Document exceptions
+9. Submit for review
