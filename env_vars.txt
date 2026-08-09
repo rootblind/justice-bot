@@ -9,8 +9,8 @@ HOME_SERVER_ID=
 
 # database vars
 DBPASS="testpass"
-DBHOST="localhost"
-DBUSER="postgres"
+DBHOST="postgres"
+DBUSER="justice"
 DBPORT=5432
 DBNAME="testdb"
 

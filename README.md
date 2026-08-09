@@ -69,7 +69,20 @@ For more details, please visit the project documentation.
 ## How to Use / Install
 
 Running the bot requires Nodejs and PostgreSQL to be installed and set up.
-If you need help with that, please refer to the server setup guide [here](https://github.com/rootblind/justice-bot/blob/main/docs/server_setup_guide.md).
+
+If you want to run the bot directly on your system, read the server setup guide [here](https://github.com/rootblind/justice-bot/blob/main/docs/server_setup_guide.md).
+
+### Running the bot using Docker
+
+Make sure Docker is installed
+
+```bash
+docker --version && docker compose version
+```
+
+If you don't see two lines printing the versions of Docker and Docker Compose, than Docker is not installed on your machine.
+
+Please follow [official installation guides](https://docs.docker.com/engine/install/debian/) or youtube tutorials to set up Docker on your machine before proceeding with the steps.
 
 Clone the project
 
@@ -87,19 +100,57 @@ Go to the project directory
   cd justice-bot
 ```
 
-Install dependencies
+Create the .env file using the template
 
 ```bash
-  npm install
-  #make sure to be in the project folder
+cp env_vars.txt .env
 ```
 
-Use Nodejs to run the bot
+Use your text editor of choice to open .env and complete the variables needed.
+
+Attention, DBHOST must be set to "postgres" as this is what the postgres container will set it up to be on its end so the bot needs to use the correct hostname.
 
 ```bash
-  node -r dotenv/config ./dist/justice.js
+nano .env
 ```
 
+Make sure you're inside `justice-bot/` and run
+
+```bash
+docker compose up -d --build
+```
+
+Check whether it worked
+
+```bash
+docker compose ps
+```
+
+You should see something that looks like this
+
+```bash
+NAME                 STATUS
+justice-bot-bot      Up
+justice-bot-postgres Up (healthy)
+```
+
+Steps to update the bot
+
+```bash
+cd justice-bot
+git pull
+docker compose up -d --build
+```
+
+Useful Docker commands for the bot
+
+```bash
+docker compose logs -f bot # show bot's output
+
+docker compose down # stop the bot
+
+docker compose restart bot # restart the bot
+```
 ## NPM scripts
 
 ```bash
