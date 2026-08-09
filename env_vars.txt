@@ -1,24 +1,34 @@
+# mandatory
+
+# Discord related vars
 BOT_TOKEN=
 CLIENT_SECRET=
 CLIENT_ID=
 OWNER=
 HOME_SERVER_ID=
 
-DBPASS=
-DBHOST=
-DBUSER=
-DBPORT=
-DBNAME=
+# database vars
+DBPASS="testpass"
+DBHOST="localhost"
+DBUSER="postgres"
+DBPORT=5432
+DBNAME="testdb"
 
-MOD_API_URL=
-
+# encryption vars
 ENCRYPT_KEY=
 IV=
-ALGORITHM=
+ALGORITHM="aes-256-cbc"
 
-ENABLE_SERVER=1
-SERVER_HOST=
-SERVER_PORT=
+# optional
 
-WEB_BACK_PORT=
-WEB_FRONT_PORT=
+# moderation model API
+MOD_API_URL="http://127.0.0.1:8080/"
+
+# bot rest api server
+ENABLE_SERVER=0
+SERVER_HOST="http://localhost"
+SERVER_PORT=5000
+
+# web app ports
+WEB_BACK_PORT=5001
+WEB_FRONT_PORT=5002
