@@ -26,7 +26,7 @@ export async function load_commands(client: Client) {
     const commandsPath = path.join(__dirname, "../Commands");
     const files = getFilesRecursive(commandsPath);
 
-    for(const filePath of files) {
+    for (const filePath of files) {
         await load_command_file(client, filePath);
     }
 }
@@ -34,16 +34,18 @@ export async function load_commands(client: Client) {
 export async function load_command_file(client: Client, filePath: string) {
     const command: ChatCommand = await import(filePath).then(m => m.default ?? m);
 
-    if(!isChatCommand(command)) {
+    if (!isChatCommand(command)) {
         throw new Error(`Command at ${filePath} is not respecting the ChatCommand interface.`)
     }
 
-    if(command.metadata.disabled) {
+    if (command.metadata.disabled) {
         table.addRow(command.data.name, "Disabled");
         return;
     }
-    
-    if(command.metadata.scope === "global") command.metadata.group = "global";
+
+    if (command.metadata.scope === "global") command.metadata.group = "global";
+    // unassigned command groups default to global
+    if (command.metadata.group === undefined) command.metadata.group = "global";
 
     table.addRow(command.data.name, "Enabled");
     client.commands.set(command.data.name, command);
@@ -70,8 +72,8 @@ export async function sync_guild_commands(client: Client, guild: Guild) {
     const disabledGroups = await GuildModulesRepo.getGuildDisabled(guild.id);
     // scope === "guild" and group is not included in disabledGroups
     const filteredCommands = client.commands.filter(
-        cmd => 
-            cmd.metadata.scope === "guild" && 
+        cmd =>
+            cmd.metadata.scope === "guild" &&
             !disabledGroups.includes(cmd.metadata.group || "")
     );
 

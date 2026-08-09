@@ -5,7 +5,7 @@ This installation guide uses Debian.
 This file serves as a guide to walk through setting up a linux server to run the Justice-Bot.
 
 
-## Create a sudoer user account
+## 1. Create a sudoer user account
 
 ```bash
 adduser server # any username, server is used in this example
@@ -13,20 +13,20 @@ adduser server # any username, server is used in this example
 usermod -aG sudo server
 ```
 
-## Change from root to user
+## 2. Change from root to user
 
 ```bash
 su - server
 ```
 
-## Make sure the system is up to date
+## 3. Make sure the system is up to date
 
 ```bash
 sudo apt update
 sudo apt upgrade
 ```
 
-## Postgresql installation
+## 4. Postgresql installation
 
 Install packages
 
@@ -108,7 +108,7 @@ Now you can access the database from the terminal by connecting to it locally
 psql -U testuser -d testdb -h localhost # will ask for the password provided when the user was created
 ```
 
-## Node.js installation
+## 5. Node.js installation
 
 Node.js will be installed using `fnm`.
 
@@ -150,8 +150,8 @@ node -v
 npm -v
 ```
 
-## FTP
-If you don't care about FTP, skip this section.
+## 6. FTP
+If you don't care about FTP, skip this section to **7. Setting up the project**.
 
 Additionally, you can set up FTP service on your linux server in order to use clients such as FileZilla to easily upload and download files from the server.
 
@@ -363,7 +363,7 @@ sudo systemctl restart vsftpd
 
 If everything worked correctly, now you should be able to connect using an FTP client.
 
-## Setting up the project
+## 7. Setting up the project
 
 Install git if it's not already installed
 

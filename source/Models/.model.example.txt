@@ -6,7 +6,12 @@ import type {  } from "../Interfaces/database_types.js";
 export default async function Table(): Promise<Result<TableInterface>> {
     try{
         const result: Result<TableInterface> = await database.query(
-            
+            `CREATE TABLE IF NOT EXISTS table_example(
+	            primary_key_column,
+	            column_1,
+	            column_2,
+	            etc
+            );`
         );
         
         return result;

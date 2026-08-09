@@ -3,13 +3,13 @@
 In this document the software is described along with its components and what they are used for.
 It's assumed that the reader is familiar with the technologies involved in this project as this documents how they are used to build Justice-bot.
 
-## Overview
+## 1. Overview
 
 Justice-bot is a collection of systems built on top of the Discordjs framework to build a modern and feature rich Discord bot focused on moderation, logging and systems that add functionality to a Discord server such as the Autovoice system and the LFG system.
 
 The philosophy of Justice-bot is to have independent systems that use common general purpose resources to build functionality on top of the Discord bot which is just an interface between the Client (discord users) and the systems.
 
-## Diagram
+## 2. Diagram
 
 The bot is split down into the following main parts:
 - Commands: The active frame through which users call the bot to perform tasks
@@ -40,7 +40,7 @@ flowchart TD
     Repositories --> Database[(Database)]
 ```
 
-## Structure
+## 3. Structure
 
 This section describes each major directory and its purpose.
 
@@ -49,25 +49,25 @@ The only files that live directly under the source directory are:
 - justice.ts: This is the entry point of the application, the main file, but for novelty reasons, it was named like the bot. This is also the most abstract part of the codebase as it calls the initializer of the Client object, sets it up, loads and registers commands, events and error listeners and boots up the bot.
 - client_provider.ts: Defines the methods through which the Client object is instantiated, set and requested. The init function loads custom caching and cleanup parameters.
 
-### Commands
+### 3.1 Commands
 
 Commands are callbacks to the `interactionCreate` event. Each command has its own source to execute. Commands are grouped in subdirectories based on the kind of task it performs.
 Commands run the highest abstractions of the systems, being one of the ways users interact with the bot.
 
-### Config
+### 3.2 Config
 
 API configurations for tools or external applications such as the database, locale (i18n) and the cache library.
 
-### Events
+### 3.3 Events
 
 Events are Discord API messages that trigger callbacks upon users or servers performing specific actions.
 In this directory, separated in subdirectories depending if the event refers to the client, a guild (server) or an interaction being created, are the sources that are executed upon event callbacks.
 
-### Handlers
+### 3.4 Handlers
 
 Before the bot connects to the Discord server, it needs to load the source files for commands and events as objects to be sent to Discord to be registered. Handlers ensure this important functionality.
 
-### Interfaces
+### 3.5 Interfaces
 
 A collection of reusable interfaced used across the codebase. Interfaces are categorized based on the kind of data they represent. Database related interfaces are in `database_types.ts` and general scope interfaces are inside `helper_types.ts`.
 
@@ -85,33 +85,33 @@ A collection of reusable interfaced used across the codebase. Interfaces are cat
 
 - lfg_system: Types specific to the LFG System
 
-### lolro_pack
+### 3.6 lolro_pack
 
 While the majority of the bot is written with general purpose in mind, very specific features that are required by League of Legends Romania are inside this pack.
 
 Some features require having League of Legends in mind and can not be easily generalized without a lot of overhead for what should be a simple feature.
 
 
-### Models and Repositories
+### 3.7 Models and Repositories
 
 Those are the only places where queries are being used and the rest of the codebase requires calling repositories in order to communicate with the database.
 
 - Models define the tables of the database that are constructed by a source inside this directory called `modelsInit.ts` which loads and executes each model source file
 - Repositories define method to interact with specific tables  in determinated ways. Each repository file corresponds to a model file with the same name
 
-### objects
+### 3.8 objects
 
 Compile time constants.
 
 As .json files are not copied over to `dist/`, it's more convenient to define config files as source files that can be imported wherever needed.
-### server
+### 3.9 server
 
 The REST API backend of the bot to expose endpoints.
 
 Intented to be used with a dashboard web application.
 
 
-### Systems
+### 3.10 Systems
 
 Feature specific subsystem built on top of Discordjs form a system.
 
@@ -120,11 +120,11 @@ Systems are required by features that use multiple commands / subcommands that w
 Another purpose of a system-based feature is that it enables it to be implemented through multiple kinds of interactions. For example having the same logic run behind both a slash command and a button interaction without the need to change something as a good implementation of the system is agnostic to the way it's called while it can get the required input.
 
 
-### types
+### 3.11 types
 
 Modules that require specific declarations.
 
-### utility_modules
+### 3.12 utility_modules
 
 Provides bot-wide abstractions and standardized implementations. Unlike Systems, which encapsulate feature-specific functionality, utility modules provide functionality intended to be reusable across unrelated features.
 

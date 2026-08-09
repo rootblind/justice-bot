@@ -45,6 +45,19 @@ export function t(
         : fixedT(key);
 }
 
+/**
+ * Gets the localized value for a translation key across all configured locales.
+ *
+ * The returned record maps each configured locale to its translated value,
+ * and can be passed directly to Discord localization methods such as
+ * `setDescriptionLocalizations()`.
+ *
+ * Locales for which the translation is missing or resolves to the key itself
+ * are omitted from the result.
+ *
+ * @param key The JSON key inside the translation file.
+ * @returns A record mapping locale codes to their localized translation values.
+ */
 export function getLocalizationRecord(key: string) {
     const result: Record<string, string> = {};
     for (const locale of local_config.locales) {

@@ -8,10 +8,10 @@ export function extend_errorEvent(hook: errorEventHook) {
 }
 
 async function runHooks(error: Error) {
-    for(const hook of hooks) {
+    for (const hook of hooks) {
         try {
             await hook(error);
-        } catch(error) {
+        } catch (error) {
             await errorLogHandle(error);
         }
     }
@@ -21,7 +21,9 @@ async function runHooks(error: Error) {
 const errorEvent: Event = {
     name: "error",
     async execute(error: Error) {
-        errorLogHandle(error, undefined, undefined, false);
+        const message = undefined;
+        const title = undefined;
+        errorLogHandle(error, message, title, false);
         await runHooks(error);
     }
 }
