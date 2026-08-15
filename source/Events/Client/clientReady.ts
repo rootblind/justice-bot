@@ -101,7 +101,6 @@ const clientReady: Event = {
         if (local_config.sources.event_hooks) {
             try {
                 const eventHooks = await load_onReady_tasks(local_config.sources.event_hooks);
-                console.log(eventHooks?.map(x => x.name));
                 if (eventHooks) await on_ready_execute("Event Hooks", eventHooks);
             } catch (error) {
                 await errorLogHandle(error, "", "Fatal error");

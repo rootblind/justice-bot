@@ -6,6 +6,7 @@ import AutoBanChannelRepo from "../Repositories/autobanchannel.js";
 import { ban_handler } from "../Systems/moderation/ban_system.js";
 import { PunishmentType } from "../objects/enums.js";
 import { errorLogHandle } from "./error_logger.js";
+import { duration_to_seconds } from "./utility_methods.js";
 
 export const autobanChannelOnMessageSent: OnReadyTaskBuilder = {
     name: "Autoban channel on message sent",
@@ -26,7 +27,7 @@ export const autobanChannelOnMessageSent: OnReadyTaskBuilder = {
                 // valid member for ban
                 try {
                     const deleteMessages = true;
-                    const noDuration = undefined;
+                    const duration_seconds = String(duration_to_seconds("1h")!);
                     const no_punishlog = true;
                     const sendDM = false;
                     const moderationLogs = await fetchLogsChannel(guild, "moderation");
@@ -35,10 +36,10 @@ export const autobanChannelOnMessageSent: OnReadyTaskBuilder = {
                         guild,
                         author.user,
                         botMember.user,
-                        PunishmentType.INDEFINITE_BAN,
+                        PunishmentType.TEMPBAN,
                         reason,
                         deleteMessages,
-                        noDuration,
+                        duration_seconds,
                         moderationLogs,
                         no_punishlog,
                         sendDM
