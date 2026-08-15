@@ -68,7 +68,7 @@ const nuke_category: ChatCommand = {
             {
                 componentType: ComponentType.ChannelSelect,
                 time: 120_000,
-                filter: (i) => i.user.id === member.id
+                filter: (i) => i.user.id === guild.ownerId
             },
             async (selectInteraction) => {
                 for (const id of selectInteraction.values) {

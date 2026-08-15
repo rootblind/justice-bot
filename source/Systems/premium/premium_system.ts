@@ -44,7 +44,9 @@ export async function remove_premium_from_member(
     const customRole = await fetchMemberCustomRole(client, guild, memberId);
     // handling the case where the booster is still a guild member but no longer boosting
     if (member) {
-        await member.roles.remove(premiumRole); // remove premium server role from the member
+        try {
+            await member.roles.remove(premiumRole); // remove premium server role from the member
+        } catch {/* do nothing */ }
     }
 
     if (customRole) {

@@ -19,6 +19,7 @@ import {
     formatDate,
     formatTime,
     get_current_version,
+    get_env_var,
     isFileOk
 } from "../../utility_modules/utility_methods.js";
 import modelsInit from "../../Models/modelsInit.js";
@@ -27,6 +28,7 @@ import fs from "graceful-fs";
 import { init_cron_jobs, load_cron_source } from "../../utility_modules/cronHandler.js";
 import { load_onReady_tasks, on_ready_execute } from "../../utility_modules/onReadyTasksHandler.js";
 import { local_config } from "../../objects/local_config.js";
+import startServer from "../../server/server.js";
 
 export type clientReadyHook = (client: Client) => Promise<void>;
 const hooks: clientReadyHook[] = [];
@@ -95,21 +97,17 @@ const clientReady: Event = {
             }
         }
 
-        // load event hooks (event extends)
-        // re-using the on ready task logic
-        // In order to add functionality to base sources, config_sources.event_hooks must implement them
-        // in order to keep the base sources unchanged
-        /* NO EVENT HOOK TO BE LOADED AT THE MOMENT
-        if(local_config.sources.event_hooks) {
+        // event hooks
+        if (local_config.sources.event_hooks) {
             try {
                 const eventHooks = await load_onReady_tasks(local_config.sources.event_hooks);
-                if(eventHooks) await on_ready_execute("Event Hooks", eventHooks);
-            } catch(error) {
+                console.log(eventHooks?.map(x => x.name));
+                if (eventHooks) await on_ready_execute("Event Hooks", eventHooks);
+            } catch (error) {
                 await errorLogHandle(error, "", "Fatal error");
                 setTimeout(() => process.exit(1), 5_000);
             }
         }
-        */
 
         // attach collectors
         if (local_config.sources.attach_collectors) {
@@ -159,6 +157,12 @@ const clientReady: Event = {
 
         // run extended code
         await runHooks(client);
+
+        const enableAPIServer = Number(get_env_var("ENABLE_SERVER"));
+
+        if (enableAPIServer === 1) {
+            await startServer(client);
+        }
 
         //////////////////////////////////////////////////////////////////
         //These lines of code are meant to be displayed at the very end//
