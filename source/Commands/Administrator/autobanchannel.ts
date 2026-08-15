@@ -13,7 +13,7 @@ import AutoBanChannelRepo from "../../Repositories/autobanchannel.js";
 const autobanChannelCommand: ChatCommand = {
     data: new SlashCommandBuilder()
         .setName("autoban-channel")
-        .setDescription("Set a channel to indefinitely ban anyone that types in it.")
+        .setDescription("Set a channel to temporary ban anyone that types in it.")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
         .addSubcommand(subcommand =>
             subcommand.setName("set")
