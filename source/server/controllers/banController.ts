@@ -31,6 +31,7 @@ export const getBan = async (req: Request, res: Response, client: Client) => {
         moderator: null,
         expires: "Indefinite",
         reason: "None",
+        account_created_at: ban.user.createdTimestamp,
         timestamp: null
     };
 

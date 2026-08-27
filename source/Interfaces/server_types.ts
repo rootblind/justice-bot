@@ -5,16 +5,18 @@ interface BanInfo {
     moderator: string | null,
     expires: string | number,
     reason: string,
-    timestamp: string | null
+    timestamp: string | null,
+    account_created_at: number
 }
 
 interface MemberInfo {
-    avatar: string,
+    // timestamps are in seconds
+    avatar: string | null,
     joined_guild_at: number | null,
-    premium: boolean
+    account_created_at: number
 }
 
-export type { 
-    BanInfo, 
-    MemberInfo, 
- };
+export type {
+    BanInfo,
+    MemberInfo,
+};

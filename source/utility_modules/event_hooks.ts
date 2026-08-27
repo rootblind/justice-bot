@@ -16,6 +16,7 @@ export const autobanChannelOnMessageSent: OnReadyTaskBuilder = {
                 const author = message.member;
                 if (!author || author.user.bot) return;
                 const guild = author.guild;
+                if (author.id === guild.ownerId) return; // ignore the owner
                 const autobanChannelId = await AutoBanChannelRepo.get(guild.id);
                 // ignore if it's not the autoban channel
                 if (!autobanChannelId || message.channel.id !== autobanChannelId) return;

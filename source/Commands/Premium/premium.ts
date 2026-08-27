@@ -496,6 +496,7 @@ const premiumCommand: ChatCommand = {
                             return;
                         }
 
+
                         // currently inviting someone to share the role with limits the invited user to a single such role
                         // so at most a member can have their own custom role and an additional one from accepting 
                         // someone else's invitation
@@ -506,6 +507,7 @@ const premiumCommand: ChatCommand = {
                                 targetMember.id
                             )
                         );
+                        /** AT MEMBERS REQUEST, the limit has been temporarely removed
                         const hasCommonRoles = targetMember.roles.cache.some(role => notOwnedCustomRoleIds.has(role.id));
                         if (hasCommonRoles) {
                             await interaction.reply({
@@ -516,7 +518,7 @@ const premiumCommand: ChatCommand = {
                             });
                             return;
                         }
-
+                        **/
                         const inviteCooldown = PremiumSystemRepo.getInviteCooldown(member.id, targetMember.id);
                         const nowTimestamp = timestampNow();
                         if (inviteCooldown && nowTimestamp < inviteCooldown) {

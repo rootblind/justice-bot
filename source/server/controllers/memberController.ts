@@ -2,9 +2,7 @@ import type { Request, Response } from "express";
 import type { Client } from "discord.js";
 
 import { fetchGuild, fetchGuildMember } from "../../utility_modules/discord_helpers.js";
-import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import type { MemberInfo } from "../../Interfaces/server_types.js";
-import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export const getMember = async (req: Request, res: Response, client: Client) => {
     const { guild_id, member_id } = req.query;
@@ -25,27 +23,17 @@ export const getMember = async (req: Request, res: Response, client: Client) => 
         });
     }
 
-    try {
-        const premiumTier = await PremiumSystemRepo.getMembershipTier(guild.id, member.id);
-
-        const memberObject: MemberInfo = {
-            avatar: member.displayAvatarURL(), // add {extension: "png"} if a format is needed
-            joined_guild_at: member.joinedTimestamp,
-            premium: Boolean(premiumTier !== null)
-        }
-
-        return res.status(200).json({
-            success: true,
-            member: memberObject
-        });
-
-    } catch (error) {
-        await errorLogHandle(error);
-
-        return res.status(500).json({
-            success: false,
-            member: null,
-            error: "Failed fatching from database premiummembers"
-        })
+    const joinedTimestamp = member.joinedTimestamp;
+    const createdTimestamp = member.user.createdTimestamp;
+    const memberObject: MemberInfo = {
+        avatar: member.displayAvatarURL(), // add {extension: "png"} if a format is needed
+        joined_guild_at: joinedTimestamp ? Math.floor(joinedTimestamp / 1000) : null,
+        account_created_at: Math.floor(createdTimestamp / 1000)
     }
+
+    return res.status(200).json({
+        success: true,
+        member: memberObject
+    });
+
 }

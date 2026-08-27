@@ -14,7 +14,8 @@ const deassignSharedRole: ChatCommand = {
         botPermissions: [PermissionFlagsBits.ManageRoles],
         group: "premium",
         category: "Miscellaneous",
-        scope: "guild"
+        scope: "guild",
+        testOnly: true
     },
     async execute(interaction) {
         const member = interaction.member as GuildMember;
