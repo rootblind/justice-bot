@@ -510,6 +510,21 @@ export async function message_collector<T extends MessageComponentType>(
 }
 
 /**
+ * Generate a random UUID with optional custom prefix and separator
+ */
+export function custom_uuid(
+    options?: {
+        customId?: string | undefined,
+        separator?: string | undefined
+    }
+): string {
+    const uuid = crypto.randomUUID();
+    const separator = options?.separator ?? "-";
+
+    return options?.customId ? [options.customId, uuid].join(separator) : uuid;
+}
+
+/**
  * @param built_modal ModalBuilder object
  * @param id The custom id set to the modal
  */
@@ -527,16 +542,15 @@ export interface ModalBuilderMethodResponse {
 export function modal_builder(
     modal_labels: LabelBuilder[],
     title: string,
-    root_id?: string | number
+    root_id?: string
 ): ModalBuilderMethodResponse {
-    const uuid = crypto.randomUUID();
-    const id = root_id ? `${root_id}-${uuid}` : `${uuid}`;
+    const customId = custom_uuid({ customId: root_id, separator: "-" });
     return {
         built_modal: new ModalBuilder()
             .setTitle(title)
-            .setCustomId(id)
+            .setCustomId(customId)
             .setLabelComponents(modal_labels),
-        id: id
+        id: customId
     }
 }
 
