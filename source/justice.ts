@@ -19,6 +19,7 @@ import { error_logger, errorLogHandle } from './utility_modules/error_logger.js'
 // Load modules (events and commands)
 import { load_events } from './Handlers/eventHandler.js';
 import { load_commands, registerGlobalCommands } from './Handlers/commandHandler.js';
+import clientReady from './Events/Client/clientReady.js';
 
 const intents = Object.values(GatewayIntentBits).filter(
     (v): v is number => typeof v === "number"
@@ -41,15 +42,15 @@ const TOKEN = get_env_var("BOT_TOKEN");
 client.commands = new Collection();
 
 process.on('uncaughtException', (error) => {
-    error_logger.error(`Unhandled Exception: ${error.message}`, {stack: error.stack});
+    error_logger.error(`Unhandled Exception: ${error.message}`, { stack: error.stack });
     setTimeout(() => {
-            process.exit(1);
+        process.exit(1);
     }, 5_000);
 });
 
 process.on('unhandledRejection', (reason) => {
-    if(reason instanceof Error) {
-        error_logger.error(`Unhandled Reject: ${reason.message}`, {stack: reason.stack});
+    if (reason instanceof Error) {
+        error_logger.error(`Unhandled Reject: ${reason.message}`, { stack: reason.stack });
         setTimeout(() => {
             process.exit(1);
         }, 5_000);
@@ -67,7 +68,9 @@ async function main() {
         await load_commands(client); // loading command sources comes above registering them
         await registerGlobalCommands(client);
         await load_events(client); // keep events to bottom
-    } catch(error) {
+        await clientReady.execute(client);
+    } catch (error) {
+        console.error(error);
         await errorLogHandle(error);
     }
 }

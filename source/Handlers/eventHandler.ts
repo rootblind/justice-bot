@@ -16,17 +16,20 @@ export async function load_events(client: Client) {
 
     const folders = fs.readdirSync(eventsPath);
 
-    for(const folder of folders) {
+    for (const folder of folders) {
         const folderPath = path.join(eventsPath, folder);
         const files = fs.readdirSync(folderPath)
-            .filter((file: string) => file.endsWith(".js"));
+            .filter((file: string) =>
+                file.endsWith(".js") &&
+                file !== "clientReady.js"
+            );
 
-        for(const file of files) {
+        for (const file of files) {
             const filePath = path.join(folderPath, file);
             const event: Event = await import(filePath).then(m => m.default ?? m);
             // checking if the event is restful
-            if(event.rest) {
-                if(event.once) {
+            if (event.rest) {
+                if (event.once) {
                     // if the event is one-time, register it as once
                     client.rest.once(event.name, (...args) =>
                         event.execute(...args, client)
@@ -38,7 +41,7 @@ export async function load_events(client: Client) {
                 }
             } else {
                 // events that are not restful
-                if(event.once) {
+                if (event.once) {
                     client.once(event.name, (...args) =>
                         event.execute(...args, client)
                     );

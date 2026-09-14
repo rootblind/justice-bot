@@ -11,7 +11,7 @@
  * or even worse, attach collectors to messages that have their rows cleared afterwards.
  */
 import type { Event } from "../../Interfaces/event.js";
-import type { Client } from "discord.js";
+import { Events, type Client } from "discord.js";
 import "colors";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import {
@@ -47,7 +47,7 @@ async function runHooks(client: Client) {
 }
 
 const clientReady: Event = {
-    name: "clientReady",
+    name: Events.ClientReady,
     once: true,
     async execute(client: Client) {
         if (!client.user) {

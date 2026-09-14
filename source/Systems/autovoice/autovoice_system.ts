@@ -94,6 +94,8 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
         }
     }
 
+    await AutoVoiceRoomRepo.setCooldown(guild.id, member.id);
+
     const voiceRoom = await category.children.create({
         name: `Room #${order}`,
         type: ChannelType.GuildVoice,
@@ -101,9 +103,9 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     });
 
     await AutoVoiceRoomRepo.put(guild.id, voiceRoom.id, member.id, order);
-    await AutoVoiceRoomRepo.setCooldown(guild.id, member.id);
+
     try {
-        member.voice.setChannel(voiceRoom);
+        await member.voice.setChannel(voiceRoom);
     } catch (error) {
         await errorLogHandle(error);
     }

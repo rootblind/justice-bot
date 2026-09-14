@@ -58,7 +58,7 @@ const voiceStateUpdate: Event = {
         }
 
         // manage autovoice channels
-        if (newState.channel instanceof VoiceChannel) {
+        if (newState.channel instanceof VoiceChannel && oldState.channelId !== newState.channelId) {
             // if member moves or joins a channel, call create_autovoice which does the necessary checks
             try {
                 await create_autovoice_room(newState.channel, member);
