@@ -80,7 +80,7 @@ const redeemPremium: ChatCommand = {
         // has uses and the dedicated user matches the member or the code can be used by anyone (no dedicated user)
 
         // interactionCreate guarantees running redeem-premium can be done only if a premium role exists
-        const premiumRole = (await fetchPremiumRole(client, guild))!;
+        const premiumRole = (await fetchPremiumRole(client!, guild))!;
 
         try {
             member.roles.add(premiumRole); // assign the premium role

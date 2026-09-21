@@ -8,6 +8,7 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
+import AntiAltGuardRepo from "../../Repositories/antialtguardsystem.js";
 
 export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
 const hooks: channelDeleteHook[] = [];
@@ -48,6 +49,9 @@ const channelDelete: Event = {
 
         // clean ticket system
         await TicketSystemRepo.onManagerDelete(guild.id, channel.id);
+
+        // clean antialt guard system
+        await AntiAltGuardRepo.onSystemComponentDelete(guild.id, channel.id);
 
         await runHooks(channel);
         // logging

@@ -9,8 +9,7 @@ config();
 
 import type { Client } from "discord.js";
 import { get_env_var } from "../utility_modules/utility_methods.js";
-
-
+import verifyRoutes from "./routes/verifyRoutes.js";
 
 const startServer = async (client: Client) => {
     const serverApp = express();
@@ -27,7 +26,7 @@ const startServer = async (client: Client) => {
         cors({
             origin: allowedOrigins,
             credentials: true
-            
+
         })
     );
 
@@ -37,6 +36,7 @@ const startServer = async (client: Client) => {
     // routes
     serverApp.use("/bot/ban/", banRoutes(client));
     serverApp.use("/bot/member", memberRoutes(client));
+    serverApp.use("/bot/verify", verifyRoutes(client));
 
     serverApp.listen(PORT);
 

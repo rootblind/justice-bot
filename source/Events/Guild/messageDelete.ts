@@ -15,6 +15,7 @@ import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
+import AntiAltGuardRepo from "../../Repositories/antialtguardsystem.js";
 
 export type messageDeleteHook = (message: Message) => Promise<void>;
 const hooks: messageDeleteHook[] = [];
@@ -130,6 +131,9 @@ const messageDelete: Event = {
             // ticket system
             await TicketSystemRepo.onManagerDelete(guild.id, message.id);
             await TicketSystemRepo.deleteTicketBySnowflake(message.id);
+
+            // clean antialt guard system
+            await AntiAltGuardRepo.onSystemComponentDelete(guild.id, message.id);
         }
     }
 }

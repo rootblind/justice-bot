@@ -253,3 +253,26 @@ export interface DailyMessageObject {
     message: string,
     schedule: string
 }
+
+/**
+ * @param guild The guild. Only one setup per guild.
+ * 
+ * @param category The category of the system
+ * 
+ * @param verification_channel The channel where members are redirected to the webapp
+ * 
+ * @param verification_message_menu The snowflake of the message that acts as the menu in verification_channel.
+ * 
+ * @param assessment_channel The channel where manual verification is required
+ * 
+ * @param verified_role The role assigned to verified members
+ */
+export interface AntiAltGuardSetupObj extends GuildTable {
+    category: string,
+    verification_channel: string,
+    verification_message_menu: string,
+    assessment_channel: string,
+    verified_role: string
+}
+
+export type AntiAltGuardSetupRow = AntiAltGuardSetupObj & { id: string }

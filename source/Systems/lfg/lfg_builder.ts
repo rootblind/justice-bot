@@ -25,7 +25,7 @@ import { getChannelNameModal, getGamemodeModal } from "./lfg_modals.js";
 import { embed_interface_manager, interface_manager_buttons, interface_manager_collector } from "./lfg_interface_manager.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import { has_cooldown } from "../../utility_modules/utility_methods.js";
+import { hasCooldownSeconds } from "../../utility_modules/utility_methods.js";
 import { lfg_post_buttons } from "./lfg_post.js";
 
 const addChannelButton = new ButtonBuilder()
@@ -255,7 +255,7 @@ export async function lfg_builder_collector(
             filter: (i) => i.user.id === interaction.user.id
         },
         async (buttonInteraction) => {
-            const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, cooldown);
+            const userCooldown = hasCooldownSeconds(buttonInteraction.user.id, cooldowns, cooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     embeds: [embed_message("Red", `You are pressing buttons too fast! <t:${userCooldown}:R>`)],

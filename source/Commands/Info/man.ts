@@ -26,6 +26,7 @@ const man: ChatCommand = {
     async execute(interaction, client) {
         const guild = interaction.guild as Guild;
         const command = interaction.options.getString("command")?.toLowerCase();
+        if (!client) return;
         if (command) { // if a command was provided, open its page
             const chatCommand: ChatCommand | undefined = client.commands.get(command);
 

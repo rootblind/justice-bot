@@ -44,7 +44,7 @@ import {
 } from "../../utility_modules/discord_helpers.js";
 import { embed_error, embed_message } from "../../utility_modules/embed_builders.js";
 import { select_gamemode_label, slots_label, select_roles_label, select_rank_label, add_details_label } from "./lfg_modals.js";
-import { duration_to_seconds, has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
+import { duration_to_seconds, hasCooldownSeconds, timestampNow } from "../../utility_modules/utility_methods.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { t } from "../../Config/i18n.js";
 
@@ -259,7 +259,7 @@ export async function lfg_post_collector(message: Message, post: LfgPostTable) {
         },
         async (buttonInteraction) => {
             const locale = buttonInteraction.locale;
-            const userCooldown = has_cooldown(post.owner_id, cooldowns, cd);
+            const userCooldown = hasCooldownSeconds(post.owner_id, cooldowns, cd);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     flags: MessageFlags.Ephemeral,

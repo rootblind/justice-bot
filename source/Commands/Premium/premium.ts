@@ -73,6 +73,7 @@ const premiumCommand: ChatCommand = {
     },
 
     async execute(interaction, client) {
+        if (!client) return;
         const member = interaction.member as GuildMember;
         const guild = member.guild;
         const options = interaction.options;

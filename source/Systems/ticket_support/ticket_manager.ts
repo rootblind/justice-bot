@@ -26,7 +26,7 @@ import {
     User
 } from "discord.js";
 import { fetchGuildChannel, fetchStaffRole, fetchTicketSupportRole, message_collector } from "../../utility_modules/discord_helpers.js";
-import { has_cooldown, timestampNow } from "../../utility_modules/utility_methods.js";
+import { hasCooldownSeconds, timestampNow } from "../../utility_modules/utility_methods.js";
 import { embed_error, embed_interaction_expired, embed_message } from "../../utility_modules/embed_builders.js";
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 import { TicketSubject } from "../../Interfaces/database_types.js";
@@ -291,7 +291,7 @@ export async function open_ticket_collector(client: Client, guild: Guild, messag
             componentType: ComponentType.Button
         },
         async (buttonInteraction) => {
-            const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, ticketCooldown);
+            const userCooldown = hasCooldownSeconds(buttonInteraction.user.id, cooldowns, ticketCooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     embeds: [

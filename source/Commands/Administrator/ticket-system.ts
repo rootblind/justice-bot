@@ -78,7 +78,7 @@ const ticketSystem: ChatCommand = {
         const subcommand = options.getSubcommand();
         const subcommandGroup = options.getSubcommandGroup();
         // interactionCreate doesn't guarantee the staff role for ticket commands
-        const staffRole = await fetchStaffRole(client, guild);
+        const staffRole = await fetchStaffRole(client!, guild);
         if (!staffRole) {
             await interaction.reply({
                 embeds: [

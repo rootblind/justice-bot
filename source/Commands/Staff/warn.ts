@@ -57,7 +57,7 @@ const warnCommand: ChatCommand = {
             return;
         }
 
-        const staffRole = await fetchStaffRole(client, guild);
+        const staffRole = await fetchStaffRole(client!, guild);
         if (!staffRole) {
             // the row is validated inside interactionCreate
             // faulty row

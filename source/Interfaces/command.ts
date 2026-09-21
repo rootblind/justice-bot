@@ -7,8 +7,13 @@ import type { PermissionResolvable, RESTPostAPIChatInputApplicationCommandsJSONB
 export interface ChatCommand {
     data: RESTPostAPIChatInputApplicationCommandsJSONBody,
     metadata: ChatCommandMetadata,
-    execute: (interaction: ChatInputCommandInteraction, client: Client) => Promise<unknown>,
+    execute: ChatCommandExecuteMethod,
 }
+
+export type ChatCommandExecuteMethod =
+    (interaction: ChatInputCommandInteraction, client?: Client) => Promise<unknown>;
+
+export type ChatCommandExecuteWrapper = (execute: ChatCommandExecuteMethod) => ChatCommandExecuteMethod;
 
 export interface ChatCommandMetadata {
     botPermissions: PermissionResolvable[],

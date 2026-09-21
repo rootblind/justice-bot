@@ -5,6 +5,7 @@ import { ColumnValuePair } from "../../Interfaces/database_types.js";
 import DatabaseRepo from "../../Repositories/database_repository.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
+import AntiAltGuardRepo from "../../Repositories/antialtguardsystem.js";
 
 export type roleDeleteHook = (role: Role) => Promise<void>;
 const hooks: roleDeleteHook[] = [];
@@ -51,6 +52,9 @@ const roleDelete: Event = {
 
         // clean lfg-system related roles
         await LfgSystemRepo.deleteOneLfgRoleBySnowflake(role.id);
+
+        // clean antialt guard system
+        await AntiAltGuardRepo.onSystemComponentDelete(guild.id, role.id);
     }
 }
 

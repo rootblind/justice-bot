@@ -17,7 +17,7 @@ import {
     TextChannel
 } from "discord.js";
 import { fetchGuildMember, message_collector, resolveSnowflakesToRoles } from "../../utility_modules/discord_helpers.js";
-import { chunkStrings, has_cooldown } from "../../utility_modules/utility_methods.js";
+import { chunkStrings, hasCooldownSeconds } from "../../utility_modules/utility_methods.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import { LfgGameTable, LfgPostFullRow } from "../../Interfaces/lfg_system.js";
 import { embed_error, embed_interaction_expired, embed_message } from "../../utility_modules/embed_builders.js";
@@ -168,7 +168,7 @@ export async function interface_manager_collector(message: Message) {
             componentType: ComponentType.Button,
         },
         async (buttonInteraction) => {
-            const userCooldown = has_cooldown(buttonInteraction.user.id, cooldowns, cooldown);
+            const userCooldown = hasCooldownSeconds(buttonInteraction.user.id, cooldowns, cooldown);
             const locale = buttonInteraction.locale;
             if (userCooldown) {
                 await buttonInteraction.reply({

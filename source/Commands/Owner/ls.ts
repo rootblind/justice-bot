@@ -29,6 +29,7 @@ const lsCommand: ChatCommand = {
         category: "Owner"
     },
     async execute(interaction, client) {
+        if (!client) return;
         const options = interaction.options;
         const subcommandGroup = options.getSubcommandGroup();
         const subcommand = options.getSubcommand();

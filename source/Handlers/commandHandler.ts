@@ -3,7 +3,7 @@ import AsciiTable from "ascii-table";
 import * as path from "path";
 import { fileURLToPath } from "url";
 import { ChatCommand } from "../Interfaces/command.js";
-import { getFilesRecursive } from "../utility_modules/utility_methods.js";
+import { get_env_var, getFilesRecursive } from "../utility_modules/utility_methods.js";
 import GuildModulesRepo from "../Repositories/guildmodules.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -71,10 +71,12 @@ export async function registerGlobalCommands(client: Client) {
 export async function sync_guild_commands(client: Client, guild: Guild) {
     const disabledGroups = await GuildModulesRepo.getGuildDisabled(guild.id);
     // scope === "guild" and group is not included in disabledGroups
+    // filter out testOnly commands for all guilds that are not the home server
     const filteredCommands = client.commands.filter(
         cmd =>
             cmd.metadata.scope === "guild" &&
-            !disabledGroups.includes(cmd.metadata.group || "")
+            !disabledGroups.includes(cmd.metadata.group || "") &&
+            (!cmd.metadata.testOnly || guild.id === get_env_var("HOME_SERVER_ID"))
     );
 
     await guild.commands.set(filteredCommands.map(cmd => cmd.data));

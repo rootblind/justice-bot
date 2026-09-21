@@ -18,7 +18,7 @@ import { anyBots, anyStaff, fetchGuildChannel, fetchGuildMember, hasBlockedConte
 import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import AutoVoiceRoomRepo from "../../Repositories/autovoiceroom.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import { has_cooldown } from "../../utility_modules/utility_methods.js";
+import { hasCooldownSeconds } from "../../utility_modules/utility_methods.js";
 import { embed_error, embed_interaction_expired, embed_message } from "../../utility_modules/embed_builders.js";
 import { channelLimitModal, channelNameModal, select_region_row } from "./autovoice_components.js";
 import { local_config } from "../../objects/local_config.js";
@@ -39,6 +39,7 @@ const relevantPermissions = [
  */
 export async function create_autovoice_room(autovoice: VoiceChannel, member: GuildMember) {
     const guild = member.guild;
+    if (member.voice.channelId !== autovoice.id) return;
 
     const autovoiceSystem = await AutoVoiceSystemRepo.getAutoVoiceSystem(guild.id, autovoice.id);
     if (autovoiceSystem === null) return;
@@ -47,6 +48,7 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
     const hasCooldown = await AutoVoiceRoomRepo.getCooldown(guild.id, member.id);
 
     if (isOwnerAlready || hasCooldown !== null) {
+        if (member.voice.channelId !== autovoice.id) return;
         try {
             await member.voice.setChannel(null); // disconnect from autovoice
         } catch (error) {
@@ -94,6 +96,8 @@ export async function create_autovoice_room(autovoice: VoiceChannel, member: Gui
         }
     }
 
+    if (member.voice.channelId !== autovoice.id) return;
+
     await AutoVoiceRoomRepo.setCooldown(guild.id, member.id);
 
     const voiceRoom = await category.children.create({
@@ -140,7 +144,7 @@ export async function attach_autovoice_manager_collector(message: Message) {
             const member = buttonInteraction.member as GuildMember;
             const guild = member.guild;
             const locale = buttonInteraction.locale;
-            const userCooldown = has_cooldown(member.id, buttonCooldowns, innerCooldown);
+            const userCooldown = hasCooldownSeconds(member.id, buttonCooldowns, innerCooldown);
             if (userCooldown) {
                 await buttonInteraction.reply({
                     flags: MessageFlags.Ephemeral,

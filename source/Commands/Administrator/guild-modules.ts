@@ -122,7 +122,7 @@ const guildModulesCommand: ChatCommand = {
                         // after the for loop, the sets are updated with the input given
                         await selectInteraction.deferReply();
                         await GuildModulesRepo.set(guild.id, [...disabledModules]); // update database
-                        await sync_guild_commands(client, guild);
+                        await sync_guild_commands(client!, guild);
                         await selectInteraction.editReply({
                             embeds: [embedList([...disabledModules], [...enabledModules])]
                         });

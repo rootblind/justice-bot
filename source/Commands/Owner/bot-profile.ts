@@ -101,7 +101,7 @@ const botProfile: ChatCommand = {
         const subcommand = options.getSubcommand();
         const group = options.getSubcommandGroup();
 
-        const botUser = client.user!;
+        const botUser = client!.user!;
 
         switch (group) {
             case "presence": {

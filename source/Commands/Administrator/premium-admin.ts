@@ -311,7 +311,7 @@ const premiumAdminCommand: ChatCommand = {
                                 const memberObject = await fetchGuildMember(guild, member_id);
                                 if (memberObject) {
                                     try {
-                                        await remove_premium_from_member(client, member_id, guild);
+                                        await remove_premium_from_member(client!, member_id, guild);
                                     } catch (error) {
                                         await errorLogHandle(error);
                                     }
@@ -530,7 +530,7 @@ const premiumAdminCommand: ChatCommand = {
                 break;
             }
             case "membership": {
-                const premiumRole = await fetchPremiumRole(client, guild);
+                const premiumRole = await fetchPremiumRole(client!, guild);
                 if (!premiumRole) {
                     await interaction.reply({
                         embeds: [embed_error("Premium role was misconfigured")],
@@ -676,7 +676,7 @@ const premiumAdminCommand: ChatCommand = {
 
                         if (member) {
                             try {
-                                await remove_premium_from_member(client, member.id, guild);
+                                await remove_premium_from_member(client!, member.id, guild);
                             } catch (error) {
                                 await errorLogHandle(error);
                                 await interaction.reply({

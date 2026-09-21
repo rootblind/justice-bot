@@ -18,7 +18,7 @@ import {
 
 import type { Event } from "../../Interfaces/event.js";
 import { fetch_bot_member, permission_names } from "../../utility_modules/discord_helpers.js";
-import { get_env_var, has_cooldown, set_cooldown } from "../../utility_modules/utility_methods.js";
+import { get_env_var, hasCooldownSeconds, set_cooldown } from "../../utility_modules/utility_methods.js";
 import BotConfigRepo from "../../Repositories/botconfig.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
@@ -200,7 +200,7 @@ const interactonCreate: Event = {
 
             // check if the user is in cooldown for the specific command
             if (timestamps.has(interaction.user.id)) {
-                const expires = has_cooldown(interaction.user.id, timestamps, command.metadata.cooldown)
+                const expires = hasCooldownSeconds(interaction.user.id, timestamps, command.metadata.cooldown)
                 if (expires) {
                     return await interaction.reply({
                         content: `Please wait, you are on cooldown for \`${command.data.name}\`.\nYou can use it again <t:${expires}:R>`,

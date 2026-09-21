@@ -25,6 +25,7 @@ const guildCommand: ChatCommand = {
         ownerOnly: true
     },
     async execute(interaction, client) {
+        if (!client) return;
         const options = interaction.options;
         const subcommands = options.getSubcommand();
         const ownerId = get_env_var("OWNER");

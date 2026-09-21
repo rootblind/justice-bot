@@ -81,8 +81,8 @@ const infractionsAdmin: ChatCommand = {
                 let target: User | null = null;
                 let moderator: User | null = null;
                 try {
-                    target = await client.users.fetch(log.target);
-                    moderator = await client.users.fetch(log.moderator);
+                    target = await client!.users.fetch(log.target);
+                    moderator = await client!.users.fetch(log.moderator);
                 } catch {
                     await interaction.reply({
                         embeds: [embed_error("Failed to fetch the target or moderator user.\nJSON data will be posted instead.")],

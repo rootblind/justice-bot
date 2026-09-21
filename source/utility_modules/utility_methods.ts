@@ -44,7 +44,7 @@ export function get_env_var(name: string) {
  * @param cd in seconds
  * @returns False if the user is not on cooldown, returns the cooldown in seconds otherwise
  */
-export function has_cooldown(
+export function hasCooldownSeconds(
     userId: Snowflake,
     cooldowns: Collection<Snowflake, number>,
     cd: number
@@ -69,7 +69,7 @@ export function set_cooldown(
     cooldowns: Collection<Snowflake, number>,
     cd: number
 ) {
-    if (!has_cooldown(userId, cooldowns, cd)) {
+    if (!hasCooldownSeconds(userId, cooldowns, cd)) {
         const now = Math.floor(Date.now() / 1000)
         cooldowns.set(userId, now);
         setTimeout(() => cooldowns.delete(userId), cd * 1000) // timeout uses time in milliseconds
@@ -532,7 +532,7 @@ export function formatBytes(bytes: number, decimals = 2): string {
  * @param cd The cooldown in milliseconds
  * @returns true if the user has a cooldown, false otherwise
  */
-export function hasCooldown(id: Snowflake, cooldowns: Collection<string, number>, cd: number) {
+export function hasCooldownMilliseconds(id: Snowflake, cooldowns: Collection<string, number>, cd: number) {
     const now = Date.now();
     if (cooldowns.has(id)) {
         const expires = cooldowns.get(id)! + cd;
