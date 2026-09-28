@@ -31,6 +31,7 @@ import LfgSystemRepo from "../Repositories/lfgsystem.js";
 import DailyMessageRepo from "../Repositories/dailymessage.js";
 import { build_cron_daily_message, init_daily_message_task } from "../Systems/components/dailymessage.js";
 import PremiumSystemRepo from "../Repositories/premiumsystem.js";
+import AntiAltGuardRepo from "../Repositories/antialtguardsystem.js";
 
 /**
  * This task checks all the premium members in the database that aquired premium through boosting
@@ -278,6 +279,14 @@ export const startDailyMessageSchedulers: OnReadyTaskBuilder = {
                 await DailyMessageRepo.delete(row.guild, row.messageid);
             }
         }
+    },
+    runCondition: async () => true
+}
+
+export const pendingVerificationCleanupOnBoot: OnReadyTaskBuilder = {
+    name: "Pending Verification cleanup",
+    task: async () => {
+        await AntiAltGuardRepo.deleteExpiredPendingVerifications();
     },
     runCondition: async () => true
 }

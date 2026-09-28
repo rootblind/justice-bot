@@ -2,7 +2,13 @@
  * System-wide tools for antialt_guard
  */
 
-import { ButtonBuilder, ButtonStyle, OverwriteResolvable, OverwriteType, PermissionFlagsBits } from "discord.js";
+import {
+    ButtonBuilder,
+    ButtonStyle,
+    OverwriteResolvable,
+    OverwriteType,
+    PermissionFlagsBits
+} from "discord.js";
 import { ChatCommandExecuteWrapper } from "../../Interfaces/command.js";
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 import { embed_message } from "../../utility_modules/embed_builders.js";

@@ -6,11 +6,20 @@ export default async function AntiAltGuardSystem(): Promise<void> {
                 CREATE TABLE IF NOT EXISTS antialtguard_setup (
                     id SERIAL PRIMARY KEY,
                     guild BIGINT NOT NULL UNIQUE,
-                    category BIGINT NOT NULL,
-                    verification_channel BIGINT NOT NULL,
-                    verification_message_menu BIGINT NOT NULL,
-                    assessment_channel BIGINT NOT NULL,
-                    verified_role BIGINT NOT NULL
+                    category BIGINT NOT NULL UNIQUE,
+                    verification_channel BIGINT NOT NULL UNIQUE,
+                    verification_message_menu BIGINT NOT NULL UNIQUE,
+                    assessment_channel BIGINT NOT NULL UNIQUE,
+                    verified_role BIGINT NOT NULL UNIQUE
+                );
+
+                CREATE TABLE IF NOT EXISTS antialtguard_pending_verification (
+                    messageid BIGINT PRIMARY KEY,
+                    channel BIGINT NOT NULL
+                        REFERENCES antialtguard_setup(assessment_channel)
+                        ON DELETE CASCADE,
+                    member BIGINT NOT NULL,
+                    expiresat BIGINT NOT NULL
                 );
             `);
 

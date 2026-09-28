@@ -1,4 +1,4 @@
-import { CategoryChannel, Message, TextChannel } from "discord.js";
+import { CategoryChannel, Collection, Message, TextChannel } from "discord.js";
 import { getClient } from "../client_provider.js";
 import { OnReadyTaskBuilder } from "../Interfaces/helper_types.js";
 import AutoVoiceSystemRepo from "../Repositories/autovoicesystem.js";
@@ -10,13 +10,15 @@ import TicketSystemRepo from "../Repositories/ticketsystem.js";
 import { open_ticket_collector } from "../Systems/ticket_support/ticket_manager.js";
 import { ticket_collector } from "../Systems/ticket_support/ticket_collector.js";
 import ServerRolesRepo from "../Repositories/serverroles.js";
+import AntiAltGuardRepo from "../Repositories/antialtguardsystem.js";
+import { attach_aa_guard_status_collector, manual_review_collector } from "../Systems/antialt_guard/collectors.js";
 
 function collectorErrorMessage(guildId: string) {
     return `Something went wrong while attaching the collector at guild id ${guildId}`
 }
 
 export const autoVoiceManagerCollectors: OnReadyTaskBuilder = {
-    name: "Autovoice Manager Collectors",
+    name: "Autovoice Manager",
     task: async () => {
         const client = getClient();
         const autovoiceSystems = await AutoVoiceSystemRepo.getAll();
@@ -42,7 +44,7 @@ export const autoVoiceManagerCollectors: OnReadyTaskBuilder = {
 }
 
 export const lfgInterfaceManagerCollector: OnReadyTaskBuilder = {
-    name: "LFG Interface Collectors",
+    name: "LFG Interface",
     task: async () => {
         const client = getClient();
         const lfgGamesTable = await LfgSystemRepo.getGamesTable();
@@ -96,7 +98,7 @@ export const LfgPostsCollector: OnReadyTaskBuilder = {
 */
 
 export const TicketSystemManagerCollector: OnReadyTaskBuilder = {
-    name: "Ticket System Manager Collector",
+    name: "Ticket System Manager",
     task: async () => {
         const client = getClient();
         const ticketManagers = await TicketSystemRepo.fetchAllManagers();
@@ -121,7 +123,7 @@ export const TicketSystemManagerCollector: OnReadyTaskBuilder = {
 }
 
 export const OpenTicketCollector: OnReadyTaskBuilder = {
-    name: "Open Ticket Collector",
+    name: "Open Ticket",
     task: async () => {
         const client = getClient();
         const openTickets = await TicketSystemRepo.fetchAllTickets();
@@ -139,6 +141,86 @@ export const OpenTicketCollector: OnReadyTaskBuilder = {
             } catch (error) {
                 await errorLogHandle(error, collectorErrorMessage(row.guild));
                 await TicketSystemRepo.deleteTicketBySnowflake(row.message);
+            }
+        }
+    },
+    runCondition: async () => true
+}
+
+export const AntiAltGuardCollectors: OnReadyTaskBuilder = {
+    name: "Antialt Guard Collectors",
+    task: async () => {
+        const client = getClient();
+        const antiAltGuardSetups = await AntiAltGuardRepo.fetchAllSetups();
+        //method 1
+        for (const row of antiAltGuardSetups) {
+            try {
+                const guild = await client.guilds.fetch(row.guild);
+                const verificationChannel = await guild.channels.fetch(row.verification_channel);
+                if (!(verificationChannel instanceof TextChannel)) throw new Error("Verification channel couldn't be fetched.");
+                const verificationMessageMenu = await verificationChannel
+                    .messages
+                    .fetch(row.verification_message_menu);
+                if (!(verificationMessageMenu instanceof Message)) throw new Error("Verification menu couldn't be fetched as a message.");
+                await attach_aa_guard_status_collector(verificationMessageMenu);
+            } catch (error) {
+                await errorLogHandle(error, collectorErrorMessage(row.guild));
+                await AntiAltGuardRepo.deleteSetup(row.guild);
+            }
+        }
+
+        // method 2
+        // building an hierarchical collections of cached objects to optimize attaching collectors
+        const pendingVerifications = await AntiAltGuardRepo.fetchPendingVerifications();
+        const guildGroups = new Collection<
+            string,
+            Collection<string, typeof pendingVerifications>
+        >();
+
+        for (const row of pendingVerifications) {
+            let channels = guildGroups.get(row.guild);
+            if (!channels) {
+                channels = new Collection();
+                guildGroups.set(row.guild, channels);
+            }
+
+            let rows = channels.get(row.channel);
+            if (!rows) {
+                rows = [];
+                channels.set(row.channel, rows);
+            }
+
+            rows.push(row);
+        }
+
+        // fetching and attaching the collectors
+        for (const [guildId, channels] of guildGroups) {
+            try {
+                const guild = await client.guilds.fetch(guildId);
+                const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
+                if (!staffRoleId) continue;
+
+                for (const [channelId, rows] of channels) {
+                    const channel = await guild.channels.fetch(channelId);
+                    if (!(channel instanceof TextChannel)) {
+                        throw new Error(`Failed to fetch the assessment channel ${channelId}`);
+                    }
+
+                    for (const row of rows) {
+                        try {
+                            const message = await channel.messages.fetch(row.messageid);
+                            if (!(message instanceof Message)) {
+                                throw new Error(`Failed to fetch assessment message ${row.messageid}`)
+                            }
+                            await manual_review_collector(message, staffRoleId);
+                        } catch (error) {
+                            await AntiAltGuardRepo.deletePendingVerification(row.messageid);
+                            await errorLogHandle(error, collectorErrorMessage(guildId));
+                        }
+                    }
+                }
+            } catch (error) {
+                await errorLogHandle(error, collectorErrorMessage(guildId));
             }
         }
     },

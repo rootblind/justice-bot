@@ -165,13 +165,3 @@ export async function aa_guard_setup(
         async () => { }
     );
 }
-
-/**
- * TODOs:
- * 
- * Attach a collector for the status button, add the neccessary cleanup in the proper guild events
- * 
- * Status button checks the verification status and replies to the user. If the user is already verified, it assigns the role directly
- * 
- * 
- */

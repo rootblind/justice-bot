@@ -276,3 +276,10 @@ export interface AntiAltGuardSetupObj extends GuildTable {
 }
 
 export type AntiAltGuardSetupRow = AntiAltGuardSetupObj & { id: string }
+
+export interface PendingVerificationRow {
+    messageid: string,
+    channel: string,
+    member: string,
+    expiresat: string
+}

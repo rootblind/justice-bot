@@ -48,7 +48,7 @@ export const clear_expired_staff_strikes: CronTaskBuilder = {
 // temporary bans that expired must be removed
 export const tempban_expired_clear: CronTaskBuilder = {
     name: "Tempban Expired Clear",
-    schedule: "0 * * * *",
+    schedule: "2 * * * *",
     job: async () => {
         const banListData = await BanListRepo.getExpiredTempBans();
         if (!banListData) return; // if there is no tempban to clear, do nothing
@@ -95,7 +95,7 @@ export const tempban_expired_clear: CronTaskBuilder = {
 // Handling premium membership expiration
 export const expiredPremium: CronTaskBuilder = {
     name: "Expired premium handle",
-    schedule: "1 * * * *",
+    schedule: "4 * * * *",
     job: async () => {
         const expiredMembers = await PremiumSystemRepo.getExpiredGuildMemberCustomRole(); // await PremiumMembersRepo.getExpiredGuildMemberCustomRole();
         if (expiredMembers.length === 0) return; // if no membership is expired, there is nothing to execute
