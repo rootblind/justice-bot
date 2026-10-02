@@ -229,18 +229,28 @@ If you want to connect the bot to an web application:
 
 Environment variables example: [env_vars.txt](https://github.com/rootblind/justice-bot/blob/main/env_vars.txt)
 
-## Language Model API
+## Related projects
+
+### Language Model API
 
 The bot uses an API provided by my own language model. At the moment there is only one classification model that helps with auto moderation if you set up a `flagged-messages` logging channel.
 
 Please visit the ML repository [here](https://github.com/rootblind/opjustice-lm).
 
-Do note, that project is still in work as well!
+### Antialt guard web application
+
+The bot has anti alternate account detection capabilities when coupled with [lolro_webapp](https://github.com/rootblind/lolro_webapp).
+
+
 ## Author
 
 - [@rootblind](https://www.github.com/rootblind)
+
+
 ## License
 
 - [GPL v3](https://github.com/rootblind/justice-bot/blob/main/LICENSE)
+
+
 ## League of Legends Romania
 Justice is a project developed with League of Legends Romania's needs in mind, you can check it out at [discord.gg/lolro](https://discord.com/invite/lolro)

@@ -16,10 +16,9 @@ export const getMember = async (req: Request, res: Response, client: Client) => 
     const member = await fetchGuildMember(guild, String(member_id));
 
     if (!member) {
-        return res.status(400).json({
-            success: false,
-            member: null,
-            error: "Invalid user ID or the user is not a member of the guild."
+        return res.status(200).json({
+            success: true,
+            member: null
         });
     }
 
