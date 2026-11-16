@@ -72,9 +72,10 @@ const interactonCreate: Event = {
 
             // check for staff commands
             if (
-                command.metadata.category === "Staff" ||
-                command.metadata.category === "Moderator" ||
-                command.metadata.group === "moderation"
+                (command.metadata.category === "Staff" ||
+                    command.metadata.category === "Moderator" ||
+                    command.metadata.group === "moderation") &&
+                command.metadata.category !== "Info"
             ) {
                 const staffRoleId = await ServerRolesRepo.getGuildStaffRole(guild.id);
                 if (staffRoleId && !interaction.member.roles.cache.has(staffRoleId)) {

@@ -11,6 +11,7 @@ import {
   ReadonlyCollection,
   Role,
   RoleSelectMenuInteraction,
+  Snowflake,
   StringSelectMenuInteraction,
   UserSelectMenuInteraction,
 
@@ -107,7 +108,21 @@ export interface ValidatorResponseType {
   value: boolean,
   message: string
 }
-
+export interface MembershipFull {
+  membership_id: number;
+  member: Snowflake;
+  guild: Snowflake;
+  premiumkey_id: number;
+  key_id: number;
+  code: Buffer;
+  tier: number;
+  generatedby: Snowflake;
+  createdat: number;
+  expiresat: number;
+  usesnumber: number;
+  dedicateduser: Snowflake | null;
+  role: Snowflake | null;
+}
 export interface TicketSubjectContext {
   subject: string,
   description: string,

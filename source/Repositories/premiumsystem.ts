@@ -3,24 +3,11 @@ import database from "../Config/database.js";
 import { PremiumCustomRole, PremiumKey, PremiumMember } from "../Interfaces/database_types.js";
 import { encryptor, timestampNow } from "../utility_modules/utility_methods.js";
 import { SelfCache } from "../Config/SelfCache.js";
+import { MembershipFull } from "../Interfaces/helper_types.js";
 
 interface GuildMemberRole { guild: Snowflake, member: Snowflake, role: Snowflake | null };
 interface MembershipTierKeyIdRole { premiumkey_id: number, tier: number, member: Snowflake, role: Snowflake | null }
-interface MembershipFull {
-    membership_id: number;
-    member: Snowflake;
-    guild: Snowflake;
-    premiumkey_id: number;
-    key_id: number;
-    code: Buffer;
-    tier: number;
-    generatedby: Snowflake;
-    createdat: number;
-    expiresat: number;
-    usesnumber: number;
-    dedicateduser: Snowflake | null;
-    role: Snowflake | null;
-}
+
 
 // invite cooldowns
 const inviteCooldowns = new SelfCache<string, number>();
