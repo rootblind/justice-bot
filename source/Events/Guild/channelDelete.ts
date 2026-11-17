@@ -9,6 +9,7 @@ import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
 import LfgSystemRepo from "../../Repositories/lfgsystem.js";
 import TicketSystemRepo from "../../Repositories/ticketsystem.js";
 import AntiAltGuardRepo from "../../Repositories/antialtguardsystem.js";
+import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 
 export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
 const hooks: channelDeleteHook[] = [];
@@ -37,7 +38,11 @@ const channelDelete: Event = {
 
         const property: ColumnValuePair = { column: "channel", value: channel.id }
         const tablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
+        const tablesToSkip = [
+            'premium_channel'
+        ];
         for (const table of tablesToBeCleaned) {
+            if (tablesToSkip.includes(table)) continue;
             await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
         }
         // clean system if any channel is deleted from it
@@ -52,6 +57,12 @@ const channelDelete: Event = {
 
         // clean antialt guard system
         await AntiAltGuardRepo.onSystemComponentDelete(guild.id, channel.id);
+
+        // clean premium category
+        await PremiumSystemRepo.onPremiumCategoryDelete(channel.id, guild.id);
+
+        // clean if it's a premium channel
+        await PremiumSystemRepo.deletePremiumChannelById(channel.id);
 
         await runHooks(channel);
         // logging

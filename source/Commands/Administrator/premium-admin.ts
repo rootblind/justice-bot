@@ -1,11 +1,15 @@
 import {
+    CategoryChannel,
+    ChannelType,
     EmbedBuilder,
     GuildMember,
     MessageFlags,
     ModalBuilder,
     PermissionFlagsBits,
     Role,
-    SlashCommandBuilder
+    SlashCommandBuilder,
+    TextChannel,
+    VoiceChannel
 } from "discord.js";
 import { ChatCommand } from "../../Interfaces/command.js";
 import {
@@ -18,10 +22,13 @@ import {
     validate_usesnumber
 } from "../../Systems/premium/premium_system.js";
 import {
+    fetchGuildChannel,
     fetchGuildMember,
     fetchGuildRole,
     fetchLogsChannel,
+    fetchMemberCustomRole,
     fetchPremiumRole,
+    fetchStaffRole,
     handleModalCatch
 } from "../../utility_modules/discord_helpers.js";
 import {
@@ -40,7 +47,7 @@ import {
 } from "../../utility_modules/utility_methods.js";
 import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
-import { PremiumKey } from "../../Interfaces/database_types.js";
+import { PremiumKey, PremiumTierEnum } from "../../Interfaces/database_types.js";
 import { role_create_modal, role_input_validator, role_builder } from "../../Systems/components/role_builder_menu.js";
 
 const premiumAdminCommand: ChatCommand = {
@@ -145,6 +152,52 @@ const premiumAdminCommand: ChatCommand = {
                         )
                 )
                 .addSubcommand(subcommand =>
+                    subcommand.setName("create-channel")
+                        .setDescription("Create a new premium channel for the member.")
+                        .addUserOption(option =>
+                            option.setName("user")
+                                .setDescription("The premium member")
+                                .setRequired(true)
+                        )
+                        .addStringOption(option =>
+                            option.setName("name")
+                                .setDescription("The name of the channel")
+                                .setMinLength(1)
+                                .setMaxLength(100)
+                                .setRequired(true)
+                        )
+                        .addStringOption(option =>
+                            option.setName("type")
+                                .setDescription("The type of the channel.")
+                                .addChoices(
+                                    {
+                                        name: "Text",
+                                        value: "text"
+                                    },
+                                    {
+                                        name: "Voice",
+                                        value: "voice"
+                                    }
+                                )
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName("set-channel")
+                        .setDescription("Set a channel as premium channel for the member.")
+                        .addUserOption(option =>
+                            option.setName("user")
+                                .setDescription("The premium member")
+                                .setRequired(true)
+                        )
+                        .addChannelOption(option =>
+                            option.setName("channel")
+                                .setDescription("The channel to be set.")
+                                .addChannelTypes(ChannelType.GuildText, ChannelType.GuildVoice)
+                                .setRequired(true)
+                        )
+                )
+                .addSubcommand(subcommand =>
                     subcommand.setName("details")
                         .setDescription("Details about a membership.")
                         .addUserOption(option =>
@@ -158,6 +211,28 @@ const premiumAdminCommand: ChatCommand = {
                         .setDescription("Go through all Nitro Boosters and assign them a premium key.")
                 )
 
+        )
+        .addSubcommandGroup(subcommandGroup =>
+            subcommandGroup.setName("category")
+                .setDescription("The category where premium channels are created.")
+                .addSubcommand(subcommand =>
+                    subcommand.setName("set")
+                        .setDescription("!!! Setting a category forgets all previous channels")
+                        .addChannelOption(option =>
+                            option.setName("category")
+                                .setDescription("The category to be used.")
+                                .setRequired(true)
+                                .addChannelTypes(ChannelType.GuildCategory)
+                        )
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName("forget")
+                        .setDescription("Forget the current category and all premium channels.")
+                )
+                .addSubcommand(subcommand =>
+                    subcommand.setName("details")
+                        .setDescription("Details about the category and channels.")
+                )
         )
         .toJSON(),
     metadata: {
@@ -925,6 +1000,286 @@ const premiumAdminCommand: ChatCommand = {
                         });
                         break;
                     }
+                    case "create-channel": {
+                        const user = options.getUser("user", true);
+                        const member = await fetchGuildMember(guild, user.id);
+
+                        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+                        if (!member) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "The user must be a member of this server.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const membership = await PremiumSystemRepo.getGuildFullMembership(guild.id, user.id);
+                        if (!membership) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The specified user is not a premium member of this server.",
+                                        "Invalid target"
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        if (membership.tier < PremiumTierEnum.TIER_1) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The membership tier of the user is too low." +
+                                        "At least Tier 1 is required."
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        const customRole = await fetchMemberCustomRole(client!, guild, member);
+                        if (customRole === null) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "The member doesn't own a custom role or the role is missing.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const staffRole = await fetchStaffRole(client!, guild);
+                        if (!staffRole) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "Server role for staff is missing on this guild.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const categoryRow = await PremiumSystemRepo.getCategory(guild.id);
+                        if (categoryRow === null) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "No category was set for this server.\nUse `/premium-admin category set`")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const category = await fetchGuildChannel(guild, categoryRow.category);
+                        if (!(category instanceof CategoryChannel)) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_error("Failed to fetch the category object", "Faulty row")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const channelTypeString = options.getString("type", true) as "text" | "voice";
+                        const channelName = options.getString("name", true);
+
+                        const newChannel = await category.children.create({
+                            name: channelName,
+                            type: channelTypeString === "text" ? ChannelType.GuildText : ChannelType.GuildVoice,
+                            permissionOverwrites: [
+                                {
+                                    id: guild.roles.everyone.id,
+                                    deny: [
+                                        PermissionFlagsBits.ViewChannel
+                                    ]
+                                },
+                                {
+                                    id: customRole.id,
+                                    allow: [
+                                        PermissionFlagsBits.ViewChannel
+                                    ]
+                                },
+                                {
+                                    id: staffRole.id,
+                                    allow: [
+                                        PermissionFlagsBits.ViewChannel
+                                    ]
+                                }
+                            ]
+                        });
+
+                        try {
+                            await newChannel.send(`${member} your channel has been created.`)
+                        } catch (error) {
+                            await errorLogHandle(error);
+                        }
+
+                        await PremiumSystemRepo.upsertPremiumChannel(
+                            membership.membership_id,
+                            newChannel.id,
+                            channelTypeString
+                        );
+
+                        await interaction.editReply({
+                            embeds: [embed_message("Green", `${newChannel} has been created and was assigned to ${member}.`)]
+                        });
+
+                        break;
+                    }
+                    case "set-channel": {
+                        const user = options.getUser("user", true);
+                        const member = await fetchGuildMember(guild, user.id);
+
+                        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
+
+                        if (!member) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "The user must be a member of this server.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const membership = await PremiumSystemRepo.getGuildFullMembership(guild.id, user.id);
+                        if (!membership) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The specified user is not a premium member of this server.",
+                                        "Invalid target"
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        if (membership.tier < PremiumTierEnum.TIER_1) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "The membership tier of the user is too low." +
+                                        "At least Tier 1 is required."
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        const customRole = await fetchMemberCustomRole(client!, guild, member);
+                        if (customRole === null) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "The member doesn't own a custom role or the role is missing.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const staffRole = await fetchStaffRole(client!, guild);
+                        if (!staffRole) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "Server role for staff is missing on this guild.")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const categoryRow = await PremiumSystemRepo.getCategory(guild.id);
+                        if (categoryRow === null) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "No category was set for this server.\nUse `/premium-admin category set`")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const category = await fetchGuildChannel(guild, categoryRow.category);
+                        if (!(category instanceof CategoryChannel)) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_error("Failed to fetch the category object", "Faulty row")
+                                ]
+                            });
+                            return;
+                        }
+
+                        const channel = options.getChannel("channel", true);
+                        if (!(channel instanceof TextChannel) && !(channel instanceof VoiceChannel)) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "Input must be a voice/text channel within the premium category",
+                                        "Invalid input"
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        if (channel.parentId !== category.id) {
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message(
+                                        "Red",
+                                        "Input must be a voice/text channel within the premium category",
+                                        "Invalid input"
+                                    )
+                                ]
+                            });
+                            return;
+                        }
+
+                        // add permissions
+                        try {
+                            await channel.edit({
+                                permissionOverwrites: [
+                                    {
+                                        id: guild.roles.everyone.id,
+                                        deny: [
+                                            PermissionFlagsBits.ViewChannel
+                                        ]
+                                    },
+                                    {
+                                        id: customRole.id,
+                                        allow: [
+                                            PermissionFlagsBits.ViewChannel
+                                        ]
+                                    },
+                                    {
+                                        id: staffRole.id,
+                                        allow: [
+                                            PermissionFlagsBits.ViewChannel
+                                        ]
+                                    }
+                                ]
+                            });
+
+                            await channel.send(`${member} your channel is ready.`);
+
+                            const channelTypeString = channel.type === ChannelType.GuildText ? "text" : "voice";
+                            await PremiumSystemRepo.upsertPremiumChannel(
+                                membership.membership_id,
+                                channel.id,
+                                channelTypeString
+                            );
+                        } catch (error) {
+                            await errorLogHandle(error);
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_error("Something went wrong while getting the channel ready.")
+                                ]
+                            });
+                        }
+                        break;
+                    }
                     case "details": {
                         const user = options.getUser("user", true);
                         const membership = await PremiumSystemRepo.getGuildMembershipFeatures(guild.id, user.id);
@@ -966,6 +1321,37 @@ const premiumAdminCommand: ChatCommand = {
                                     value: customRole.toString()
                                 });
                             }
+                        }
+
+                        if (membership.tier >= PremiumTierEnum.TIER_1) {
+                            // fetch premium channels if any
+                            const premiumChannelRows = await PremiumSystemRepo.fetchMemberChannels(
+                                guild.id,
+                                user.id
+                            )
+
+                            let voiceString = "None";
+                            let textString = "None";
+
+                            for (const channelRow of premiumChannelRows) {
+                                if (channelRow.type === "text") {
+                                    const channelObject = await fetchGuildChannel(guild, channelRow.channel);
+                                    if (channelObject instanceof TextChannel) {
+                                        textString = channelObject.toString();
+                                    }
+                                } else if (channelRow.type === "voice") {
+                                    const channelObject = await fetchGuildChannel(guild, channelRow.channel);
+                                    if (channelObject instanceof VoiceChannel) {
+                                        voiceString = channelObject.toString();
+                                    }
+                                }
+                            }
+
+                            embedMembership.addFields({
+                                name: "Channels",
+                                value: `Text: ${textString}
+                                Voice: ${voiceString}`
+                            });
                         }
 
                         await interaction.reply({
@@ -1021,6 +1407,81 @@ const premiumAdminCommand: ChatCommand = {
                         });
                         break;
                     }
+                }
+                break;
+            }
+            case "category": {
+                switch (subcommand) {
+                    case "set": {
+                        const category = options.getChannel("category", true) as CategoryChannel;
+                        await PremiumSystemRepo.upsertCategory(guild.id, category.id);
+                        await PremiumSystemRepo.wipePremiumChannelsFromGuild(guild.id); // setting a new category requires wiping previous configuration
+                        await interaction.reply({
+                            embeds: [
+                                embed_message(
+                                    "Green",
+                                    `${category} is now the category for premium channels.\nAll previous channels were forgotten.`
+                                )
+                            ],
+                            flags: MessageFlags.Ephemeral
+                        });
+                        break;
+                    }
+                    case "forget": {
+                        await PremiumSystemRepo.deleteCategory(guild.id);
+                        await PremiumSystemRepo.wipePremiumChannelsFromGuild(guild.id);
+                        await interaction.reply({
+                            embeds: [
+                                embed_message("Green", "The current configuration was wiped.")
+                            ],
+                            flags: MessageFlags.Ephemeral
+
+                        });
+                        break;
+                    }
+                    case "details": {
+                        const premCategoryRow = await PremiumSystemRepo.getCategory(guild.id);
+                        if (premCategoryRow === null) {
+                            await interaction.reply({
+                                embeds: [
+                                    embed_message("Aqua", "There is no category set yet.")
+                                ],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        const category = await fetchGuildChannel(guild, premCategoryRow.category);
+                        if (!(category instanceof CategoryChannel)) {
+                            await interaction.reply({
+                                embeds: [
+                                    embed_error("Failed to fetch the category.\nTry again or set a new category", "Faulty row")
+                                ],
+                                flags: MessageFlags.Ephemeral
+                            });
+                            return;
+                        }
+
+                        const premiumChannelRows = await PremiumSystemRepo.fetchGuildChannels(guild.id);
+                        const textChannelsCount = premiumChannelRows.filter(c => c.type === "text").length;
+                        const voiceChannelsCount = premiumChannelRows.filter(c => c.type === "voice").length;
+                        const embed = new EmbedBuilder()
+                            .setColor("Aqua")
+                            .setAuthor({
+                                name: `${guild.name} premium channels details`,
+                                iconURL: guild.iconURL({ extension: "png" }) ?? ""
+                            })
+                            .setDescription(
+                                `🔗 Category: ${category}
+                                ✍️ Text Channels: ${textChannelsCount}
+                                🔊 Voice Channels: ${voiceChannelsCount}`
+                            );
+
+                        await interaction.reply({ embeds: [embed] });
+
+                        break;
+                    }
+
                 }
                 break;
             }

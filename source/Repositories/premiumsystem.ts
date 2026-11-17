@@ -1,6 +1,6 @@
 import { Snowflake } from "discord.js";
 import database from "../Config/database.js";
-import { PremiumCustomRole, PremiumKey, PremiumMember } from "../Interfaces/database_types.js";
+import { GuildPremiumCategory, PremiumChannel, PremiumCustomRole, PremiumKey, PremiumMember } from "../Interfaces/database_types.js";
 import { encryptor, timestampNow } from "../utility_modules/utility_methods.js";
 import { SelfCache } from "../Config/SelfCache.js";
 import { MembershipFull } from "../Interfaces/helper_types.js";
@@ -480,6 +480,124 @@ class PremiumSystemRepository {
         );
 
         return data.map(r => r.role);
+    }
+
+    async upsertCategory(guildId: string, channelId: string): Promise<GuildPremiumCategory> {
+        const { rows: result } = await database.query<GuildPremiumCategory>(
+            `INSERT INTO premium_channel_category(guild, category)
+            VALUES ($1, $2)
+            ON CONFLICT (guild)
+            DO UPDATE SET
+                category = EXCLUDED.category
+                
+            RETURNING *;`,
+            [guildId, channelId]
+        );
+
+        return result[0]!;
+    }
+
+    async getCategory(guildId: string): Promise<GuildPremiumCategory | null> {
+        const { rows: data } = await database.query<GuildPremiumCategory>(
+            `SELECT * FROM premium_channel_category WHERE guild=$1`,
+            [guildId]
+        );
+
+        return data[0] ?? null;
+    }
+
+    async wipePremiumChannelsFromGuild(guildId: string) {
+        await database.query(
+            `
+            DELETE FROM premium_channel AS pc
+            USING premiummember AS pm
+            WHERE pc.premiummember_id = pm.id
+                AND pm.guild=$1;
+            `,
+            [guildId]
+        );
+    }
+
+    async wipePremiumChannelsByMember(guildId: string, memberId: string) {
+        await database.query(
+            `DELETE FROM premium_channel AS pc
+            USING premiummember AS pm
+            WHERE pc.premiummember_id = pm.id
+                AND pm.guild=$1
+                AND pm.member=$2`,
+            [guildId, memberId]
+        );
+    }
+
+    async deletePremiumChannelById(channelId: string) {
+        await database.query(`DELETE FROM premium_channel WHERE channel=$1`, [channelId]);
+    }
+
+    async deleteCategory(guildId: string) {
+        await database.query(`DELETE FROM premium_channel_category WHERE guild=$1`, [guildId]);
+    }
+
+    async fetchGuildChannels(guildId: string): Promise<PremiumChannel[]> {
+        const { rows: data } = await database.query<PremiumChannel>(
+            `SELECT pc.*
+            FROM premium_channel AS pc
+            JOIN premiummember AS pm
+                ON pm.id = pc.premiummember_id
+            WHERE pm.guild=$1`,
+            [guildId]
+        );
+
+        return data;
+    }
+
+    async upsertPremiumChannel(
+        premiumMemberId: number,
+        channelId: string,
+        type: "text" | "voice"
+    ): Promise<PremiumChannel> {
+        const { rows: result } = await database.query<PremiumChannel>(
+            `INSERT INTO premium_channel(channel, premiummember_id, type)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (premiummember_id, type)
+            DO UPDATE SET
+                channel = EXCLUDED.channel
+            RETURNING *;`,
+            [channelId, premiumMemberId, type]
+        );
+
+        return result[0]!;
+    }
+
+    async fetchMemberChannels(guildId: string, memberId: string): Promise<PremiumChannel[]> {
+        const { rows: data } = await database.query<PremiumChannel>(
+            `SELECT pc.*
+            FROM premium_channel AS pc
+            JOIN premiummember AS pm
+                ON pm.id = pc.premiummember_id
+            WHERE pm.guild=$1
+            AND pm.member=$2`,
+            [guildId, memberId]
+        );
+
+        return data;
+    }
+
+    async onPremiumCategoryDelete(categoryId: string, guildId: string) {
+        await database.query(
+            `
+            WITH deleted_category AS (
+                DELETE FROM premium_channel_category
+                WHERE guild = $1
+                AND category = $2
+                RETURNING guild
+            )
+            DELETE FROM premium_channel AS pc
+            USING premiummember AS pm, deleted_category AS dc
+            WHERE pc.premiummember_id = pm.id
+            AND pm.guild = dc.guild;
+            `,
+            [guildId, categoryId]
+        );
     }
 }
 

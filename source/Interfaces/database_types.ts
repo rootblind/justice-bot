@@ -71,6 +71,11 @@ export interface PremiumKey extends GuildTable {
     dedicateduser: Snowflake | null;
 }
 
+export enum PremiumTierEnum {
+    TIER_0,
+    TIER_1
+}
+
 export interface PremiumMember extends GuildTable {
     member: Snowflake;
     premiumkey_id: number;
@@ -79,6 +84,17 @@ export interface PremiumMember extends GuildTable {
 export interface PremiumCustomRole {
     premiummember_id: number;
     role: Snowflake;
+}
+
+export interface GuildPremiumCategory {
+    guild: string,
+    category: string
+}
+
+export interface PremiumChannel {
+    channel: string,
+    premiummember_id: number,
+    type: "text" | "voice"
 }
 
 export interface BotConfig {
@@ -283,3 +299,4 @@ export interface PendingVerificationRow {
     member: string,
     expiresat: string
 }
+

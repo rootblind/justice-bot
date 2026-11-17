@@ -9,6 +9,7 @@ import PremiumSystemRepo, { } from "../../Repositories/premiumsystem.js";
 import { embed_error } from "../../utility_modules/embed_builders.js";
 import { profile_subcommand } from "../../Systems/premium/profile_subcommand.js";
 import { role_subcommand_group } from "../../Systems/premium/role_subcommand_group.js";
+import { channels_subcommand } from "../../Systems/premium/channels_subcommand.js";
 
 const premiumCommand: ChatCommand = {
     data: new SlashCommandBuilder()
@@ -17,6 +18,10 @@ const premiumCommand: ChatCommand = {
         .addSubcommand(subcommand =>
             subcommand.setName("profile")
                 .setDescription("Show your premium profile page.")
+        )
+        .addSubcommand(subcommand =>
+            subcommand.setName("channels")
+                .setDescription("Open the panel to manage your channels.")
         )
         .addSubcommandGroup(subcommandGroup =>
             subcommandGroup.setName("role")
@@ -80,6 +85,9 @@ const premiumCommand: ChatCommand = {
                     case "profile": {
                         await profile_subcommand(interaction, member, membership);
                         break;
+                    }
+                    case "channels": {
+                        await channels_subcommand(interaction, member, membership);
                     }
                 }
                 break;

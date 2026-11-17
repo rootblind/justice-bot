@@ -13,12 +13,12 @@ import {
     type Role,
     type Snowflake
 } from "discord.js";
-import { fetchGuildMember, fetchMemberCustomRole, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
+import { fetchGuildChannel, fetchGuildMember, fetchMemberCustomRole, fetchPremiumRole } from "../../utility_modules/discord_helpers.js";
 import { errorLogHandle } from "../../utility_modules/error_logger.js";
 import { duration_to_seconds, generate_unique_code, timestampNow } from "../../utility_modules/utility_methods.js";
 import { embed_new_premium_membership, embed_premium_member_notification } from "../../utility_modules/embed_builders.js";
 import PremiumSystemRepo from "../../Repositories/premiumsystem.js";
-import { PremiumKey } from "../../Interfaces/database_types.js";
+import { PremiumKey, PremiumTierEnum } from "../../Interfaces/database_types.js";
 
 /**
  * Remove the membership of the member and handle the follow up actions.
@@ -34,6 +34,7 @@ export async function remove_premium_from_member(
     guild: Guild
 ) {
     const premiumRole = await fetchPremiumRole(client, guild);
+    const membership = await PremiumSystemRepo.getGuildFullMembership(guild.id, memberId);
     if (!premiumRole) {
         throw new Error(
             `remove_premium_membership was called, but failed to fetch ${guild.name}[${guild.id}] premium role.
@@ -52,10 +53,31 @@ export async function remove_premium_from_member(
     if (customRole) {
         // Custom roles of members that no longer have premium must be deleted
         try {
-            await customRole.delete();
+            await customRole.delete("Membership revoked.");
         } catch (error) {
             errorLogHandle(error);
         }
+    }
+
+    // cleaning extra features
+    if (membership && membership.tier >= PremiumTierEnum.TIER_1) {
+        // for the moment the discord channels are left undeleted for the consideration of 
+        // the member aquiring membership again and wanting to keep past conversations. 
+        const ownedPremiumChannels = await PremiumSystemRepo.fetchMemberChannels(guild.id, memberId);
+        for (const channelRow of ownedPremiumChannels) {
+            // marking the channels as expired
+            try {
+                const channel = await fetchGuildChannel(guild, channelRow.channel);
+                if (channel) {
+                    await channel.edit({ name: `${member?.user.username ?? memberId}-expired` });
+                }
+            } catch (error) {
+                await errorLogHandle(error);
+            }
+        }
+
+        await PremiumSystemRepo.wipePremiumChannelsByMember(guild.id, memberId);
+
     }
 
     // cleaning the database

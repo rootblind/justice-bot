@@ -654,7 +654,8 @@ async function revoke_subcommand(
         }
     } else {
         await interaction.reply({
-            embeds: [embed_message("Red", "The targeted member doesn't share this role with you.")]
+            embeds: [embed_message("Red", "The targeted member doesn't share this role with you.")],
+            flags: MessageFlags.Ephemeral
         });
     }
 }

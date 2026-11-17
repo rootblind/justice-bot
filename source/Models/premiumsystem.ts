@@ -57,7 +57,43 @@ export default async function PremiumKey(): Promise<void> {
                     ON DELETE CASCADE
             );
             `
+        );
+
+        /**
+         * the category for premium channels 
+         */
+        await database.query(
+            `
+            CREATE TABLE IF NOT EXISTS premium_channel_category(
+                guild BIGINT PRIMARY KEY,
+                category BIGINT NOT NULL
+            );
+            `
         )
+
+        /**
+         * premium channels
+         */
+        await database.query(
+            `
+            CREATE TABLE IF NOT EXISTS premium_channel(
+                channel BIGINT PRIMARY KEY,
+                premiummember_id INT NOT NULL,
+                
+                type TEXT NOT NULL CHECK (type IN ('text', 'voice')),
+
+                UNIQUE (premiummember_id, type),
+
+                CONSTRAINT fk_premiummember
+                    FOREIGN KEY (premiummember_id)
+                    REFERENCES premiummember(id)
+                    ON DELETE CASCADE
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_premium_channel_member
+                ON premium_channel(premiummember_id);
+            `
+        );
     } catch (error) {
         console.error(error);
         throw error;
