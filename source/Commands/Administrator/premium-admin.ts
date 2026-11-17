@@ -1210,6 +1210,7 @@ const premiumAdminCommand: ChatCommand = {
                             return;
                         }
 
+                        // TODO: CHECK IF THE GIVEN CHANNEL IS ALREADY OWNED AND BLOCK THE ATTEMPT
                         const channel = options.getChannel("channel", true);
                         if (!(channel instanceof TextChannel) && !(channel instanceof VoiceChannel)) {
                             await interaction.editReply({
@@ -1234,6 +1235,18 @@ const premiumAdminCommand: ChatCommand = {
                                     )
                                 ]
                             });
+                            return;
+                        }
+
+                        const lookupChannelRow = await PremiumSystemRepo.getPremiumChannel(channel.id);
+                        if (!lookupChannelRow) {
+                            // if the channel is already in the system, it means it's already owned
+                            await interaction.editReply({
+                                embeds: [
+                                    embed_message("Red", "This channel is already owned.")
+                                ]
+                            });
+
                             return;
                         }
 

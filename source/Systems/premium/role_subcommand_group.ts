@@ -424,25 +424,25 @@ async function invite_subcommand(
     // currently inviting someone to share the role with limits the invited user to a single such role
     // so at most a member can have their own custom role and an additional one from accepting 
     // someone else's invitation
-
-    const notOwnedCustomRoleIds = new Set(
-        await PremiumSystemRepo.getGuildRolesNotOwnedByMember(
-            guild.id,
-            targetMember.id
-        )
-    );
-    /** AT MEMBERS REQUEST, the limit has been temporarely removed
-    const hasCommonRoles = targetMember.roles.cache.some(role => notOwnedCustomRoleIds.has(role.id));
-    if (hasCommonRoles) {
-        await interaction.reply({
-            embeds: [
-                embed_message("Red", `You can not invite ${targetMember} as they already share a custom role.`)
-            ],
-            flags: MessageFlags.Ephemeral
-        });
-        return;
-    }
-    **/
+    /** 
+        const notOwnedCustomRoleIds = new Set(
+            await PremiumSystemRepo.getGuildRolesNotOwnedByMember(
+                guild.id,
+                targetMember.id
+            )
+        );
+        AT MEMBERS REQUEST, the limit has been temporarely removed
+        const hasCommonRoles = targetMember.roles.cache.some(role => notOwnedCustomRoleIds.has(role.id));
+        if (hasCommonRoles) {
+            await interaction.reply({
+                embeds: [
+                    embed_message("Red", `You can not invite ${targetMember} as they already share a custom role.`)
+                ],
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+        **/
     const inviteCooldown = PremiumSystemRepo.getInviteCooldown(member.id, targetMember.id);
     const nowTimestamp = timestampNow();
     if (inviteCooldown && nowTimestamp < inviteCooldown) {
@@ -520,6 +520,8 @@ async function invite_subcommand(
             }
             const buttonMember = buttonInteraction.member as GuildMember;
             // to avoid abuse from multiple parallel menus open at a time, the roles must be checked again
+
+            /*
             const alreadyHasRole = buttonMember.roles.cache.some(r => notOwnedCustomRoleIds.has(r.id));
             if (alreadyHasRole) {
                 await buttonInteraction.reply({
@@ -532,10 +534,11 @@ async function invite_subcommand(
                     await reply.edit({
                         embeds: [embed_message("Red", "The invite couldn't be accepted.")]
                     });
-                } catch { /* do nothing */ }
+                } catch {  }
                 (await collector).stop();
                 return;
             }
+            */
 
             if (buttonInteraction.customId === "accept-button") {
                 try {

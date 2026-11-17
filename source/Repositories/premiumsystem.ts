@@ -506,6 +506,14 @@ class PremiumSystemRepository {
         return data[0] ?? null;
     }
 
+    async getPremiumChannel(channelId: string): Promise<PremiumChannel | null> {
+        const { rows: data } = await database.query<PremiumChannel>(
+            `SELECT * FROM premium_channel WHERE channel=$1`, [channelId]
+        );
+
+        return data[0] ?? null;
+    }
+
     async wipePremiumChannelsFromGuild(guildId: string) {
         await database.query(
             `
