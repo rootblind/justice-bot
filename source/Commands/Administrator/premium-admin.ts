@@ -1270,6 +1270,10 @@ const premiumAdminCommand: ChatCommand = {
                                 channel.id,
                                 channelTypeString
                             );
+
+                            await interaction.editReply({
+                                embeds: [embed_message("Green", `${channel} has been assigned to ${member}.`)]
+                            });
                         } catch (error) {
                             await errorLogHandle(error);
                             await interaction.editReply({
